@@ -1,0 +1,369 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using SPTarkov.Common.Models.Logging;
+using SPTarkov.DI.Annotations;
+using SPTarkov.Server.Core.DI;
+using SPTarkov.Server.Core.Models.Common;
+using SPTarkov.Server.Core.Models.Eft.Common;
+using Upd = SPTarkov.Server.Core.Models.Eft.Common.Tables.Upd;
+using SPTarkov.Server.Core.Models.Spt.Config;
+using SPTarkov.Server.Core.Models.Spt.Tables;
+using SPTarkov.Server.Core.Utils;
+using SPTarkov.Server.Core.Utils.Cloners;
+using SPTarkov.Server.Core.Utils.Json;
+
+namespace mizmii.CustomMapLoader;
+
+// Registers every map under <mod>/maps/<id>/ as a new location:
+//
+//   base.json         location settings (copy maps/sdk_example/base.json as a template)
+//   sdk_export.json   written by the Unity SDK build: spawn points, exits, export timestamp
+//   locale.json       optional: { "Name": "...", "Description": "...", "Keys": { "<key>": "<text>" } }
+//
+// SPT 4.1's LocationTable.GetDictionary() returns the live dictionary that GetLocation and the
+// client's location list read, so adding an entry is enough to make the map selectable.
+// (Registration path documented by ManimalIcebreaker's STANDALONE-LOCATION.md.)
+[Injectable(TypePriority = OnLoadOrder.Preload + 90000)]
+public class CustomMapLoader(
+    LocationTable locationTable,
+    LocaleTable localeTable,
+    LocationConfig locationConfig,
+    BotConfig botConfig,
+    PmcConfig pmcConfig,
+    ICloner cloner,
+    JsonUtil jsonUtil,
+    ISptLogger<CustomMapLoader> logger) : IOnLoad
+{
+    // loot pools and ammo are borrowed from this map until a map ships its own
+    private const string DonorLocation = "factory4_day";
+
+    public async Task OnLoadAsync(CancellationToken cancellationToken)
+    {
+        var modDir = Path.GetDirectoryName(typeof(CustomMapLoader).Assembly.Location)!;
+        var mapsDir = Path.Combine(modDir, "maps");
+        if (!Directory.Exists(mapsDir))
+        {
+            logger.Warning($"[MappingSDK] No maps folder at {mapsDir}");
+            return;
+        }
+
+        foreach (var dir in Directory.GetDirectories(mapsDir))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                await LoadMap(dir, cancellationToken);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                logger.Error($"[MappingSDK] Map in {dir} was not loaded: {e.Message}");
+            }
+        }
+
+        // after every map is registered, so a transit can lead to another custom map
+        foreach (var dir in Directory.GetDirectories(mapsDir))
+            ResolveTransitTargets(Path.GetFileName(dir));
+    }
+
+    // The SDK exports a transit's destination as "location" (a map id); the game also needs
+    // "target", the destination's _Id, which only the server knows for every map.
+    private void ResolveTransitTargets(string mapId)
+    {
+        var transits = locationTable.GetDictionary().TryGetValue(mapId, out var location) ? location?.Base?.Transits : null;
+        if (transits == null)
+            return;
+        foreach (var transit in transits)
+        {
+            if (!string.IsNullOrEmpty(transit.Target) || string.IsNullOrEmpty(transit.Location))
+                continue;
+            var destination = locationTable.GetDictionary().Values.FirstOrDefault(l =>
+                l?.Base != null && string.Equals(l.Base.Id, transit.Location, StringComparison.OrdinalIgnoreCase));
+            if (destination == null)
+            {
+                logger.Warning($"[MappingSDK] {mapId}: transit {transit.Id} leads to unknown location '{transit.Location}'");
+                continue;
+            }
+            transit.Location = destination.Base!.Id; // the game matches the id's exact case
+            transit.Target = destination.Base.IdField.ToString();
+        }
+    }
+
+    private async Task LoadMap(string dir, CancellationToken cancellationToken)
+    {
+        var mapId = Path.GetFileName(dir);
+        var basePath = Path.Combine(dir, "base.json");
+        if (!File.Exists(basePath))
+        {
+            logger.Warning($"[MappingSDK] {dir} has no base.json, skipped");
+            return;
+        }
+
+        var locationBase = await jsonUtil.DeserializeFromFileAsync<LocationBase>(basePath, cancellationToken)
+                           ?? throw new InvalidDataException("base.json could not be parsed");
+        if (!string.Equals(locationBase.Id, mapId, StringComparison.Ordinal))
+            throw new InvalidDataException($"base.json Id '{locationBase.Id}' must equal the folder name '{mapId}'");
+        EnsureAvailable(mapId, locationBase.IdField);
+
+        // the bundle keys the client plugin serves, as built by the SDK
+        locationBase.Scene = new Scene
+        {
+            Path = $"maps/{mapId}.bundle",
+            Rcid = $"{mapId}.scenespreset.asset",
+        };
+        // retail banner rows point at files nothing serves; the client then shows an empty error
+        locationBase.Banners = [];
+        // ServerAirdropManager.Init reads AirdropParameters[0] unconditionally at raid start, and an
+        // explicit [] replaces the client's one-entry default, so an empty list fails the raid load
+        if (locationBase.AirdropParameters is not { Count: > 0 })
+            locationBase.AirdropParameters = [DisabledAirdrops()];
+
+        var exportPath = Path.Combine(dir, "sdk_export.json");
+        List<SdkLootSpawn> lootSpawns = [];
+        if (File.Exists(exportPath))
+        {
+            var export = await jsonUtil.DeserializeFromFileAsync<SdkExport>(exportPath, cancellationToken)
+                         ?? throw new InvalidDataException("sdk_export.json could not be parsed");
+            lootSpawns = export.LootSpawns ?? [];
+            locationBase.SpawnPointParams = export.SpawnPointParams ?? [];
+            locationBase.Exits = export.Exits ?? [];
+            if (export.Transits is { Count: > 0 })
+                locationBase.Transits = export.Transits;
+            // the client only accepts backend spawn points when the scene is not newer than this
+            locationBase.UnixDateTime = Math.Max(locationBase.UnixDateTime, export.UnixDateTime);
+        }
+        else
+        {
+            logger.Warning($"[MappingSDK] {mapId}: no sdk_export.json, using spawn points and exits from base.json. Build the map in the SDK to create it.");
+        }
+
+        var donor = locationTable.GetLocation(DonorLocation);
+        var location = new Location
+        {
+            Base = locationBase,
+            StaticAmmo = donor?.StaticAmmo ?? new Dictionary<string, IEnumerable<StaticAmmoDetails>>(),
+            // container pools are keyed by container template, so sharing them is safe;
+            // they are only read, never mutated
+            StaticLoot = donor?.StaticLoot,
+            // no containers or loose loot until the map ships its own lists
+            StaticContainers = new LazyLoad<StaticContainerDetails>(() => new StaticContainerDetails
+            {
+                StaticWeapons = [],
+                StaticContainers = [],
+                StaticForced = [],
+            }, cacheValue: true),
+            // not cached: SPT's loot generator mutates the loose loot it reads each raid
+            LooseLoot = new LazyLoad<LooseLoot>(() => BuildLooseLoot(lootSpawns), cacheValue: false),
+            AllExtracts = [],
+        };
+
+        locationTable.GetDictionary().Add(mapId, location);
+        ConfigureLocation(mapId);
+        await RegisterLocales(dir, locationBase, cancellationToken);
+
+        logger.Success($"[MappingSDK] Registered map '{mapId}' ({locationBase.IdField}): " +
+                       $"{locationBase.SpawnPointParams?.Count() ?? 0} spawn point(s), {locationBase.Exits?.Count() ?? 0} exit(s), " +
+                       $"{lootSpawns.Count} loot spawn(s)");
+    }
+
+    // SDK loot spawns as SPT loose loot, in retail's layout: every candidate item is a root item in
+    // the template, keyed by composedKey, and itemDistribution weights the keys; SPT's generator
+    // picks one per spawnpoint. Always-spawn points go to spawnpointsForced. On average a raid
+    // spawns the sum of the other points' probabilities.
+    private static LooseLoot BuildLooseLoot(List<SdkLootSpawn> spawns)
+    {
+        var points = new List<Spawnpoint>();
+        var forced = new List<Spawnpoint>();
+        double expected = 0;
+        foreach (var spawn in spawns)
+        {
+            if (spawn.Items is not { Count: > 0 })
+                continue;
+            var items = new List<SptLootItem>();
+            var distribution = new List<LooseLootItemDistribution>();
+            foreach (var entry in spawn.Items)
+            {
+                var id = new MongoId();
+                var key = id.ToString();
+                items.Add(new SptLootItem
+                {
+                    Id = id,
+                    Template = new MongoId(entry.Template),
+                    Upd = new Upd { StackObjectsCount = Math.Max(1, entry.StackCount) },
+                    ComposedKey = key,
+                });
+                distribution.Add(new LooseLootItemDistribution
+                {
+                    ComposedKey = new ComposedKey { Key = key },
+                    RelativeProbability = Math.Max(1, entry.Weight),
+                });
+            }
+            var position = spawn.Position ?? new Vector3(0, 0, 0);
+            var point = new Spawnpoint
+            {
+                LocationId = $"({position.X}, {position.Y}, {position.Z})",
+                Probability = spawn.AlwaysSpawn ? 1 : Math.Clamp(spawn.Probability, 0, 1),
+                Template = new SpawnpointTemplate
+                {
+                    Id = spawn.Id,
+                    IsContainer = false,
+                    UseGravity = spawn.UseGravity,
+                    RandomRotation = spawn.RandomRotation,
+                    Position = position,
+                    Rotation = spawn.Rotation ?? new Vector3(0, 0, 0),
+                    IsGroupPosition = false,
+                    GroupPositions = [],
+                    IsAlwaysSpawn = spawn.AlwaysSpawn,
+                    Root = items[0].Id.ToString(),
+                    Items = items,
+                },
+                ItemDistribution = distribution,
+            };
+            if (spawn.AlwaysSpawn)
+            {
+                forced.Add(point);
+            }
+            else
+            {
+                points.Add(point);
+                expected += point.Probability ?? 0;
+            }
+        }
+        return new LooseLoot
+        {
+            SpawnpointCount = new SpawnpointCount { Mean = expected, Std = Math.Sqrt(expected) * 0.5 },
+            Spawnpoints = points,
+            SpawnpointsForced = forced,
+        };
+    }
+
+    // the client's own AirdropParameters defaults, with no plane drops (chance and max of 0)
+    private static AirdropParameter DisabledAirdrops() => new()
+    {
+        PlaneAirdropStartMin = 250,
+        PlaneAirdropStartMax = 550,
+        PlaneAirdropEnd = 2200,
+        PlaneAirdropChance = 0,
+        PlaneAirdropMax = 0,
+        PlaneAirdropCooldownMin = 550,
+        PlaneAirdropCooldownMax = 850,
+        AirdropPointDeactivateDistance = 60,
+        MinimumPlayersCountToSpawnAirdrop = 6,
+        UnsuccessfulTryPenalty = 120,
+    };
+
+    private void EnsureAvailable(string mapId, MongoId id)
+    {
+        var locations = locationTable.GetDictionary();
+        if (locations.ContainsKey(mapId))
+            throw new InvalidOperationException($"location key '{mapId}' is already registered");
+        foreach (var (key, existing) in locations)
+            if (existing?.Base != null && existing.Base.IdField == id)
+                throw new InvalidOperationException($"_Id {id} is already used by '{key}'; give base.json a new unique 24-character hex _Id");
+    }
+
+    // per-map config lookups that otherwise miss for an unknown location id
+    private void ConfigureLocation(string mapId)
+    {
+        if (locationConfig.ScavRaidTimeSettings.Maps.TryGetValue(DonorLocation, out var raidTime))
+            locationConfig.ScavRaidTimeSettings.Maps.TryAdd(mapId, cloner.Clone(raidTime)!);
+        locationConfig.StaticLootMultiplier.TryAdd(mapId, 1);
+        locationConfig.LooseLootMultiplier.TryAdd(mapId, 1);
+
+        // the client reads these brain weights by map id when a bot's brain activates
+        // (/singleplayer/settings/bot/getBotBehaviours/); a missing key throws inside
+        // BotOwner activation and every bot is left standing in place (BotState.ActiveFail)
+        CopyDonorEntry(botConfig.AssaultBrainType, mapId);
+        CopyDonorEntry(botConfig.PlayerScavBrainType, mapId);
+        foreach (var (_, byMap) in pmcConfig.PmcType)
+            CopyDonorEntry(byMap, mapId);
+        if (botConfig.MaxBotCap.TryGetValue(DonorLocation, out var botCap))
+            botConfig.MaxBotCap.TryAdd(mapId, botCap);
+    }
+
+    private void CopyDonorEntry<T>(Dictionary<string, T> byMap, string mapId) where T : class
+    {
+        if (byMap.TryGetValue(DonorLocation, out var donor))
+            byMap.TryAdd(mapId, cloner.Clone(donor)!);
+    }
+
+    // the map select screen reads "<_Id> Name" / "<_Id> Description" from locales, not base.json
+    private async Task RegisterLocales(string dir, LocationBase locationBase, CancellationToken cancellationToken)
+    {
+        var path = Path.Combine(dir, "locale.json");
+        var locale = File.Exists(path)
+            ? await jsonUtil.DeserializeFromFileAsync<MapLocale>(path, cancellationToken)
+            : null;
+
+        var name = locale?.Name ?? locationBase.Name ?? locationBase.Id;
+        var description = locale?.Description ?? locationBase.Description ?? "";
+        var id = locationBase.IdField.ToString();
+
+        foreach (var (_, lazy) in localeTable.Global)
+        {
+            lazy.AddTransformer(entries =>
+            {
+                if (entries == null)
+                    return entries;
+                entries[$"{id} Name"] = name;
+                entries[$"{id} Description"] = description;
+                entries[locationBase.Id] = name;
+                if (locale?.Keys != null)
+                    foreach (var (key, text) in locale.Keys)
+                        entries[key] = text;
+                return entries;
+            });
+        }
+    }
+
+    private sealed record SdkExport
+    {
+        [JsonPropertyName("MapId")]
+        public string? MapId { get; init; }
+
+        [JsonPropertyName("UnixDateTime")]
+        public long UnixDateTime { get; init; }
+
+        [JsonPropertyName("SpawnPointParams")]
+        public List<SpawnPointParam>? SpawnPointParams { get; init; }
+
+        [JsonPropertyName("Exits")]
+        public List<Exit>? Exits { get; init; }
+
+        [JsonPropertyName("Transits")]
+        public List<Transit>? Transits { get; init; }
+
+        [JsonPropertyName("LootSpawns")]
+        public List<SdkLootSpawn>? LootSpawns { get; init; }
+    }
+
+    private sealed record SdkLootSpawn
+    {
+        [JsonPropertyName("Id")] public string Id { get; init; } = "";
+        [JsonPropertyName("Position")] public Vector3? Position { get; init; }
+        [JsonPropertyName("Rotation")] public Vector3? Rotation { get; init; }
+        [JsonPropertyName("Probability")] public double Probability { get; init; }
+        [JsonPropertyName("AlwaysSpawn")] public bool AlwaysSpawn { get; init; }
+        [JsonPropertyName("UseGravity")] public bool UseGravity { get; init; }
+        [JsonPropertyName("RandomRotation")] public bool RandomRotation { get; init; }
+        [JsonPropertyName("Items")] public List<SdkLootItem>? Items { get; init; }
+    }
+
+    private sealed record SdkLootItem
+    {
+        [JsonPropertyName("Template")] public string Template { get; init; } = "";
+        [JsonPropertyName("Weight")] public int Weight { get; init; } = 1;
+        [JsonPropertyName("StackCount")] public int StackCount { get; init; } = 1;
+    }
+
+    private sealed record MapLocale
+    {
+        [JsonPropertyName("Name")]
+        public string? Name { get; init; }
+
+        [JsonPropertyName("Description")]
+        public string? Description { get; init; }
+
+        [JsonPropertyName("Keys")]
+        public Dictionary<string, string>? Keys { get; init; }
+    }
+}

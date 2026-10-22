@@ -1,0 +1,490 @@
+{
+  "AccessKeys": [],
+  "AccessKeysPvE": [],
+  "AirdropParameters": [
+    {
+      "AirdropPointDeactivateDistance": 60,
+      "MinPlayersCountToSpawnAirdrop": 6,
+      "PlaneAirdropChance": 0,
+      "PlaneAirdropCooldownMax": 850,
+      "PlaneAirdropCooldownMin": 550,
+      "PlaneAirdropEnd": 2200,
+      "PlaneAirdropMax": 0,
+      "PlaneAirdropStartMax": 550,
+      "PlaneAirdropStartMin": 250,
+      "UnsuccessfulTryPenalty": 120
+    }
+  ],
+  "Area": 0,
+  "AveragePlayTime": 20,
+  "AveragePlayerLevel": 20,
+  "Banners": [],
+  "BossLocationSpawn": [],
+  "BotAssault": 80,
+  "BotEasy": 10,
+  "BotHard": 40,
+  "BotImpossible": 0,
+  "BotLocationModifier": {
+    "AccuracySpeed": 1,
+    "AdditionalHostilitySettings": [
+      {
+        "AlwaysEnemies": [
+          "pmcBot",
+          "exUsec",
+          "bossBully",
+          "bossBoar",
+          "bossTagilla",
+          "bossKilla",
+          "bossKojaniy",
+          "bossSanitar",
+          "bossKolontay",
+          "bossGluhar",
+          "bossKnight",
+          "bossBoarSniper",
+          "bossPartisan",
+          "followerBigPipe",
+          "followerBirdEye",
+          "followerBoar",
+          "followerBoarClose1",
+          "followerBoarClose2",
+          "followerBully",
+          "followerGluharAssault",
+          "followerGluharScout",
+          "followerGluharSecurity",
+          "followerGluharSnipe",
+          "followerKojaniy",
+          "followerKolontayAssault",
+          "followerKolontaySecurity",
+          "followerSanitar",
+          "followerTagilla"
+        ],
+        "AlwaysFriends": [
+          "bossZryachiy",
+          "followerZryachiy",
+          "peacefullZryachiyEvent",
+          "ravangeZryachiyEvent",
+          "gifter"
+        ],
+        "BearEnemyChance": 75,
+        "BearPlayerBehaviour": "ChancedEnemies",
+        "BotRole": "pmcBEAR",
+        "ChancedEnemies": [
+          {
+            "EnemyChance": 100,
+            "Role": "assault"
+          },
+          {
+            "EnemyChance": 100,
+            "Role": "marksman"
+          },
+          {
+            "EnemyChance": 75,
+            "Role": "pmcUSEC"
+          }
+        ],
+        "Neutral": [
+          "sectantPriest",
+          "sectantWarrior"
+        ],
+        "SavagePlayerBehaviour": "Warn",
+        "UsecEnemyChance": 90,
+        "UsecPlayerBehaviour": "ChancedEnemies",
+        "Warn": [
+          "sectactPriestEvent"
+        ]
+      },
+      {
+        "AlwaysEnemies": [
+          "pmcBot",
+          "bossBully",
+          "bossBoar",
+          "bossTagilla",
+          "bossKilla",
+          "bossKojaniy",
+          "bossSanitar",
+          "bossKolontay",
+          "bossGluhar",
+          "bossBoarSniper",
+          "bossPartisan",
+          "followerBoar",
+          "followerBoarClose1",
+          "followerBoarClose2",
+          "followerBully",
+          "followerGluharAssault",
+          "followerGluharScout",
+          "followerGluharSecurity",
+          "followerGluharSnipe",
+          "followerKojaniy",
+          "followerKolontayAssault",
+          "followerKolontaySecurity",
+          "followerSanitar",
+          "followerTagilla"
+        ],
+        "AlwaysFriends": [
+          "bossZryachiy",
+          "followerZryachiy",
+          "peacefullZryachiyEvent",
+          "ravangeZryachiyEvent",
+          "gifter"
+        ],
+        "BearEnemyChance": 90,
+        "BearPlayerBehaviour": "ChancedEnemies",
+        "BotRole": "pmcUSEC",
+        "ChancedEnemies": [
+          {
+            "EnemyChance": 100,
+            "Role": "assault"
+          },
+          {
+            "EnemyChance": 100,
+            "Role": "marksman"
+          },
+          {
+            "EnemyChance": 75,
+            "Role": "pmcBEAR"
+          },
+          {
+            "EnemyChance": 15,
+            "Role": "exUsec"
+          },
+          {
+            "EnemyChance": 15,
+            "Role": "bossKnight"
+          }
+        ],
+        "Neutral": [
+          "sectantPriest",
+          "sectantWarrior"
+        ],
+        "SavagePlayerBehaviour": "Warn",
+        "UsecEnemyChance": 75,
+        "UsecPlayerBehaviour": "ChancedEnemies",
+        "Warn": [
+          "sectactPriestEvent"
+        ]
+      },
+      {
+        "AlwaysEnemies": [
+          "pmcBEAR",
+          "pmcUSEC"
+        ],
+        "AlwaysFriends": [
+          "assault",
+          "marksman",
+          "peacefullZryachiyEvent",
+          "ravangeZryachiyEvent",
+          "gifter",
+          "bossBoar",
+          "bossKilla",
+          "bossGluhar",
+          "bossKnight",
+          "bossKojaniy",
+          "bossKolontay",
+          "bossPartisan",
+          "bossSanitar",
+          "bossTagilla",
+          "bossZryachiy"
+        ],
+        "BotRole": "bossBully"
+      },
+      {
+        "AlwaysEnemies": [
+          "pmcBEAR",
+          "pmcUSEC"
+        ],
+        "AlwaysFriends": [
+          "bossKilla",
+          "marksman",
+          "peacefullZryachiyEvent",
+          "ravangeZryachiyEvent",
+          "gifter",
+          "bossBoar",
+          "bossBully",
+          "bossGluhar",
+          "bossKnight",
+          "bossKojaniy",
+          "bossKolontay",
+          "bossPartisan",
+          "bossSanitar",
+          "bossTagilla",
+          "bossZryachiy",
+          "exUsec",
+          "followerBigPipe",
+          "followerBirdEye",
+          "followerBully"
+        ],
+        "BotRole": "assault",
+        "SavagePlayerBehaviour": "Neutral"
+      }
+    ],
+    "DistToActivate": 265,
+    "DistToActivatePvE": 265,
+    "DistToPersueAxemanCoef": 1,
+    "DistToSleep": 300,
+    "DistToSleepPvE": 300,
+    "FogVisibilityDistanceCoef": 0,
+    "FogVisibilitySpeedCoef": 0,
+    "GainSight": 1,
+    "KhorovodChance": 0,
+    "LockSpawnCheckRadius": 150,
+    "LockSpawnCheckRadiusPvE": 150,
+    "LockSpawnStartTime": 10,
+    "LockSpawnStartTimePvE": 10,
+    "LockSpawnStepTime": 50,
+    "LockSpawnStepTimePvE": 50,
+    "MagnetPower": 44,
+    "MarksmanAccuratyCoef": 1,
+    "MaxExfiltrationTime": 1800,
+    "MinExfiltrationTime": 1200,
+    "NonWaveSpawnBotsLimitPerPlayer": 10,
+    "NonWaveSpawnBotsLimitPerPlayerPvE": 10,
+    "RainVisibilityDistanceCoef": 0.35,
+    "RainVisibilitySpeedCoef": 0,
+    "Scattering": 1,
+    "VisibleDistance": 1
+  },
+  "BotMarksman": 20,
+  "BotMax": 6,
+  "BotMaxPlayer": 6,
+  "BotMaxPvE": 6,
+  "BotMaxTimePlayer": 1200,
+  "BotNormal": 50,
+  "BotSpawnCountStep": 4,
+  "BotSpawnPeriodCheck": 15,
+  "BotSpawnTimeOffMax": 30,
+  "BotSpawnTimeOffMin": 20,
+  "BotSpawnTimeOnMax": 320,
+  "BotSpawnTimeOnMin": 260,
+  "BotStart": 10,
+  "BotStartPlayer": 10,
+  "BotStop": 1500,
+  "Description": "Example map built with the Tushonka mapping SDK",
+  "DisabledForScav": true,
+  "DisabledScavExits": "",
+  "EnableCoop": true,
+  "Enabled": true,
+  "EscapeTimeLimit": 30,
+  "EscapeTimeLimitCoop": 30,
+  "EscapeTimeLimitPVE": 30,
+  "Events": {
+    "Halloween2024": {
+      "CrowdAttackBlockRadius": 100,
+      "CrowdAttackSpawnParams": [
+        {
+          "Difficulty": "easy",
+          "Role": "infectedAssault",
+          "Weight": 30
+        },
+        {
+          "Difficulty": "normal",
+          "Role": "infectedAssault",
+          "Weight": 110
+        },
+        {
+          "Difficulty": "hard",
+          "Role": "infectedAssault",
+          "Weight": 40
+        },
+        {
+          "Difficulty": "easy",
+          "Role": "infectedPmc",
+          "Weight": 15
+        },
+        {
+          "Difficulty": "normal",
+          "Role": "infectedPmc",
+          "Weight": 55
+        },
+        {
+          "Difficulty": "hard",
+          "Role": "infectedPmc",
+          "Weight": 20
+        },
+        {
+          "Difficulty": "easy",
+          "Role": "infectedCivil",
+          "Weight": 0
+        },
+        {
+          "Difficulty": "normal",
+          "Role": "infectedCivil",
+          "Weight": 0
+        },
+        {
+          "Difficulty": "hard",
+          "Role": "infectedCivil",
+          "Weight": 0
+        },
+        {
+          "Difficulty": "easy",
+          "Role": "infectedLaborant",
+          "Weight": 0
+        },
+        {
+          "Difficulty": "normal",
+          "Role": "infectedLaborant",
+          "Weight": 0
+        },
+        {
+          "Difficulty": "hard",
+          "Role": "infectedLaborant",
+          "Weight": 0
+        }
+      ],
+      "CrowdCooldownPerPlayerSec": 300,
+      "CrowdsLimit": 2,
+      "InfectedLookCoeff": 0.5,
+      "MaxCrowdAttackSpawnLimit": 18,
+      "MinInfectionPercentage": 0,
+      "MinSpawnDistToPlayer": 50,
+      "TargetPointSearchRadiusLimit": 200,
+      "ZombieCallDeltaRadius": 20,
+      "ZombieCallPeriodSec": 1,
+      "ZombieCallRadiusLimit": 200,
+      "ZombieMultiplier": 5
+    },
+    "Khorovod": {
+      "Chance": 0
+    }
+  },
+  "ForceOnlineRaidInPVE": false,
+  "GenerateLocalLootCache": true,
+  "GlobalContainerChanceModifier": 1,
+  "GlobalLootChanceModifier": 0.4,
+  "GlobalLootChanceModifierPvE": 0.9,
+  "HeatmapCellSize": {
+    "x": 1,
+    "y": 2,
+    "z": 1
+  },
+  "HeatmapLayers": [
+    "AllCharactersPositions",
+    "AllBotsPositions",
+    "AllRealPlayersPositions",
+    "RealPlayersSavagesPositions",
+    "RealPlayersSavagesDeads",
+    "RealPlayersSavagesDamages",
+    "RealPlayersPmcPositions",
+    "RealPlayersPmcDeads",
+    "RealPlayersPmcDamages",
+    "RealPlayersPmcLaydownPositions",
+    "RealPlayersPmcEquipmentDropPositions",
+    "RealPlayersPmcHealingPositions",
+    "BotsBossPositions",
+    "BotsBossDeads",
+    "BotsBossDamages",
+    "BotsSavagesPositions",
+    "BotsSavagesDeads",
+    "BotsSavagesDamages",
+    "AllCharactersDamageSources",
+    "RealPlayerDamageSources",
+    "BotsDamageSources",
+    "LootPositions"
+  ],
+  "IconX": 420,
+  "IconY": 420,
+  "Id": "sdk_example",
+  "Insurance": true,
+  "IsSecret": false,
+  "Locked": false,
+  "Loot": [],
+  "MatchMakerMinPlayersByWaitTime": [
+    {
+      "minPlayers": 11,
+      "time": 240
+    },
+    {
+      "minPlayers": 8,
+      "time": 300
+    },
+    {
+      "minPlayers": 5,
+      "time": 360
+    },
+    {
+      "minPlayers": 2,
+      "time": 420
+    },
+    {
+      "minPlayers": 1,
+      "time": 450
+    }
+  ],
+  "MaxBotPerZone": 4,
+  "MaxCoopGroup": 4,
+  "MaxDistToFreePoint": 200,
+  "MaxPlayers": 4,
+  "MinDistToExitPoint": 30,
+  "MinDistToFreePoint": 60,
+  "MinMaxBots": [],
+  "MinPlayerLvlAccessKeys": 0,
+  "MinPlayers": 1,
+  "Name": "SDK Example",
+  "NewSpawn": true,
+  "NewSpawnForPlayers": true,
+  "NonWaveGroupScenario": {
+    "Chance": 50,
+    "Enabled": true,
+    "MaxToBeGroup": 3,
+    "MinToBeGroup": 2
+  },
+  "OcculsionCullingEnabled": false,
+  "OfflineNewSpawn": true,
+  "OfflineOldSpawn": true,
+  "OldSpawn": true,
+  "OpenZones": "ZoneMain",
+  "PlayersRequestCount": -1,
+  "PmcMaxPlayersInGroup": 4,
+  "Preview": {
+    "path": "",
+    "rcid": ""
+  },
+  "RequiredPlayerLevelMax": 100,
+  "RequiredPlayerLevelMin": 0,
+  "Rules": "AvoidAllPmc",
+  "SafeLocation": false,
+  "ScavMaxPlayersInGroup": 4,
+  "Scene": {
+    "path": "maps/sdk_example.bundle",
+    "rcid": "sdk_example.scenespreset.asset"
+  },
+  "SpawnPointParams": [],
+  "UnixDateTime": 0,
+  "_Id": "68f6a1c2b3d4e5f601a2b3c4",
+  "doors": [],
+  "exit_access_time": 60,
+  "exit_count": 2,
+  "exit_time": 1,
+  "exits": [],
+  "filter_ex": [],
+  "limits": [],
+  "matching_min_seconds": 60,
+  "maxItemCountInLocation": [],
+  "sav_summon_seconds": 60,
+  "secretExits": [],
+  "tmp_location_field_remove_me": 0,
+  "transits": [],
+  "users_gather_seconds": 0,
+  "users_spawn_seconds_n": 120,
+  "users_spawn_seconds_n2": 200,
+  "users_summon_seconds": 0,
+  "waves": [
+    {
+      "BotPreset": "normal",
+      "BotSide": "Savage",
+      "KeepZoneOnSpawn": true,
+      "SpawnMode": [
+        "regular",
+        "pve"
+      ],
+      "SpawnPoints": "ZoneMain",
+      "WildSpawnType": "assault",
+      "isPlayers": false,
+      "number": 0,
+      "slots_max": 2,
+      "slots_min": 1,
+      "time_max": 60,
+      "time_min": 30
+    }
+  ]
+}

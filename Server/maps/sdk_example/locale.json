@@ -1,0 +1,7 @@
+{
+  "Name": "SDK Example",
+  "Description": "A small test map built with the Tushonka mapping SDK.",
+  "Keys": {
+    "SDK_Exit_Main": "Main Exit"
+  }
+}

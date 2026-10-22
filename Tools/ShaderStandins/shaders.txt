@@ -1,0 +1,35 @@
+# Game shaders the SDK provides stand-ins for, most used first (material counts across
+# Customs, Shoreline, Woods and Factory scenes in 0.16.9).
+# Unity's built-in Standard shader also works in the game and needs no stand-in.
+
+# props, buildings, terrain meshes (802)
+p0/Reflective/Bumped Specular SMap
+# (269)
+p0/Reflective/Bumped Specular
+# alpha-tested props: fences, grates, foliage cards (44)
+p0/Cutout/Bumped Diffuse
+# glass (36)
+Global Fog/Transparent Reflective Specular
+# vertex-painted ground blending (15)
+Custom/Vert Paint Shader Solid
+# (13)
+p0/Reflective/Bumped Specular SMap Transparent Cutoff
+# lamps, screens, signs (11)
+p0/Reflective/Bumped Emissive Specular SMap
+p0/Bumped Specular
+p0/AlphaBumpedFresnel
+
+# full weather system (sky dome, clouds, rain, snow)
+Time of Day/Atmosphere
+Time of Day/Clear Alpha
+Time of Day/Moon
+Time of Day/Skybox
+Time of Day/Space
+Time of Day/Sun
+Custom/Particles-AdditiveVertLit
+Custom/RainDrops
+Custom/SnowFlakes
+EFT/Snow Sparkling
+EFT/SnowCopyNormalAndAlphaMask
+Hidden/AmbientHighlihgt
+Rain/LiquidDrop

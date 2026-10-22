@@ -1,0 +1,269 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afed78276e13ac843ae81a8fa88f8abf, type: 3}
+  m_Name: sp_construct_AmbientSoundData
+  m_EditorClassIdentifier: 
+  _windSoundStorage:
+    _seasonPrecipitations:
+      _keys:
+      - Summer
+      - Autumn
+      - Winter
+      - Spring
+      - AutumnLate
+      - SpringEarly
+      - Storm
+      _values:
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+      - _keys:
+        - Light
+        - Moderate
+        - Strong
+        - VeryStrong
+        - Hurricane
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 6dd0f91b2ead97c42916f84f218ebbaa, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: a0193c8376fa0834bb2e0696ed4fc50e, type: 3}
+  _dayTimeAmbientSeasonClips:
+    _keys:
+    - Summer
+    - Autumn
+    - Winter
+    - Spring
+    - AutumnLate
+    - SpringEarly
+    - Storm
+    _values:
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+    - DayAmbientClip: {fileID: 8300000, guid: f01e23523716504469c2428df211e6cb, type: 3}
+      NightAmbientClip: {fileID: 8300000, guid: 4d10df7fee8d70d42bd6c5d20b657d09, type: 3}
+  _precipitationSoundStorageSo: {fileID: 3659946797787111648}
+--- !u!114 &3659946797787111648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5cb564b43b6bcd4482399e05d30a7f4, type: 3}
+  m_Name: Precipitation
+  m_EditorClassIdentifier: 
+  _storage:
+    _seasonPrecipitations:
+      _keys:
+      - Summer
+      - Autumn
+      - Winter
+      - Spring
+      - AutumnLate
+      - SpringEarly
+      - Storm
+      _values:
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}
+      - _keys:
+        - Low
+        - Med
+        - High
+        _values:
+        - _indoorClip: {fileID: 8300000, guid: 5fe12951b1ffea545b962afa1885e644, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 91d3b6560b2f5ff40844c03b9e674630, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 0f23dd8af37933f439d7aec3655b600d, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 9221b459941ca5942a135989b512fd20, type: 3}
+        - _indoorClip: {fileID: 8300000, guid: 42adf7585b869d049a2a528f1fcbb4a5, type: 3}
+          _outdoorClip: {fileID: 8300000, guid: 52342f22c16886549a30863cf7d31723, type: 3}

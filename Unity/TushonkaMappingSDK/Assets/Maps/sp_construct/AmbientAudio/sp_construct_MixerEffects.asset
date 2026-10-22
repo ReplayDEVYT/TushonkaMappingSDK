@@ -1,0 +1,346 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5123830448927462919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5446b8620f24474dbc83ad7ec28bc12, type: 3}
+  m_Name: Delay
+  m_EditorClassIdentifier: 
+  delayVolume:
+    paramName: DelayVolume
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -32
+      - -30
+      - -80
+  delay:
+    paramName: DelayTime
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 853
+      - 420
+      - 500
+  decayTime:
+    paramName: DelayDecayTime
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0.22
+      - 0.1
+      - 0
+  wetMix:
+    paramName: DelayWetmix
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 1
+      - 1
+      - 1
+  lowpassFilterFreq:
+    paramName: DelayLowpassFilterFreq
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 2500
+      - 2500
+      - 5100
+--- !u!114 &-1374505346956142476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed6bfaa08a492614fa98a4f3a9fb4a56, type: 3}
+  m_Name: EffectsVolumes
+  m_EditorClassIdentifier: 
+  mixerEnvironmentParameters: []
+--- !u!114 &-1106499685433856141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae18ce7e4e1426c48aae64c7d43acd5f, type: 3}
+  m_Name: Reverb
+  m_EditorClassIdentifier: 
+  reverbVolume:
+    paramName: AmbientReverbVolume
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -13
+      - -80
+      - -3.1
+  reverbDryLevel:
+    paramName: AmbientReverbDryLevel
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -143
+      - -4576
+      - -10000
+  mix:
+    paramName: AmbientReverbMix
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 1090
+      - -10000
+      - 1392
+  reverbDelay:
+    paramName: AmbientReverbDelay
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0.06
+      - 0.06
+      - 0.04
+  reflectDelay:
+    paramName: AmbientReverbReflectDelay
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0.15
+      - 0.02
+      - 0.19
+  reflectMix:
+    paramName: AmbientReverbReflectMix
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -1444
+      - -10000
+      - -1914
+  roomSize:
+    paramName: AmbientReverbRoomSize
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -1113
+      - -10000
+      - -704
+  decayTime:
+    paramName: AmbientReverbDecayTime
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 1
+      - 1
+      - 1.1
+  decayHFRatio:
+    paramName: AmbientReverbDecayHFRatio
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0.5
+      - 0.5
+      - 0.41
+  roomLowFrequencyGain:
+    paramName: AmbientReverbRoomLowFreqGain
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -636
+      - -2065
+      - -636
+  lowFrequencyReference:
+    paramName: AmbientReverbLFReference
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 553
+      - 553
+      - 359
+  roomHighFrequencyGain:
+    paramName: AmbientReverbRoomHighFreqGain
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -2655
+      - -2655
+      - -3822
+  highFrequencyReference:
+    paramName: AmbientReverbHFReference
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 6960
+      - 6960
+      - 10000
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baf1ff9c815e8cb4094c916287a329df, type: 3}
+  m_Name: sp_construct_MixerEffects
+  m_EditorClassIdentifier: 
+  reverbMixerData: {fileID: -1106499685433856141}
+  delayMixerData: {fileID: -5123830448927462919}
+  effectsSendsMixerData: {fileID: 5103494983969948838}
+  effectsVolumesMixerData: {fileID: -1374505346956142476}
+--- !u!114 &5103494983969948838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed6bfaa08a492614fa98a4f3a9fb4a56, type: 3}
+  m_Name: EffectsSends
+  m_EditorClassIdentifier: 
+  mixerEnvironmentParameters:
+  - paramName: AmbientOutDelaySend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - -2.4
+  - paramName: AmbientOutReverbSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -5.8
+      - -80
+      - -5.4
+  - paramName: AmbCommonEffectsSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - -14.6
+  - paramName: AmbientOutDayEffectsSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - 0
+  - paramName: AmbientOutNightEffectsSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - 0
+  - paramName: CommonAmbOutEffectsSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - -19.1
+  - paramName: CommonAmbInEffectsSend
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - 0
+      - -80
+      - -80
+  - paramName: DelayToReverbSendLevel
+    parametersByRoom:
+      _keys:
+      - IndoorGeneric
+      - IndoorIsolated
+      - Outdoor
+      _values:
+      - -16
+      - -80
+      - -16

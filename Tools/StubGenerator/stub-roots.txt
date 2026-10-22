@@ -1,0 +1,129 @@
+# Game types the SDK exposes as full stubs (every serialized field emitted).
+# Types referenced by these are pulled in automatically: plain [Serializable] types and enums in
+# full, other components as empty "shallow" stubs. Add a line here to give a shallow stub its fields.
+# Nested types use '+' or '/', e.g. EFT.ScenesPreset+Guid.
+
+# --- scene loading ---
+EFT.ScenesPreset
+LocationScene
+LevelSettings
+EFT.LocationExportInfo
+
+# --- spawning and bot zones ---
+EFT.Game.Spawning.SpawnPointMarker
+BotZone
+UnspawnPoint
+BotZoneNavMeshCutter
+PatrolWay
+PatrolPoint
+
+# --- AI data holders (left empty in the editor; the client plugin generates their data from the navmesh) ---
+AICoversData
+AICorePointHolder
+AICorePoint
+AIVoxelesData
+AIPatrolsData
+AIPlaceInfoHolder
+AIPlaceInfo
+AIManualPointsHolder
+AIMinesPositionsHolder
+AIMinePoint
+AIDangerPlacesHolder
+AIDoorsHolder
+# BotsController.Init calls FindObjectOfType<AIStationaryController>().Init(...) unchecked
+AIStationaryController
+BotZoneEntranceInfo
+NavMeshDoorLink
+
+# --- interactive objects ---
+EFT.Interactive.WorldInteractiveObject
+EFT.Interactive.Door
+EFT.Interactive.KeycardDoor
+EFT.Interactive.Trunk
+EFT.Interactive.Switch
+EFT.Interactive.DoorSwitch
+EFT.Interactive.LootableContainer
+EFT.Interactive.WindowBreaker
+EFT.Interactive.LampController
+
+# --- extracts, transits, borders ---
+EFT.Interactive.ExfiltrationPoint
+EFT.Interactive.ScavExfiltrationPoint
+EFT.Interactive.SharedExfiltrationPoint
+EFT.Interactive.SecretExfiltrations.SecretExfiltrationPoint
+EFT.Interactive.TransitPoint
+EFT.Interactive.BorderZone
+EFT.Interactive.Minefield
+EFT.Interactive.SniperFiringZone
+EFT.Interactive.LocationOrigin
+EFT.Airdrop.AirdropPoint
+
+# --- surfaces and environment ---
+EFT.Ballistics.BallisticCollider
+EFT.EnvironmentEffect.EnvironmentManager
+EFT.EnvironmentEffect.IndoorTrigger
+EFT.EnvironmentEffect.TriggerGroup
+
+# --- sky and lighting (Factory's rig: no TOD_Sky, a static sun and SH ambient) ---
+# BSG shaders read ambient only from globals AmbientLight.SetSH writes, which TODSkySimple
+# calls every frame; without both, a scene renders black whatever LevelSettings says
+EFT.Weather.TODSkySimple
+EFT.Weather.TodLightSetter
+TOD_Time
+AmbientLight
+OnRenderObjectManager
+
+# --- full weather system (Tarkov SDK > Map > Time of Day / Weather...) ---
+TOD_Sky
+TOD_Components
+TOD_Resources
+EFT.Weather.WeatherController
+EFT.Weather.WindController
+EFT.Rendering.Clouds.CloudController
+EFT.Rendering.Clouds.CloudRemapData
+EFT.Rendering.Clouds.CloudLayer
+EFT.Weather.FogRemapData
+EFT.Weather.FogRemapDataV2
+WinterEventVisual
+RainController
+RippleController
+WetRenderer
+SnowRippleController
+SnowWetRenderer
+SnowFlakes
+RainFallDrops
+RainSplashController
+DepthPhotograper
+AmbientHighlight
+SceneLights
+RenderQueue
+ShadowMaskExtractor
+TOD_Scattering
+ScreenWater
+RainScreenDrops
+PrismEffects
+WeatherObstacle
+EFT.EnvironmentEffect.DryPlane
+
+# ambient random sound events
+Audio.AmbientSubsystem.SeasonAmbientSoundPlayer
+EFT.SoundBank
+
+# the game's ambient audio system (day/night loops, rain and wind ambience, ambient player groups)
+Audio.AmbientSubsystem.AmbientAudioSystem
+Audio.AmbientSubsystem.DayTimeAmbientBlender
+Audio.AmbientSubsystem.PrecipitationAmbientBlender
+Audio.AmbientSubsystem.WindAmbientBlender
+Audio.AmbientSubsystem.AmbientSoundPlayerGroupController
+Audio.AmbientSubsystem.AmbientSoundPlayerGroup
+Audio.AmbientSubsystem.Data.SeasonAmbientSoundDataSO
+Audio.AmbientSubsystem.Data.PrecipitationSoundStorageSO
+Audio.AmbientSubsystem.Data.MixerEffectsDataSO
+Audio.AmbientSubsystem.Data.ReverbMixerDataSO
+Audio.AmbientSubsystem.Data.DelayMixerDataSO
+Audio.AmbientSubsystem.Data.GenericVolumeParamsMixerDataSO
+Audio.AmbientSubsystem.DayTimeAmbientSoundContainer
+Audio.AmbientSubsystem.Data.WindBySpeed
+Audio.AmbientSubsystem.Data.PrecipitationsByIntensity
+Audio.AmbientSubsystem.Data.EnvironmentSoundContainer
+Audio.AmbientSubsystem.Data.MixerEnvironmentParameter

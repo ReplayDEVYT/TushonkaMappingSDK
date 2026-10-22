@@ -1,0 +1,36 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+*.user
+*.suo
+*.zip
+
+# Unity SDK project
+Unity/*/[Ll]ibrary/
+Unity/*/[Tt]emp/
+Unity/*/[Ll]ogs/
+Unity/*/[Uu]ser[Ss]ettings/
+Unity/*/[Bb]uild/
+Unity/*/Assets/TarkovSDK/Generated/
+Unity/*/Assets/TarkovSDK/Generated.meta
+Unity/*/*.csproj
+Unity/*/*.sln
+
+# extracted from the author's own game by Tools/WeatherExtract; never committed
+Unity/*/Assets/TarkovSDK/Weather/Extracted/
+Unity/*/Assets/TarkovSDK/Weather/Extracted.meta
+Unity/*/Assets/TarkovSDK/Weather/Generated/
+Unity/*/Assets/TarkovSDK/Weather/Generated.meta
+
+# the game's own assemblies, copied for browsing only; never committed
+Client/_Ref/
+*.spt-bak
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Unity per-user files
+Unity/*/*.dwlt
+Unity/*/.vsconfig

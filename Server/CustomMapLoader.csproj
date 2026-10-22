@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <RootNamespace>mizmii.CustomMapLoader</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>mizmii</Authors>
+    <Company>mizmii</Company>
+    <Product>CustomMapLoader</Product>
+    <Description>Loads custom maps built with the Tushonka mapping SDK</Description>
+    <Copyright>Copyright © mizmii</Copyright>
+    <RepositoryUrl></RepositoryUrl>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SPTushonka.Common" Version="4.1.6" />
+    <PackageReference Include="SPTushonka.DI" Version="4.1.6" />
+    <PackageReference Include="SPTushonka.Server.Core" Version="4.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Client\CustomMapLoader.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="dist\package.json" />
+    <!-- map data ships next to the DLL; it is not web content -->
+    <Content Remove="maps\**" />
+    <None Remove="maps\**" />
+    <MapFiles Include="maps\**\*.json" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- dotnet build -p:DeployToSpt=true copies the server mod into the SPT install below -->
+    <SptRoot Condition="'$(SptRoot)' == ''">C:\spt41</SptRoot>
+  </PropertyGroup>
+
+  <Target Name="PackageModForDistribution" AfterTargets="Build">
+    <PropertyGroup>
+      <ModName>$(AssemblyName)</ModName>
+      <ZipFileName>$(ModName).zip</ZipFileName>
+      <TempPackageDir>$(ProjectDir)obj\Package</TempPackageDir>
+      <ModPackageDir>$(TempPackageDir)\SPT_Runtime\user\mods\$(ModName)</ModPackageDir>
+    </PropertyGroup>
+    <Message Text="--- Starting Mod packaging for distribution ---" Importance="high" />
+    <RemoveDir Directories="$(TempPackageDir)" />
+    <MakeDir Directories="$(ModPackageDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModPackageDir)" />
+    <Copy SourceFiles="@(MapFiles)" DestinationFiles="@(MapFiles->'$(ModPackageDir)\maps\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- the client plugin gets its own folder; map bundles go in its bundles\maps subfolder -->
+    <MakeDir Directories="$(TempPackageDir)\BepInEx\plugins\$(ModName)\bundles\maps" />
+    <Copy SourceFiles="$(ProjectDir)..\Client\bin\$(Configuration)\netstandard2.1\$(AssemblyName).dll" DestinationFolder="$(TempPackageDir)\BepInEx\plugins\$(ModName)" />
+    <ZipDirectory SourceDirectory="$(TempPackageDir)" DestinationFile="$(ProjectDir)..\$(ZipFileName)" Overwrite="true" />
+
+    <RemoveDir Directories="$(TempPackageDir)" />
+    <Message Text="--- Mod successfully packaged at: $(ProjectDir)..\$(ZipFileName) ---" Importance="high" />
+  </Target>
+
+  <!-- sdk_export.json files written there by the Unity SDK deploy are left untouched -->
+  <Target Name="DeployToSptInstall" AfterTargets="Build" Condition="'$(DeployToSpt)' == 'true'">
+    <PropertyGroup>
+      <SptModDir>$(SptRoot)\SPT_Runtime\user\mods\$(AssemblyName)</SptModDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SptModDir)" />
+    <Copy SourceFiles="@(MapFiles)" DestinationFiles="@(MapFiles->'$(SptModDir)\maps\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Message Text="--- Server mod deployed to $(SptModDir) ---" Importance="high" />
+  </Target>
+</Project>
