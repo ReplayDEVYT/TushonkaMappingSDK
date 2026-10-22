@@ -195,16 +195,3 @@ python Tools/ShaderStandins/generate_standins.py C:/spt41/EscapeFromTarkov_Data/
 ```
 
 Reading the 378 MB shader bundle takes a few minutes.
-
-## Status and limitations
-
-This is an untested prototype. Every project compiles, Unity compiles the SDK, and the server mod's registration was checked offline against SPT 4.1.6's own types. No raid has been played on an SDK map yet.
-
-Not implemented:
-
-- **Loot**: static containers and loose loot are empty. Container loot pools are borrowed from Factory, but there is no export of container ids to `staticContainers.json` yet.
-- **Scav raids**: the example map sets `DisabledForScav`, because no scav exfils are authored.
-- **PMC bots**: the example `base.json` has no `BossLocationSpawn` entries, so only the scav wave spawns.
-- **Loose-loot AI points**: bots won't path to loose items.
-- **Lighting and rendering**: the full weather system is new and untested in raids. SDK maps use the game's fallback camera, which has no `TOD_Scattering`, so the full system's atmospheric fog falls back to LevelSettings fog. Two snow shaders (`EFT/Snow Sparkling`, `EFT/SnowCopyNormalAndAlphaMask`) only exist in Customs' scene files, so winter snow wetness renders without them. Lightmaps and occlusion culling are not handled. Deferred decals and tree/foliage shaders (SpeedTree, impostors) have no stand-ins yet.
-- **Ballistics tuning**: `BallisticCollider` penetration values are left at the game's defaults.
