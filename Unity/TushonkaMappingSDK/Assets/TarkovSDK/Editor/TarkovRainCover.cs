@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
         private const float CellSize = 1.5f;
         private const float HeadRoom = 1.8f;
 
-        [MenuItem("Tarkov SDK/Map/Generate Rain Cover", priority = 25)]
+        [MenuItem("Tarkov SDK/Map/Generate Rain Cover", priority = 123)]
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();
@@ -42,20 +42,29 @@ namespace TarkovSDK.Editor
             return null;
         }
 
-        public static GameObject Generate(Scene scene)
+        // layers of the solid geometry the scans hit
+        internal static int SolidMask => LayerMask.GetMask("Default", "Terrain", "HighPolyCollider", "LowPolyCollider");
+
+        // bounds of every solid collider in the scene (that include accepts): the area to scan
+        internal static bool SolidBounds(Scene scene, int mask, out Bounds bounds, System.Func<Collider, bool> include = null)
         {
-            int mask = LayerMask.GetMask("Default", "Terrain", "HighPolyCollider", "LowPolyCollider");
-            var bounds = new Bounds();
+            bounds = new Bounds();
             bool any = false;
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var collider in root.GetComponentsInChildren<Collider>())
                 {
-                    if (collider.isTrigger || (mask & (1 << collider.gameObject.layer)) == 0)
+                    if (collider.isTrigger || (mask & (1 << collider.gameObject.layer)) == 0 || (include != null && !include(collider)))
                         continue;
                     if (!any) { bounds = collider.bounds; any = true; }
                     else bounds.Encapsulate(collider.bounds);
                 }
-            if (!any)
+            return any;
+        }
+
+        public static GameObject Generate(Scene scene)
+        {
+            int mask = SolidMask;
+            if (!SolidBounds(scene, mask, out var bounds))
             {
                 EditorUtility.DisplayDialog("Rain Cover", "The scene has no solid colliders to scan.", "OK");
                 return null;

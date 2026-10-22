@@ -6,4 +6,5 @@
 
 public class BaseLight : global::UnityEngine.MonoBehaviour
 {
+    public float m_Intensity = 0.8f;
 }

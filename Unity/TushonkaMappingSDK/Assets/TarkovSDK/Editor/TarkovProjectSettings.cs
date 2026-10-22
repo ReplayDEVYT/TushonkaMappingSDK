@@ -58,7 +58,7 @@ namespace TarkovSDK.Editor
             EditorApplication.delayCall += () => Apply(logIfUnchanged: false);
         }
 
-        [MenuItem("Tarkov SDK/Project/Apply Tarkov Tags, Layers and Physics", priority = 200)]
+        [MenuItem("Tarkov SDK/Project/Apply Tarkov Tags, Layers and Physics", priority = 1000)]
         public static void ApplyFromMenu() => Apply(logIfUnchanged: true);
 
         public static void Apply(bool logIfUnchanged)

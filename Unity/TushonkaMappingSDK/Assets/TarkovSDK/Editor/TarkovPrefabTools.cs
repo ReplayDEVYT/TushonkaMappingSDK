@@ -11,6 +11,8 @@ namespace TarkovSDK.Editor
     //          a HighPolyCollider (bullets, with BallisticCollider) and a DoorLowPolyCollider
     //          (movement), a DoorHandle and a placeholder panel to replace with a real model
     //  Switch  small solid box on the Interactive layer; set its Door to open a door, or Lamps
+    //  Lootable Container  a wooden crate on the Interactive layer with an interaction box,
+    //          high and low poly colliders and a placeholder model; Template sets the container type
     //  Low + High Poly Colliders  splits an object's collision the way retail maps do: movement
     //          on LowPolyCollider, bullets and AI sight on HighPolyCollider with a BallisticCollider
     public static class TarkovPrefabTools
@@ -38,7 +40,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = sw.gameObject;
         }
 
-        [MenuItem(Menu + "Loot Spawn", priority = 32)]
+        [MenuItem(Menu + "Loot Spawn", priority = 33)]
         private static void MenuLootSpawn(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("LootSpawn") { tag = "EditorOnly" };
@@ -47,6 +49,9 @@ namespace TarkovSDK.Editor
             go.AddComponent<TarkovLootSpawn>();
             return go;
         });
+
+        [MenuItem(Menu + "Lootable Container", priority = 32)]
+        private static void MenuContainer(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateContainer(p).gameObject);
 
         // ------------------------------------------------------------ door
 
@@ -151,9 +156,63 @@ namespace TarkovSDK.Editor
             return sw;
         }
 
+        // ------------------------------------------------------------ container
+
+        // "Wooden crate" (5x2): one of the container types whose loot pools the server mod takes from Factory
+        public const string WoodenCrateTemplate = "578f87ad245977356274f2cc";
+
+        public static LootableContainer CreateContainer(Transform parent)
+        {
+            var size = new Vector3(1f, 0.6f, 0.6f);
+            var center = new Vector3(0f, size.y * 0.5f, 0f);
+            var go = new GameObject("LootableContainer") { layer = LayerMask.NameToLayer("Interactive") };
+            if (parent != null)
+                go.transform.SetParent(parent, false);
+            // the player's interaction ray looks for this box
+            var box = go.AddComponent<BoxCollider>();
+            box.center = center;
+            box.size = size;
+
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            visual.name = "Crate (replace with your model)";
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            visual.transform.SetParent(go.transform, false);
+            visual.transform.localPosition = center;
+            visual.transform.localScale = size;
+            var material = TarkovSceneTools.DefaultSurfaceMaterial();
+            if (material != null)
+                visual.GetComponent<MeshRenderer>().sharedMaterial = material;
+
+            var high = BoxChild(go.transform, "HighPoly", "HighPolyCollider", center, size);
+            var ballistic = high.AddComponent<BallisticCollider>();
+            ballistic._typeOfMaterial = MaterialType.WoodThick;
+            ballistic.SurfaceSound = BaseBallistic.ESurfaceSound.Wood;
+            var low = BoxChild(go.transform, "LowPoly", "LowPolyCollider", center, size);
+#pragma warning disable 618
+            GameObjectUtility.SetStaticEditorFlags(low, StaticEditorFlags.NavigationStatic);
+#pragma warning restore 618
+
+            var container = go.AddComponent<LootableContainer>();
+            container.Template = WoodenCrateTemplate;
+            container.SpawnType = ELootableContainerSpawnType.CanBeEmpty;
+            container.SpawnChance = 100;
+            container._openInteraction = EInteraction.ContainerOpenDefault;
+            container._closeInteraction = EInteraction.ContainerCloseDefault;
+            container._doorState = EDoorState.Shut;
+            container.Snap = EDoorState.Shut | EDoorState.Open | EDoorState.Interacting;
+            container.Operatable = true;
+            // the player searches it from the front (-Z), looking at its middle
+            container.interactPosition1 = new Vector3(0f, 0f, -0.9f);
+            container.viewTarget1 = center;
+            container.FilterExtended = new System.Collections.Generic.List<LootableContainerParameters>();
+            container.GameObjectsToDestroy = new System.Collections.Generic.List<GameObject>();
+            // Id is assigned when the map is built
+            return container;
+        }
+
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Collision/Add Low + High Poly Colliders To Selected", priority = 42)]
+        [MenuItem("Tarkov SDK/Collision/Add Low + High Poly Colliders To Selected", priority = 302)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

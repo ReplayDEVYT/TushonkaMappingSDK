@@ -127,3 +127,13 @@ Audio.AmbientSubsystem.Data.WindBySpeed
 Audio.AmbientSubsystem.Data.PrecipitationsByIntensity
 Audio.AmbientSubsystem.Data.EnvironmentSoundContainer
 Audio.AmbientSubsystem.Data.MixerEnvironmentParameter
+
+# --- lights (Tarkov's own light types; LampController above groups and switches them) ---
+AreaLight
+TubeLight
+AdvancedLight
+CullingLightObject
+CullingAdvancedLightObject
+MultiFlare.FlareLight
+MultiFlare.FlareSceneSettings
+MultiFlare.ProFlareAtlas

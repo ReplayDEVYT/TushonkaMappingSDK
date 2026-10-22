@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0b06919958e05145af94d8e97653442, type: 3}
+  m_Name: CloudLayerSettings_main
+  m_EditorClassIdentifier: 
+  Opacity: 1
+  ShadowMultiplier: 109
+  ShadowTint: {r: 0.2264151, g: 0.2264151, b: 0.2264151, a: 0}
+  ShadowSize: 500
+  PlanetCenterRadius: {x: 0, y: 6704000, z: 0, w: 6704000}
+  LayerA:
+    CloudTexture: {fileID: 2800000, guid: 1e0e385443cbd794abee0ec89c6506ee, type: 3}
+    Altitude: 6000
+    Rotation: 191
+    Tint: {r: 1, g: 1, b: 1, a: 1}
+    Exposure: 2.1
+    ScrollOrientation: 180
+    MinScrollSpeed: 20
+    MaxScrollSpeed: 100
+    Lighting: 1
+    Thickness: 1
+    AmbientProbeDimmer: 0.675

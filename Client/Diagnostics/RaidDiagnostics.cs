@@ -123,6 +123,14 @@ namespace mizmii.CustomMapLoader.Diagnostics
             sb.AppendLine($"  RenderSettings: mode={RenderSettings.ambientMode} sky={RenderSettings.ambientSkyColor} intensity={RenderSettings.ambientIntensity} skybox={Name(RenderSettings.skybox)}");
             sb.AppendLine($"  reflection: mode={RenderSettings.defaultReflectionMode} intensity={RenderSettings.reflectionIntensity} custom={Name(RenderSettings.customReflectionTexture)} active scene={SceneManager.GetActiveScene().name}");
             sb.AppendLine($"  fog: on={RenderSettings.fog} mode={RenderSettings.fogMode} ({(int)RenderSettings.fogMode}) density={RenderSettings.fogDensity} start={RenderSettings.fogStartDistance} end={RenderSettings.fogEndDistance} color={RenderSettings.fogColor}");
+            // the weather's fog: MBOIT_Scattering on the camera, driven by WeatherController
+            var camera = Camera.main;
+            var tod = camera != null ? camera.GetComponent<TOD_Scattering>() : null;
+            var mboit = camera != null ? camera.GetComponent<MBOIT_Scattering>() : null;
+            var weather = WeatherController.Instance;
+            sb.AppendLine($"  weather fog: value={(weather != null ? weather.WeatherCurve?.Fog.ToString("0.###") ?? "?" : "no WeatherController")} remapV2={(weather != null && weather.MBOITFogRemapDataV2 != null)} " +
+                          $"TOD_Scattering={(tod != null ? $"on={tod.enabled} mboit={tod.MBOIT} density={tod.GlobalDensity:0.#####}" : "none")} " +
+                          $"MBOIT_Scattering={(mboit != null ? $"on={mboit.enabled} density={mboit.GlobalDensity:0.#####}" : "none")}");
         }
 
         private static void AudioReport(StringBuilder sb)

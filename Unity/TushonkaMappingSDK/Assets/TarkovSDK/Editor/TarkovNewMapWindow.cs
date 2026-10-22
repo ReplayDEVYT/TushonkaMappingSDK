@@ -13,7 +13,7 @@ namespace TarkovSDK.Editor
     {
         private string _mapId = "sdk_example";
 
-        [MenuItem("Tarkov SDK/Map/New Map...", priority = 10)]
+        [MenuItem("Tarkov SDK/Map/New Map...", priority = 100)]
         private static void Open()
         {
             var window = GetWindow<TarkovNewMapWindow>(true, "New Tarkov Map");

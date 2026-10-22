@@ -44,9 +44,13 @@ namespace mizmii.CustomMapLoader
             Enable(new SceneSingletonPatch());
             Enable(new StationaryControllerPatch());
             Enable(new AmbientLightShaderPatch());
+            foreach (var patch in LightShaderPatch.ForAllLights())
+                Enable(patch);
             Enable(new LevelSettingsFixPatch());
             Enable(new SimpleTimeOfDayPatch());
             Enable(new RainCameraPatch());
+            Enable(new MboitFogTimePatch());
+            Enable(new WeatherFogDensityPatch());
             Enable(new Diagnostics.BotActivationDiagnostics());
             Enable(new CameraEffectsPatch());
             foreach (var patch in CameraSettingSetterPatch.ForAllSetters())

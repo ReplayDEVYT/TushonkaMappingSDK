@@ -61,10 +61,15 @@ namespace TarkovSDK.Editor
             return go;
         }
 
-        public static GameObject Build(Scene scene)
+        public static GameObject Build(Scene scene) => Build(scene, ExtractedFolder, "weather.json", RootName, true);
+
+        // rebuilds an extracted hierarchy (extract_weather.py output: the json and its Textures and
+        // Meshes in folder) under rootName, saved inactive; weather adds the OnRenderObjectManager
+        // and the camera effects template
+        public static GameObject Build(Scene scene, string folder, string json, string rootName, bool weather)
         {
-            var data = JObject.Parse(File.ReadAllText(Path.Combine(ExtractedFolder, "weather.json")));
-            var b = new Builder(data);
+            var data = JObject.Parse(File.ReadAllText(Path.Combine(folder, json)));
+            var b = new Builder(data, folder, rootName, weather);
             try
             {
                 AssetDatabase.StartAssetEditing();
@@ -77,13 +82,16 @@ namespace TarkovSDK.Editor
             AssetDatabase.Refresh();
             var root = b.Build(scene);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Tarkov SDK] Full weather system built from {data.Value<string>("source")}: {b.Report}");
+            Debug.Log($"[Tarkov SDK] {rootName} built from {data.Value<string>("source")}: {b.Report}");
             return root;
         }
 
         private sealed class Builder
         {
             private readonly JObject _data;
+            private readonly string _folder;
+            private readonly string _rootName;
+            private readonly bool _weather;
             private readonly Dictionary<long, UnityEngine.Object> _byPid = new Dictionary<long, UnityEngine.Object>();
             private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
             private readonly Dictionary<string, Mesh> _meshes = new Dictionary<string, Mesh>();
@@ -95,9 +103,12 @@ namespace TarkovSDK.Editor
             private readonly List<string> _skipped = new List<string>();
             private int _components, _values;
 
-            public Builder(JObject data)
+            public Builder(JObject data, string folder, string rootName, bool weather)
             {
                 _data = data;
+                _folder = folder;
+                _rootName = rootName;
+                _weather = weather;
             }
 
             public string Report =>
@@ -115,14 +126,16 @@ namespace TarkovSDK.Editor
                     var file = prop.Value.Value<string>("file");
                     if (file == null)
                         continue;
-                    var importer = AssetImporter.GetAtPath($"{ExtractedFolder}/{file}") as TextureImporter;
+                    var importer = AssetImporter.GetAtPath($"{_folder}/{file}") as TextureImporter;
                     if (importer == null)
                         continue;
                     bool normal = prop.Value.Value<bool?>("normal") ?? false;
                     var wanted = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
-                    if (importer.textureType != wanted)
+                    // a cube import makes the game reject the texture on a 2D property (flares draw as squares)
+                    if (importer.textureType != wanted || importer.textureShape != TextureImporterShape.Texture2D)
                     {
                         importer.textureType = wanted;
+                        importer.textureShape = TextureImporterShape.Texture2D;
                         importer.SaveAndReimport();
                     }
                 }
@@ -135,7 +148,7 @@ namespace TarkovSDK.Editor
                 if (_textures.TryGetValue(key, out var texture))
                     return texture;
                 var file = _data["textures"]?[key]?.Value<string>("file");
-                texture = file != null ? AssetDatabase.LoadAssetAtPath<Texture>($"{ExtractedFolder}/{file}") : null;
+                texture = file != null ? AssetDatabase.LoadAssetAtPath<Texture>($"{_folder}/{file}") : null;
                 if (texture == null)
                     _skipped.Add($"texture {key}");
                 return _textures[key] = texture;
@@ -146,7 +159,7 @@ namespace TarkovSDK.Editor
                 if (_meshes.TryGetValue(key, out var mesh))
                     return mesh;
                 var info = _data["meshes"][key];
-                var json = JObject.Parse(File.ReadAllText($"{ExtractedFolder}/{info.Value<string>("file")}"));
+                var json = JObject.Parse(File.ReadAllText($"{_folder}/{info.Value<string>("file")}"));
                 mesh = new Mesh { name = info.Value<string>("name") };
                 var vertices = json["vertices"].Select(v => new Vector3(v.Value<float>(0), v.Value<float>(1), v.Value<float>(2))).ToList();
                 if (vertices.Count > 65535)
@@ -312,7 +325,7 @@ namespace TarkovSDK.Editor
                     go.transform.localScale = V3(o["scale"]);
                     go.layer = o.Value<int>("layer");
                 }
-                root.name = RootName;
+                root.name = _rootName;
 
                 // pass 1: every component exists before any reference is resolved
                 var filled = new List<(UnityEngine.Object, JObject)>();
@@ -350,17 +363,20 @@ namespace TarkovSDK.Editor
                     _components++;
                 }
 
-                // feeds the game cameras to AmbientLight (its ambient pass); Customs keeps it outside "Weather"
-                var manager = new GameObject("OnRenderObjectManager");
-                manager.transform.SetParent(root.transform, false);
-                manager.AddComponent<OnRenderObjectManager>();
+                if (_weather)
+                {
+                    // feeds the game cameras to AmbientLight (its ambient pass); Customs keeps it outside "Weather"
+                    var manager = new GameObject("OnRenderObjectManager");
+                    manager.transform.SetParent(root.transform, false);
+                    manager.AddComponent<OnRenderObjectManager>();
 
-                BuildCameraEffects(root.transform);
+                    BuildCameraEffects(root.transform);
+                }
 
                 foreach (JObject o in objects)
                     goByPid[o.Value<long>("pid")].SetActive(o.Value<bool>("active"));
                 root.SetActive(false); // CustomMapLoader activates it once the shaders are swapped
-                Undo.RegisterCreatedObjectUndo(root, "Add full weather system");
+                Undo.RegisterCreatedObjectUndo(root, "Add " + _rootName);
                 return root;
             }
 

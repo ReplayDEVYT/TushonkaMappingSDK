@@ -19,33 +19,66 @@ namespace mizmii.CustomMapLoader.Loading
     //    ComputeShader fields holding a "Tarkov_<name>" placeholder the game's compute shader
     //  - "Freeze Time" (TOD_Time.LockCurrentTime saved on) lets the raid clock set the time once,
     //    then holds it there
+    //
+    // The SDK's lens flare settings, "SDK_Flares" (FlareSceneSettings with the game's flare atlas),
+    // ship inactive the same way and get the same shader swap before they wake.
     internal static class WeatherActivation
     {
         private const string RootName = "SDK_Weather";
+        private const string FlaresRootName = "SDK_Flares";
         private const string ComputePrefix = "Tarkov_";
         private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+        public static void ActivateFlares(Scene scene)
+        {
+            var root = InactiveRoot(scene, FlaresRootName);
+            if (root == null)
+                return;
+            try
+            {
+                SwapShaders(scene, root);
+            }
+            catch (Exception e)
+            {
+                Plugin.LogSource.LogError($"Preparing the lens flares failed, activating them anyway: {e}");
+            }
+            root.SetActive(true);
+            Plugin.Verbose($"Lens flares active on {scene.name}");
+        }
+
+        private static GameObject InactiveRoot(Scene scene, string name)
+        {
+            foreach (var go in scene.GetRootGameObjects())
+                if (go.name == name)
+                    return go.activeSelf ? null : go;
+            return null;
+        }
+
+        // every material the root uses, held by renderers or by component and ScriptableObject
+        // fields, onto the game's shader; placeholder Shader and ComputeShader fields to the game's
+        private static void SwapShaders(Scene scene, GameObject root)
+        {
+            var materials = new HashSet<Material>();
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+                materials.UnionWith(renderer.sharedMaterials);
+            // by reference: game types' own GetHashCode can throw on incomplete data (CloudLayer does)
+            var visited = new HashSet<object>(ReferenceComparer.Instance);
+            int shaders = 0, computes = 0;
+            foreach (var behaviour in root.GetComponentsInChildren<MonoBehaviour>(true))
+                Walk(root.name, behaviour, 0, visited, materials, ref shaders, ref computes);
+            ShaderSwap.Swap(scene.name + "/" + root.name, materials);
+            Plugin.Verbose($"{root.name}: {materials.Count} material(s) checked, {shaders} shader and {computes} compute shader field(s) filled");
+        }
+
         public static void Activate(Scene scene)
         {
-            GameObject root = null;
-            foreach (var go in scene.GetRootGameObjects())
-                if (go.name == RootName)
-                    root = go;
-            if (root == null || root.activeSelf)
+            var root = InactiveRoot(scene, RootName);
+            if (root == null)
                 return;
 
             try
             {
-                var materials = new HashSet<Material>();
-                foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
-                    materials.UnionWith(renderer.sharedMaterials);
-                // by reference: game types' own GetHashCode can throw on incomplete data (CloudLayer does)
-                var visited = new HashSet<object>(ReferenceComparer.Instance);
-                int shaders = 0, computes = 0;
-                foreach (var behaviour in root.GetComponentsInChildren<MonoBehaviour>(true))
-                    Walk(behaviour, 0, visited, materials, ref shaders, ref computes);
-                ShaderSwap.Swap(scene.name + "/" + RootName, materials);
-                Plugin.Verbose($"{RootName}: {materials.Count} material(s) checked, {shaders} shader and {computes} compute shader field(s) filled");
+                SwapShaders(scene, root);
 
                 foreach (var time in root.GetComponentsInChildren<TOD_Time>(true))
                     if (time.LockCurrentTime)
@@ -54,13 +87,8 @@ namespace mizmii.CustomMapLoader.Loading
                         time.gameObject.AddComponent<FreezeTimeAfterStart>();
                     }
 
-                // MBOIT fog needs an MBOIT_Scattering camera component SDK maps don't have, and its
-                // path throws before the game time exists; plain TOD scattering fog is used instead
-                foreach (var weather in root.GetComponentsInChildren<EFT.Weather.WeatherController>(true))
-                {
-                    weather.MBOITFogRemapData = null;
-                    weather.MBOITFogRemapDataV2 = null;
-                }
+                // the fog remap data stays as on Customs; WeatherFogDensityPatch makes the world fog
+                // follow the weather and MboitFogTimePatch covers the frames before the raid clock exists
 
                 // a cloud layer without its texture throws every frame (maps built before the SDK saved it)
                 foreach (var clouds in root.GetComponentsInChildren<EFT.Rendering.Clouds.CloudController>(true))
@@ -150,8 +178,9 @@ namespace mizmii.CustomMapLoader.Loading
                     var copy = (MonoBehaviour)camera.AddComponent(source.GetType());
                     // object references survive as instance ids within the session
                     JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(source), copy);
+                    // the field, not the MBOIT property: the property runs Init now, before the camera is complete
                     if (copy is TOD_Scattering scattering)
-                        scattering.MBOIT = false;
+                        scattering._mboit = false;
                     copy.enabled = true;
                     copied++;
                 }
@@ -210,7 +239,7 @@ namespace mizmii.CustomMapLoader.Loading
         }
 
         // fields of components and of the serializable objects and ScriptableObjects they hold
-        private static void Walk(object target, int depth, HashSet<object> visited, HashSet<Material> materials, ref int shaders, ref int computes)
+        private static void Walk(string label, object target, int depth, HashSet<object> visited, HashSet<Material> materials, ref int shaders, ref int computes)
         {
             if (target == null || depth > 4 || !visited.Add(target))
                 return;
@@ -249,7 +278,7 @@ namespace mizmii.CustomMapLoader.Loading
                             }
                             else
                             {
-                                Plugin.LogSource.LogWarning($"{RootName}: no game shader '{shader.name.Substring(7)}' for {type.Name}.{field.Name}");
+                                Plugin.LogSource.LogWarning($"{label}: no game shader '{shader.name.Substring(7)}' for {type.Name}.{field.Name}");
                             }
                         }
                     }
@@ -268,13 +297,13 @@ namespace mizmii.CustomMapLoader.Loading
                                 // the placeholder has none of the game's kernels; null is the state the
                                 // game's code checks for (e.g. WindController skips tree wind)
                                 field.SetValue(target, null);
-                                Plugin.LogSource.LogWarning($"{RootName}: game compute shader '{compute.name.Substring(ComputePrefix.Length)}' isn't loaded; {type.Name}.{field.Name} left empty");
+                                Plugin.LogSource.LogWarning($"{label}: game compute shader '{compute.name.Substring(ComputePrefix.Length)}' isn't loaded; {type.Name}.{field.Name} left empty");
                             }
                         }
                     }
                     else if (value is ScriptableObject asset)
                     {
-                        Walk(asset, depth + 1, visited, materials, ref shaders, ref computes);
+                        Walk(label, asset, depth + 1, visited, materials, ref shaders, ref computes);
                     }
                     else if (value is IList list && !(value is string))
                     {
@@ -284,14 +313,14 @@ namespace mizmii.CustomMapLoader.Loading
                             if (item is Material m)
                                 materials.Add(m);
                             else if (item is ScriptableObject so)
-                                Walk(so, depth + 1, visited, materials, ref shaders, ref computes);
+                                Walk(label, so, depth + 1, visited, materials, ref shaders, ref computes);
                             else if (item != null && IsSerializableClass(item.GetType()))
-                                Walk(item, depth + 1, visited, materials, ref shaders, ref computes);
+                                Walk(label, item, depth + 1, visited, materials, ref shaders, ref computes);
                         }
                     }
                     else if (IsSerializableClass(fieldType))
                     {
-                        Walk(value, depth + 1, visited, materials, ref shaders, ref computes);
+                        Walk(label, value, depth + 1, visited, materials, ref shaders, ref computes);
                     }
                 }
             }

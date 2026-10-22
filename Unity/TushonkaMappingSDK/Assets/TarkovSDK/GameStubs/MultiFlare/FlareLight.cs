@@ -8,5 +8,19 @@ namespace MultiFlare
 {
     public class FlareLight : global::UnityEngine.MonoBehaviour
     {
+        [global::UnityEngine.Tooltip("Общий множитель размера всех флар для этого FlareLight")]
+        [global::UnityEngine.Serialization.FormerlySerializedAs("_scale")]
+        [global::UnityEngine.Serialization.FormerlySerializedAs("Scale")]
+        [global::UnityEngine.SerializeField]
+        public float _totalScale = 1f;
+        [global::UnityEngine.Tooltip("Общий множитель прозрачности всех флар для этого FlareLight")]
+        [global::UnityEngine.Serialization.FormerlySerializedAs("_alpha")]
+        [global::UnityEngine.Serialization.FormerlySerializedAs("Alpha")]
+        [global::UnityEngine.SerializeField]
+        [global::UnityEngine.Range(0f, 1f)]
+        public float _totalAlpha = 1f;
+        [global::UnityEngine.SerializeField]
+        [global::UnityEngine.Serialization.FormerlySerializedAs("Flares")]
+        public global::MultiFlare.Flare[] _flares;
     }
 }

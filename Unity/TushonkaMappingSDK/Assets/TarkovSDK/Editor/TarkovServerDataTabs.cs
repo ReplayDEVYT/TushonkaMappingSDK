@@ -264,6 +264,14 @@ namespace TarkovSDK.Editor
                 _base[key] = value;
         }
 
+        private void BoolField(string label, string key, string tooltip = null)
+        {
+            bool current = _base.Value<bool?>(key) ?? false;
+            bool value = EditorGUILayout.Toggle(new GUIContent(label, tooltip), current);
+            if (value != current)
+                _base[key] = value;
+        }
+
         private JArray EnsureArray(string key)
         {
             if (!(_base[key] is JArray array))

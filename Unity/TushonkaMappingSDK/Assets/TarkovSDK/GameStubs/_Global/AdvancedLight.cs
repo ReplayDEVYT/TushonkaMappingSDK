@@ -6,4 +6,33 @@
 
 public class AdvancedLight : global::UnityEngine.MonoBehaviour
 {
+    public global::UnityEngine.Shader Shader;
+    public global::AdvancedLight.LightTypeEnum LightType;
+    public global::UnityEngine.Mesh Mesh;
+    public int SubMesh;
+    public global::UnityEngine.Transform LightPosition;
+    [global::UnityEngine.ColorUsage(false, true)]
+    public global::UnityEngine.Color Color;
+    public float Radius;
+    public global::AdvancedLight.ShadingTypeEnum ShadingType;
+    public bool ShowDebugShapes;
+    public global::UnityEngine.Transform CubeControlHelper;
+    public bool FullScreen;
+    [global::UnityEngine.HideInInspector]
+    public global::UnityEngine.Vector3 CubeScale;
+    [global::UnityEngine.HideInInspector]
+    public global::UnityEngine.Vector3 CubeShift;
+
+    public enum LightTypeEnum
+    {
+        Point = 0,
+        Directional = 1,
+    }
+
+    public enum ShadingTypeEnum
+    {
+        Diffuse = 0,
+        Specular = 1,
+        DiffuseAndSpecular = 2,
+    }
 }

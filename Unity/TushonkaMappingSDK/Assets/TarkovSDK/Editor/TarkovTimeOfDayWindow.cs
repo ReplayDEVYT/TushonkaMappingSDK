@@ -21,7 +21,7 @@ namespace TarkovSDK.Editor
         private string _gameData = "C:/spt41/EscapeFromTarkov_Data";
         private string _python = "python";
 
-        [MenuItem("Tarkov SDK/Map/Time of Day \u2215 Weather...", priority = 22)]
+        [MenuItem("Tarkov SDK/Map/Time of Day \u2215 Weather...", priority = 120)]
         private static void Open()
         {
             var window = GetWindow<TarkovTimeOfDayWindow>(true, "Time of Day / Weather");

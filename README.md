@@ -42,7 +42,7 @@ The map loading and AI generation approach comes from [ManimalIcebreaker](https:
 
 5. Start the SPT server and the game. **SDK Example** appears on the map select screen.
 
-`Server/maps/sdk_example/base.json` already matches this map id. For a new map, copy that folder, rename it to the new id, and set `Id` and a new unique 24-character hex `_Id` in `base.json`.
+`Server/maps/sdk_example/base.json` already matches this map id. For a new map, open **Edit Server Data** and press **Create From sdk_example Template**: it copies that `base.json` with the new `Id` and a new unique `_Id`. To do it by hand, copy the folder, rename it to the new id, and set `Id` and a new unique 24-character hex `_Id` (the **Generate** button next to `_Id` on the General tab makes one).
 
 Keep at least one entry in `AirdropParameters`, even with airdrops off: the client reads entry 0 at raid start and fails to load the raid on an empty list. The example's entry has `PlaneAirdropChance` and `PlaneAirdropMax` at 0. If the list is empty, the server mod adds that entry itself.
 
@@ -85,6 +85,7 @@ All game components are under `Assets/TarkovSDK/GameStubs`. They contain only th
   - **Simple** (`Weather`): Factory's static rig of `TODSkySimple`, `TOD_Time`, `TodLightSetter`, a directional `Sun` and an `AmbientLight`. In the raid the sun follows the raid's clock: the client places it for the hour at the rig's `Latitude`, facing the LevelSettings north direction, and fades light and fog for night. The `TODSkySimple` inspector has a **Preview Hour** slider. Factory's values are dim, so raise `AmbientBrightness` or the sun intensity for a brighter map.
   - **Full weather system** (`SDK_Weather`): Customs' `TOD_Sky` sky dome, `WeatherController`, clouds, wind, rain and snow, driven by the server's weather and season. Its values come from your own game: the window's **Extract From Game** runs `Tools/WeatherExtract/extract_weather.py` (Python with `pip install UnityPy TypeTreeGeneratorAPI`), which writes `Assets/TarkovSDK/Weather/Extracted/`. That folder and the generated materials are gitignored and never shipped with the SDK. The root is saved inactive; the client swaps its stand-in shaders for the game's and then activates it. It also sets LevelSettings like Customs: no skybox, the TOD sky supplies the ambient light.
   - **Freeze Time** (both modes) keeps the time at the raid's start time for the whole raid.
+  - **Fog** (full mode): the world fog follows the raid's weather, from the map's own density up to thick fog. The game's volumetric (MBOIT) weather fog only exists on Shoreline and Labyrinth: it needs a renderer whose shaders ship only in Shoreline's scene files, so SDK maps, like Customs or Woods, don't have it. For local volumetric-looking fog, place **Fog Volumes**.
   - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Map**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
 - **SpawnPointMarker**: set `Sides`, `Categories` and, for PMC player spawns, `Infiltration` (the entry point name). Place it under a BotZone to assign it to that zone.
 - **BotZone**: its GameObject name is the zone name used by `waves` and `OpenZones` in `base.json`.
@@ -95,6 +96,7 @@ All game components are under `Assets/TarkovSDK/GameStubs`. They contain only th
 ### Indoor areas and transits
 
 - **GameObject > Tarkov SDK > Indoor Trigger Group** adds a group (for example one per building) under the map's root trigger group, or inside the group you right-click. The game tests a group's bounds before its triggers.
+- **Tarkov SDK > Map > Generate Indoor Triggers** (also in the **Ambient Sounds** window) places indoor triggers for the whole map. It scans from above like the rain cover, on every storey, and treats a space as a room when it has a ceiling (seen from inside, so the ground over a basement never counts) with head room and walls on most sides; carports, overhangs and bridges stay outdoors. Each room is covered with one trigger box, or a few for an L-shaped room, with one trigger group per building, under `GeneratedIndoorTriggers`. Only real geometry counts: objects tagged **EditorOnly** (or under one) and colliders without a mesh, like invisible blockers, are ignored. Regenerating replaces only that group; hand-placed triggers are kept, and areas they cover are skipped. Check the result in the Scene view and fix odd boxes by hand.
 - **GameObject > Tarkov SDK > Indoor Trigger** marks an interior (indoor audio, exposure, rain volume). The trigger is its own box: scale the object to cover the room. The SDK creates it under an `IndoorTriggers` TriggerGroup inside the EnvironmentManager, where the game looks for it, and computes its bounds at build. Keep triggers in that group.
 - **GameObject > Tarkov SDK > Transit Point** adds a transit to another map: a trigger box with a unique `id`. Set `parameters.location` to the destination's map id (`bigmap`, `Woods`, or a custom map's id); the server mod fills in its `_Id` (`target`). Use **Edit Server Data > Add Missing Locale Keys** to give the transit its displayed name.
 
@@ -111,6 +113,7 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
 ### Doors, switches and collision
 
 - **GameObject > Tarkov SDK > Door** adds a working door laid out like retail ones: the leaf pivots at its hinge on the Interactive layer, with an interaction trigger, a high poly collider (bullets, wood) and a door low poly collider (movement). Replace the placeholder panel with your model and resize the colliders to match.
+- **GameObject > Tarkov SDK > Lootable Container** adds a searchable wooden crate on the Interactive layer, with high and low poly colliders and a placeholder model to replace. `Template` sets the container type (an item template id; it starts as the Wooden crate). The server mod doesn't spawn loot in containers yet, so they open empty.
 - **GameObject > Tarkov SDK > Switch** adds a switch. Right-click a door to make a switch that opens it; otherwise set its `Door` or `Lamps`.
 - **Tarkov SDK > Collision > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
 
@@ -118,15 +121,33 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
 
 The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 
+- **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, locale keys, and the map select icon position.
+- **Access**: whether the map is enabled, locked or insured, the PMC level range, scav raids on or off, group sizes, and **required items** (`AccessKeys`, like the Labs keycard), searched by name from the SPT item database or added by template id. The list is written to `AccessKeysPvE` too unless **Same In PvE** is off.
 - **Bots**: bot limits and the scav mix, open zones, **waves** (bot type, difficulty, count, time and zones picked from the scene's bot zones) and **boss spawns** (boss, chance, escorts, zones). These are `base.json` values; restart the SPT server after saving.
 - **Spawns**: every spawn point in the open scenes, with buttons to add player and bot spawns.
 - **Loot**: every loot spawn, with the expected loose loot per raid.
+- **JSON**: the whole `base.json` as text, including the other tabs' unsaved changes, for values no tab covers. **Apply** checks the JSON and passes the edits to the other tabs; leaving the tab or pressing **Save** applies them too, and broken JSON is never saved.
 
 **GameObject > Tarkov SDK > Loot Spawn** places a loose loot spot. Search items by name in its inspector (it reads the SPT install's item database), weight them, and set a chance or **Always Spawn**. Loot spawns are editor-only; **Build Map** exports them and the server builds the map's loose loot from them.
 
 ### Keeping bots out of an area
 
 Bots path only on the navmesh, and the client generates their cover points and patrols from it. To block an area, use **GameObject > Tarkov SDK > Nav Blocker**: a translucent red box set to the **Not Walkable** navigation area, with no collider and the **EditorOnly** tag, so it cuts the navmesh but never ships with the map. Scale it over the area, then rebake with **Tarkov SDK > Map > Bake NavMesh For Active Scene**. To block a whole object instead, set its **Navigation Area** to **Not Walkable** in the Navigation window; to make bots avoid an area without forbidding it, use **Danger**.
+
+### Lights
+
+Tarkov lights its maps with its own light components on top of Unity's. **GameObject > Tarkov SDK > Lights** places them with retail defaults:
+
+- **Lamp** / **Spot Lamp**: a Unity point or spot light with a `CullingLightObject` (fades the light out from 40 to 50 m and drops its shadows beyond 16 m, as retail lamps do) under a `LampController`, which switches, flickers and breaks it. Its glass **Bulb** is what gets shot out; replace it with your model. A Switch's **Lamps** list and the lamp's time-of-day settings turn it on and off. The build assigns lamp ids.
+- **Area Light**: the game's `AreaLight`, soft light from a rectangle (`length` x `size`) shining along its +Z up to `depth`, for strip lights, light panels and windows; it starts pointing down. It has no preview in the editor (the gizmo shows its shape), and the client fills in its shader in the raid.
+- **Lens Flare**: a `FlareLight`, the glow sprite around a bulb, picked by `_texId` from the game's flare atlas. Flares only draw through the map's flare settings: **Tarkov SDK > Map > Lens Flare Settings** adds them as `SDK_Flares`, built from the game's flare atlas and materials that ship in `Assets/TarkovSDK/Lights/Flares` (taken from Factory; every retail map shares them).
+- **Advanced Light**: the game's `AdvancedLight`, a shadowless point light. Only one retail map uses it; prefer a Lamp.
+
+Right-click a lamp to add an Area Light, Lens Flare or Advanced Light to it, so the lamp switches it too.
+
+### Fog volumes
+
+**GameObject > Tarkov SDK > Fog Volume** places a local patch of fog (a foggy room, mist over water, a smoky hall): a box of slow, soft particle puffs on the game's lit, fog-aware particle shader, so it is shaded by the scene's lights and blends into the weather's fog. Its box is the particle system's **Shape** (scale the object, or **Shape > Scale**; the gizmo shows it). For thicker fog raise **Start Color** alpha or **Emission > Rate over Time**; for tint change **Start Color**. Retail maps use fog-sheet billboards instead, but their shader only ships inside retail scenes.
 
 ### Materials and shaders
 

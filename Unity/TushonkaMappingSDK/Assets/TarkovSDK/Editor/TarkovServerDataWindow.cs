@@ -13,7 +13,7 @@ namespace TarkovSDK.Editor
     // Edits the server-side files of a map in the SPT install the Map Definition deploys to:
     //
     //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/locale.json   name, description, extra keys
-    //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/base.json     IconX / IconY only
+    //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/base.json     ids, raid time, access, bots, icon
     //
     // base.json is loaded as a whole and written back with every other value untouched.
     // The SPT server reads both files at startup, so restart it after saving.
@@ -29,9 +29,10 @@ namespace TarkovSDK.Editor
         private string _loadedFrom;
         private Vector2 _scroll;
         private int _tab;
-        private static readonly string[] Tabs = { "General", "Bots", "Spawns", "Loot" };
+        private static readonly string[] Tabs = { "General", "Access", "Bots", "Spawns", "Loot", "JSON" };
+        private const int JsonTab = 5;
 
-        [MenuItem("Tarkov SDK/Map/Server Data Editor", priority = 24)]
+        [MenuItem("Tarkov SDK/Map/Server Data Editor", priority = 140)]
         public static void Open() => Open(Selection.activeObject as TarkovMapDefinition);
 
         public static void Open(TarkovMapDefinition definition)
@@ -78,14 +79,22 @@ namespace TarkovSDK.Editor
                 return;
             }
 
-            _tab = GUILayout.Toolbar(_tab, Tabs);
+            int tab = GUILayout.Toolbar(_tab, Tabs);
+            if (tab != _tab && (_tab != JsonTab || LeaveJsonTab()))
+            {
+                _tab = tab;
+                _jsonText = null;
+                GUI.FocusControl(null);
+            }
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUI.BeginChangeCheck();
             switch (_tab)
             {
-                case 1: DrawBots(); break;
-                case 2: DrawSpawns(); break;
-                case 3: DrawLoot(); break;
+                case 1: DrawAccess(); break;
+                case 2: DrawBots(); break;
+                case 3: DrawSpawns(); break;
+                case 4: DrawLoot(); break;
+                case JsonTab: DrawJson(); break;
                 default: DrawGeneral(); break;
             }
             if (EditorGUI.EndChangeCheck())
@@ -122,6 +131,10 @@ namespace TarkovSDK.Editor
                 EditorGUILayout.HelpBox("Must match the map name (the Map Definition's Map Id). To rename the map, change the Map Id, " +
                                         "rebuild, then set this to the same value.", MessageType.None);
             }
+            DrawMongoId();
+
+            EditorGUILayout.Space();
+            DrawRaidTime();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Locale (locale.json)", EditorStyles.boldLabel);
@@ -165,18 +178,19 @@ namespace TarkovSDK.Editor
         {
             _dirty = false;
             _base = null;
+            _jsonText = _jsonError = null;
+            _jsonEdited = false;
             _name = _description = "";
             _keys = new List<KeyValuePair<string, string>>();
             if (_definition == null)
                 return;
             try
             {
+                LoadUsedIds();
                 if (File.Exists(BasePath))
                 {
                     _base = JObject.Parse(File.ReadAllText(BasePath));
-                    _locationId = _base.Value<string>("Id") ?? "";
-                    _iconX = _base.Value<int?>("IconX") ?? 0;
-                    _iconY = _base.Value<int?>("IconY") ?? 0;
+                    PullFieldsFromBase();
                 }
                 if (File.Exists(LocalePath))
                 {
@@ -200,8 +214,32 @@ namespace TarkovSDK.Editor
             }
         }
 
+        // General tab values kept outside _base until Save
+        private void PullFieldsFromBase()
+        {
+            _locationId = _base.Value<string>("Id") ?? "";
+            _mongoId = _base.Value<string>("_Id") ?? "";
+            _iconX = _base.Value<int?>("IconX") ?? 0;
+            _iconY = _base.Value<int?>("IconY") ?? 0;
+            _sameRaidTime = RaidTimesMatch();
+            _sameKeysPvE = _base["AccessKeysPvE"] == null || JToken.DeepEquals(_base["AccessKeys"], _base["AccessKeysPvE"]);
+        }
+
+        private void PushFieldsToBase()
+        {
+            _base["Id"] = _locationId;
+            _base["_Id"] = _mongoId;
+            _base["IconX"] = _iconX;
+            _base["IconY"] = _iconY;
+        }
+
         private void Save()
         {
+            if (!ApplyJson())
+            {
+                EditorUtility.DisplayDialog("Server Data", $"The JSON tab has an error, so nothing was saved:\n\n{_jsonError}", "OK");
+                return;
+            }
             try
             {
                 var keys = new JObject();
@@ -221,15 +259,23 @@ namespace TarkovSDK.Editor
                     !EditorUtility.DisplayDialog("Server Data", $"Location ID '{_locationId}' doesn't match the map name '{_definition.MapId}', " +
                                                  "so the server will skip this map. Save anyway?", "Save", "Cancel"))
                     return;
-                _base["Id"] = _locationId;
+                _mongoId = (_mongoId ?? "").Trim().ToLowerInvariant();
+                if (!TarkovMongoId.IsValid(_mongoId) &&
+                    !EditorUtility.DisplayDialog("Server Data", $"_Id '{_mongoId}' isn't a 24-character hex MongoID, so the server will fail to load this map. " +
+                                                 "Save anyway?", "Save", "Cancel"))
+                    return;
+                if (_usedIds.TryGetValue(_mongoId, out var owner) &&
+                    !EditorUtility.DisplayDialog("Server Data", $"'{owner}' already uses _Id '{_mongoId}', so the server will refuse to load this map. " +
+                                                 "Save anyway?", "Save", "Cancel"))
+                    return;
+                PushFieldsToBase();
                 if (_base["waves"] is JArray waves)
                     for (int i = 0; i < waves.Count; i++)
                         waves[i]["number"] = i;
-                _base["IconX"] = _iconX;
-                _base["IconY"] = _iconY;
                 File.WriteAllText(BasePath, _base.ToString(Formatting.Indented));
 
                 _dirty = false;
+                _jsonText = null;
                 Debug.Log($"[Tarkov SDK] Saved server data for '{_definition.MapId}' to {_loadedFrom}. Restart the SPT server to apply it.");
             }
             catch (Exception e)
@@ -286,7 +332,7 @@ namespace TarkovSDK.Editor
             }
             var data = JObject.Parse(File.ReadAllText(template));
             data["Id"] = _definition.MapId;
-            data["_Id"] = Guid.NewGuid().ToString("N").Substring(0, 24);
+            data["_Id"] = NewMongoId();
             data["Name"] = _definition.MapId;
             Directory.CreateDirectory(MapDir);
             File.WriteAllText(BasePath, data.ToString(Formatting.Indented));

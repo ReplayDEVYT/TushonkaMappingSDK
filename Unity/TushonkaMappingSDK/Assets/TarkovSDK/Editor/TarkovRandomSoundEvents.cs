@@ -16,10 +16,10 @@ namespace TarkovSDK.Editor
     // retail maps the game's AmbientAudioSystem does both).
     public static class TarkovRandomSoundEvents
     {
-        [MenuItem("GameObject/Tarkov SDK/Random Sound Events (3D)", priority = 34)]
+        [MenuItem("GameObject/Tarkov SDK/Random Sound Events (3D)", priority = 91)]
         private static void Menu3D(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p, true).gameObject);
 
-        [MenuItem("GameObject/Tarkov SDK/Random Sound Events (2D)", priority = 35)]
+        [MenuItem("GameObject/Tarkov SDK/Random Sound Events (2D)", priority = 92)]
         private static void Menu2D(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p, false).gameObject);
 
         public static SeasonAmbientSoundPlayer Create(Transform parent, bool spatial)

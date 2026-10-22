@@ -14,7 +14,7 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/";
 
-        [MenuItem("Tarkov SDK/Map/Create Map Skeleton In Active Scene", priority = 20)]
+        [MenuItem("Tarkov SDK/Map/Create Map Skeleton In Active Scene", priority = 101)]
         private static void CreateSkeletonMenu()
         {
             if (Object.FindObjectOfType<LocationScene>() != null &&
@@ -23,7 +23,7 @@ namespace TarkovSDK.Editor
             CreateSkeleton();
         }
 
-        [MenuItem("Tarkov SDK/Map/Bake NavMesh For Active Scene", priority = 21)]
+        [MenuItem("Tarkov SDK/Map/Bake NavMesh For Active Scene", priority = 102)]
         public static void BakeNavMesh()
         {
             // legacy scene bake with the "Humanoid" agent (type 0), the agent bots path with;
@@ -197,15 +197,15 @@ namespace TarkovSDK.Editor
         [MenuItem(Menu + "Exfil", priority = 15)]
         private static void MenuExfil(MenuCommand cmd) => Place(cmd, p => CreateExfil(p, "SDK_Exit", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "Nav Blocker", priority = 16)]
+        [MenuItem(Menu + "Nav Blocker", priority = 17)]
         private static void MenuNavBlocker(MenuCommand cmd) => Place(cmd, p => CreateNavBlocker(p, Vector3.zero));
 
-        [MenuItem(Menu + "Transit Point", priority = 17)]
+        [MenuItem(Menu + "Transit Point", priority = 16)]
         private static void MenuTransit(MenuCommand cmd) => Place(cmd, p => CreateTransit(p, Vector3.zero).gameObject);
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Indoor Trigger Group", priority = 19)]
+        [MenuItem(Menu + "Indoor Trigger Group", priority = 51)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -220,7 +220,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Indoor Trigger", priority = 18)]
+        [MenuItem(Menu + "Indoor Trigger", priority = 50)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -230,7 +230,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Collision/Make Selected Static Geometry (Terrain layer)", priority = 40)]
+        [MenuItem("Tarkov SDK/Collision/Make Selected Static Geometry (Terrain layer)", priority = 300)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -242,7 +242,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Collision/Add BallisticCollider To Selected Colliders", priority = 41)]
+        [MenuItem("Tarkov SDK/Collision/Add BallisticCollider To Selected Colliders", priority = 301)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -257,7 +257,7 @@ namespace TarkovSDK.Editor
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Map/Refresh Default Surface Material", priority = 23)]
+        [MenuItem("Tarkov SDK/Map/Refresh Default Surface Material", priority = 141)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()
@@ -450,7 +450,7 @@ namespace TarkovSDK.Editor
         }
 
         // the TriggerGroup EnvironmentManager reads, created (with the manager) when missing
-        private static EFT.EnvironmentEffect.TriggerGroup IndoorTriggerGroup()
+        internal static EFT.EnvironmentEffect.TriggerGroup IndoorTriggerGroup()
         {
             var manager = Object.FindObjectOfType<EFT.EnvironmentEffect.EnvironmentManager>(true);
             if (manager == null)

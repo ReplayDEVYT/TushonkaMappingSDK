@@ -67,7 +67,7 @@ namespace TarkovSDK.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Map/Ambient Sounds...", priority = 26)]
+        [MenuItem("Tarkov SDK/Map/Ambient Sounds...", priority = 121)]
         private static void Open()
         {
             var window = GetWindow<TarkovAmbienceWindow>(true, "Ambient Sounds");
@@ -85,6 +85,15 @@ namespace TarkovSDK.Editor
             using (new EditorGUI.DisabledScope(!AssetDatabase.IsValidFolder(folder)))
                 if (GUILayout.Button(new GUIContent($"Auto-Fill From {folder}", "Picks clips by name: openspace_day, openspace_night, wind, rain_outdoor_weak/medium/strong, residential, rain_indoor_weak/medium/strong.")))
                     EditorApplication.delayCall += () => AutoFillFrom(scene, folder);
+            EditorGUILayout.Space();
+
+            int indoor = UnityEngine.Object.FindObjectsOfType<EFT.EnvironmentEffect.IndoorTrigger>(true).Length;
+            EditorGUILayout.LabelField(indoor > 0
+                ? $"Indoor triggers: {indoor}. Regenerate after changing buildings; hand-placed triggers are kept."
+                : "Indoor triggers: none, so the whole map counts as outdoors (no indoor muffling or room tone).", EditorStyles.wordWrappedMiniLabel);
+            if (GUILayout.Button(new GUIContent(TarkovIndoorTriggers.Find() != null ? "Regenerate Indoor Triggers" : "Generate Indoor Triggers",
+                    "Scans the map for rooms (a ceiling with walls around it) and covers each with indoor trigger boxes.")))
+                EditorApplication.delayCall += TarkovIndoorTriggers.GenerateMenu;
             EditorGUILayout.Space();
 
             if (system != null)
@@ -370,7 +379,7 @@ namespace TarkovSDK.Editor
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        [MenuItem("GameObject/Tarkov SDK/Ambient Sound Point", priority = 33)]
+        [MenuItem("GameObject/Tarkov SDK/Ambient Sound Point", priority = 90)]
         private static void MenuSoundPoint(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("[Nature] Ambient Sound Point");

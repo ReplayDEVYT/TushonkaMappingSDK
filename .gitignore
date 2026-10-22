@@ -17,12 +17,6 @@ Unity/*/Assets/TarkovSDK/Generated.meta
 Unity/*/*.csproj
 Unity/*/*.sln
 
-# extracted from the author's own game by Tools/WeatherExtract; never committed
-Unity/*/Assets/TarkovSDK/Weather/Extracted/
-Unity/*/Assets/TarkovSDK/Weather/Extracted.meta
-Unity/*/Assets/TarkovSDK/Weather/Generated/
-Unity/*/Assets/TarkovSDK/Weather/Generated.meta
-
 # the game's own assemblies, copied for browsing only; never committed
 Client/_Ref/
 *.spt-bak
@@ -34,3 +28,4 @@ __pycache__/
 # Unity per-user files
 Unity/*/*.dwlt
 Unity/*/.vsconfig
+CLAUDE.md

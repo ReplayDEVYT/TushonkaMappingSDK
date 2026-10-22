@@ -1,0 +1,347 @@
+{
+ "source": "level525",
+ "root": 9,
+ "objects": [
+  {
+   "pid": 9,
+   "transform": 1463,
+   "name": "lightManager",
+   "parent": null,
+   "active": true,
+   "layer": 0,
+   "tag": 0,
+   "position": [
+    399.2767639160156,
+    0.7715895175933838,
+    43.78834533691406
+   ],
+   "rotation": [
+    -0.0,
+    -0.0,
+    -0.0,
+    1.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "components": [
+  {
+   "pid": 6517,
+   "go": 9,
+   "type": "MultiFlare.FlareSceneSettings",
+   "fields": {
+    "m_Enabled": 1,
+    "_settings": {
+     "_atlas": {
+      "ref": "asset",
+      "key": "asset_00000014"
+     },
+     "_normalBatch": {
+      "_capacity": 2048,
+      "_material": {
+       "ref": "material",
+       "key": "MultiFlare_00000005"
+      },
+      "_blindProtectionAlphaFactor": 1.0,
+      "_blindProtectionSizeFactor": 1.0
+     },
+     "_shitBatch": {
+      "_capacity": 512,
+      "_material": {
+       "ref": "material",
+       "key": "ShitOnScreen_00000006"
+      },
+      "_blindProtectionAlphaFactor": 1.0,
+      "_blindProtectionSizeFactor": 1.0
+     },
+     "_flareOverlapSettings": {
+      "_capacity": 256,
+      "_material": {
+       "ref": "material",
+       "key": "FlashLightFlares_00000004"
+      },
+      "_blindProtectionAlphaFactor": 1.0,
+      "_blindProtectionSizeFactor": 1.0,
+      "_maxNeighborCount": 5,
+      "_searchRange": 0.5,
+      "_maxScaleMultiplier": 0.25
+     }
+    }
+   }
+  }
+ ],
+ "camera": [],
+ "materials": {
+  "MultiFlare_00000005": {
+   "name": "MultiFlare",
+   "shader": "Custom/multiFlare",
+   "renderQueue": -1,
+   "keywords": [],
+   "textures": {
+    "_MainTex": {
+     "texture": "Atlas2_0000000b",
+     "scale": [
+      1.0,
+      1.0
+     ],
+     "offset": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "floats": {
+    "_DepthOffset": 0.10000000149011612,
+    "_FadeDepthOffset": 0.30000001192092896,
+    "_FallofShift": 1.0,
+    "_FallofStrength": 18.0,
+    "_Intensity": 0.6000000238418579,
+    "_Size": 0.20000000298023224,
+    "_Val1": 0.0,
+    "_Val2": -2.619999885559082,
+    "_VisibilityCheckerSize": 0.003000000026077032,
+    "_Volume": 1.0,
+    "_VolumeStep": 3.0
+   },
+   "ints": {},
+   "colors": {
+    "_Color": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "_Size": [
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ShitOnScreen_00000006": {
+   "name": "ShitOnScreen",
+   "shader": "Custom/ShitOnScreen",
+   "renderQueue": -1,
+   "keywords": [],
+   "textures": {
+    "_MainTex": {
+     "texture": "Atlas2_0000000b",
+     "scale": [
+      1.0,
+      1.0
+     ],
+     "offset": [
+      0.0,
+      0.0
+     ]
+    },
+    "_ShitTex": {
+     "texture": "Noise_00000563",
+     "scale": [
+      1.0,
+      1.0
+     ],
+     "offset": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "floats": {
+    "_DepthOffset": 1.0,
+    "_FadeDepthOffset": 0.4000000059604645,
+    "_FallofShift": 1.0,
+    "_FallofStrength": 16.0,
+    "_Intensity": 1.0,
+    "_NoiseIntensity": 5.0,
+    "_VisibilityCheckerSize": 0.009999999776482582
+   },
+   "ints": {},
+   "colors": {
+    "_Color": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "_NoiseScale": [
+     2.0,
+     2.0,
+     1.0,
+     0.0
+    ]
+   }
+  },
+  "FlashLightFlares_00000004": {
+   "name": "FlashLightFlares",
+   "shader": "Custom/multiFlare",
+   "renderQueue": -1,
+   "keywords": [],
+   "textures": {
+    "_MainTex": {
+     "texture": "Atlas2_0000000b",
+     "scale": [
+      1.0,
+      1.0
+     ],
+     "offset": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "floats": {
+    "_DepthOffset": 0.10000000149011612,
+    "_FadeDepthOffset": 0.30000001192092896,
+    "_FallofShift": 1.0,
+    "_FallofStrength": 18.0,
+    "_Intensity": 0.6000000238418579,
+    "_Size": 0.20000000298023224,
+    "_Val1": 0.0,
+    "_Val2": -2.619999885559082,
+    "_VisibilityCheckerSize": 0.003000000026077032,
+    "_Volume": 1.0,
+    "_VolumeStep": 3.0
+   },
+   "ints": {},
+   "colors": {
+    "_Color": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "_Size": [
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "textures": {
+  "Atlas2_0000000b": {
+   "name": "Atlas2",
+   "type": "Texture2D",
+   "file": "Textures/Atlas2_0000000b.png",
+   "normal": false,
+   "linear": false,
+   "wrap": 0
+  },
+  "Noise_00000563": {
+   "name": "Noise",
+   "type": "Texture2D",
+   "file": "Textures/Noise_00000563.png",
+   "normal": false,
+   "linear": false,
+   "wrap": 0
+  }
+ },
+ "meshes": {},
+ "assets": {
+  "asset_00000014": {
+   "name": "FlareAtlas",
+   "type": "MultiFlare.ProFlareAtlas",
+   "fields": {
+    "_containers": [
+     {
+      "_name": "New Element 0",
+      "_rect": {
+       "x": 0.0,
+       "y": 0.5,
+       "width": 0.5,
+       "height": 0.5
+      }
+     },
+     {
+      "_name": "New Element 1",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.5,
+       "width": 0.5,
+       "height": 0.5
+      }
+     },
+     {
+      "_name": "New Element 2",
+      "_rect": {
+       "x": 0.0,
+       "y": 0.0,
+       "width": 0.5,
+       "height": 0.5
+      }
+     },
+     {
+      "_name": "New Element 3",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.25,
+       "width": 0.25,
+       "height": 0.25
+      }
+     },
+     {
+      "_name": "New Element 4",
+      "_rect": {
+       "x": 0.75,
+       "y": 0.25,
+       "width": 0.25,
+       "height": 0.25
+      }
+     },
+     {
+      "_name": "New Element 5",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.1875,
+       "width": 0.25,
+       "height": 0.06499999761581421
+      }
+     },
+     {
+      "_name": "New Element 6",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.15699999034404755,
+       "width": 0.25,
+       "height": 0.029999999329447746
+      }
+     },
+     {
+      "_name": "New Element 7",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.08249999582767487,
+       "width": 0.25,
+       "height": 0.07500000298023224
+      }
+     },
+     {
+      "_name": "New Element 8",
+      "_rect": {
+       "x": 0.75,
+       "y": 0.0,
+       "width": 0.25,
+       "height": 0.25
+      }
+     },
+     {
+      "_name": "New Element 9",
+      "_rect": {
+       "x": 0.5,
+       "y": 0.006999999284744263,
+       "width": 0.25,
+       "height": 0.07000000029802322
+      }
+     }
+    ]
+   }
+  }
+ }
+}

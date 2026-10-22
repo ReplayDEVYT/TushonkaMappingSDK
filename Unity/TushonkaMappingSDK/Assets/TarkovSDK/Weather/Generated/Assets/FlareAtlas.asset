@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0598a666b2344cd8e93cbe5251ff44d, type: 3}
+  m_Name: FlareAtlas
+  m_EditorClassIdentifier: 
+  _containers:
+  - _name: New Element 0
+    _rect:
+      serializedVersion: 2
+      x: 0
+      y: 0.5
+      width: 0.5
+      height: 0.5
+  - _name: New Element 1
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.5
+      width: 0.5
+      height: 0.5
+  - _name: New Element 2
+    _rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 0.5
+      height: 0.5
+  - _name: New Element 3
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.25
+      width: 0.25
+      height: 0.25
+  - _name: New Element 4
+    _rect:
+      serializedVersion: 2
+      x: 0.75
+      y: 0.25
+      width: 0.25
+      height: 0.25
+  - _name: New Element 5
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.1875
+      width: 0.25
+      height: 0.065
+  - _name: New Element 6
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.15699999
+      width: 0.25
+      height: 0.03
+  - _name: New Element 7
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.082499996
+      width: 0.25
+      height: 0.075
+  - _name: New Element 8
+    _rect:
+      serializedVersion: 2
+      x: 0.75
+      y: 0
+      width: 0.25
+      height: 0.25
+  - _name: New Element 9
+    _rect:
+      serializedVersion: 2
+      x: 0.5
+      y: 0.0069999993
+      width: 0.25
+      height: 0.07

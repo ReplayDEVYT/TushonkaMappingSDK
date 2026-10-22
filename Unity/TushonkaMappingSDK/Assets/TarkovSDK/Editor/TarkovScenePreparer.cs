@@ -214,6 +214,17 @@ namespace TarkovSDK.Editor
                 if (wio is LootableContainer container && string.IsNullOrEmpty(container.Template))
                     report.Warnings.Add($"{scene.name}/{wio.name}: LootableContainer has no Template (item tpl id)");
             }
+            // lamps are switched and broken by id, like retail "lamp_<scene>_<name>"
+            foreach (var lamp in All<Turnable>(roots))
+                if (string.IsNullOrEmpty(lamp.Id) || !seen.Add(lamp.Id))
+                {
+                    lamp.Id = $"lamp_{scene.name}_{lamp.gameObject.name}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                    seen.Add(lamp.Id);
+                    EditorUtility.SetDirty(lamp);
+                }
+            // lens flares draw only through a FlareSceneSettings, in any scene of the map
+            if (All<MultiFlare.FlareLight>(roots).Count > 0 && UnityEngine.Object.FindObjectsOfType<MultiFlare.FlareSceneSettings>(true).Length == 0)
+                report.Warnings.Add($"{scene.name}: has lens flares but no flare settings, so they don't show (Tarkov SDK > Map > Lens Flare Settings)");
         }
 
         private static void SyncPatrolWays(GameObject[] roots)
@@ -377,7 +388,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        private static Bounds TransformBounds(Transform t)
+        internal static Bounds TransformBounds(Transform t)
         {
             var bounds = new Bounds(t.TransformPoint(new Vector3(-0.5f, -0.5f, -0.5f)), Vector3.zero);
             for (int i = 1; i < 8; i++)

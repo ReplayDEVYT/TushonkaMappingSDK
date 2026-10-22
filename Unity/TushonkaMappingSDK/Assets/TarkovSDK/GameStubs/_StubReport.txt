@@ -22,12 +22,16 @@ Types:
   shallow AReserveWayAction
   full    AdditionalHostilitySettings
   full    AdditionalHostilitySettings/ChancedEnemy
-  shallow AdvancedLight
+  full    AdvancedLight
+  full    AdvancedLight/LightTypeEnum
+  full    AdvancedLight/ShadingTypeEnum
   full    AmbientHighlight
   full    AmbientHighlight/AmbientDirectionalLight
   full    AmbientHighlight/HighlightSettings
   full    AmbientHighlight/StencilType
   full    AmbientLight
+  full    AreaLight
+  full    AreaLight/TextureSize
   full    Audio.AmbientSubsystem.AmbientAudioSystem
   full    Audio.AmbientSubsystem.AmbientSoundPlayerGroup
   full    Audio.AmbientSubsystem.AmbientSoundPlayerGroupController
@@ -59,7 +63,7 @@ Types:
   shallow Audio.RadioSystem.ClientBroadcastPlayer
   full    BaseBallistic
   full    BaseBallistic/ESurfaceSound
-  shallow BaseLight
+  full    BaseLight
   shallow BetterAudio
   full    BetterAudio/AudioSourceGroupType
   full    BotLocationModifier
@@ -72,7 +76,13 @@ Types:
   full    CoverLevel
   full    CoverPointDefenceInfo
   full    CoverType
+  full    CullingAdvancedLightObject
+  full    CullingLightObject
+  full    CullingObject
   full    DepthPhotograper
+  shallow DisablerCullingObject
+  full    DisablerCullingObject/ComponentState
+  shallow DisablerCullingObjectBase
   shallow DoorHandle
   full    EBodyPart
   full    ECoverPointSpecial
@@ -190,7 +200,15 @@ Types:
   full    JsonType.LocationSettings/Location/TransitParameters
   full    LevelSettings
   full    LocationScene
-  shallow MultiFlare.FlareLight
+  full    MultiFlare.BatchSettings
+  full    MultiFlare.Flare
+  full    MultiFlare.FlareLight
+  full    MultiFlare.FlareOverlapSettings
+  full    MultiFlare.FlareSceneSettings
+  full    MultiFlare.FlareSettings
+  full    MultiFlare.FlareType
+  full    MultiFlare.ProFlareAtlas
+  full    MultiFlare.ProFlareAtlas/Container
   full    NavGraphEditorPath
   full    NavGraphVoxelBase
   full    NavGraphVoxelSimple
@@ -259,6 +277,7 @@ Types:
   full    TOD_Time
   full    TOD_WorldParameters
   shallow ThrowGrenadePlace
+  full    TubeLight
   full    UnspawnPoint
   full    WeatherObstacle
   full    WetRenderer

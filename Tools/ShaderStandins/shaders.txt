@@ -33,3 +33,6 @@ EFT/Snow Sparkling
 EFT/SnowCopyNormalAndAlphaMask
 Hidden/AmbientHighlihgt
 Rain/LiquidDrop
+
+# fog volumes (GameObject > Tarkov SDK > Fog Volume): lit, fog-aware particles
+Global Fog/Particle Alpha Blended Lighted

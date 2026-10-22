@@ -1,0 +1,317 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42457a34c6e083c4ca777daa33905fcc, type: 3}
+  m_Name: Fog Remap Data
+  m_EditorClassIdentifier: 
+  _hourCount: 6
+  _originalFogValueCount: 5
+  _fogRemapRecords:
+  - Hour: 6.5
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0008
+    ColorMultiplier: {r: 1, g: 0.8396, b: 0.8396, a: 0.6549}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 6.5
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 0.8584, g: 0.8341, b: 0.8341, a: 0.7529}
+    DensityMultiplier: 2.42
+    DensityPower: 1.68
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 6.5
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.004183242
+    ColorMultiplier: {r: 0.9256059, g: 0.8341, b: 0.8341, a: 0.85}
+    DensityMultiplier: 2.310838
+    DensityPower: 1.5423608
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.3317003
+    FogSoftParticleScale: 646.58844
+  - Hour: 6.5
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.0066
+    ColorMultiplier: {r: 1, g: 0.8341, b: 0.8341, a: 1}
+    DensityMultiplier: 2.19
+    DensityPower: 1.39
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.4
+    FogSoftParticleScale: 800
+  - Hour: 6.5
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 1, g: 0.8341, b: 0.8341, a: 1}
+    DensityMultiplier: 2.19
+    DensityPower: 1.39
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.68
+    FogSoftParticleScale: 1400
+  - Hour: 7.5
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0007
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.6274}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 7.5
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.9294}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.17
+    FogSoftParticleScale: 508
+  - Hour: 7.5
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.004183242
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.962908}
+    DensityMultiplier: 2.1468315
+    DensityPower: 1.0837855
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0.47461787
+    SlicesDistribution: 1.279162
+    FogSoftParticleScale: 646.58844
+  - Hour: 7.5
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.0066
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    DensityMultiplier: 0.66
+    DensityPower: -0.34
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.4
+    FogSoftParticleScale: 800
+  - Hour: 7.5
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 0.5943, g: 0.5943, b: 0.5943, a: 1}
+    DensityMultiplier: 0.66
+    DensityPower: -0.34
+    DensityBias: 0
+    GreyscaleLerpFactor: 0.517
+    SlicesDistribution: 1.68
+    FogSoftParticleScale: 1400
+  - Hour: 9.2
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0008
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.698}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.17
+    FogSoftParticleScale: 508
+  - Hour: 9.2
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.6392}
+    DensityMultiplier: 0.51
+    DensityPower: 1.9
+    DensityBias: 0
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1
+    FogSoftParticleScale: 800
+  - Hour: 9.2
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.01237554
+    ColorMultiplier: {r: 0.7895544, g: 0.7895544, b: 0.7895544, a: 1}
+    DensityMultiplier: 0.47677675
+    DensityPower: 1.5060672
+    DensityBias: 0
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.1471316
+    FogSoftParticleScale: 1084.7708
+  - Hour: 9.2
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.066
+    ColorMultiplier: {r: 0.5566, g: 0.5566, b: 0.5566, a: 1}
+    DensityMultiplier: 0.44
+    DensityPower: 1.07
+    DensityBias: 0
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.31
+    FogSoftParticleScale: 1400
+  - Hour: 9.2
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 0.5566, g: 0.5566, b: 0.5566, a: 1}
+    DensityMultiplier: 1.23
+    DensityPower: 1.07
+    DensityBias: 0
+    GreyscaleLerpFactor: 0.74
+    SlicesDistribution: 1.54
+    FogSoftParticleScale: 1400
+  - Hour: 17.6
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0008
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.4705}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 17.6
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    DensityMultiplier: 1.36
+    DensityPower: 1.5
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 17.6
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.004183242
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    DensityMultiplier: 0.99929047
+    DensityPower: 0.7168805
+    DensityBias: 0.30997545
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.3317003
+    FogSoftParticleScale: 646.58844
+  - Hour: 17.6
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.0066
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    DensityMultiplier: 0.6
+    DensityPower: -0.15
+    DensityBias: 0
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.4
+    FogSoftParticleScale: 800
+  - Hour: 17.6
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 1}
+    DensityMultiplier: 0.46
+    DensityPower: -1.54
+    DensityBias: 0
+    GreyscaleLerpFactor: 1
+    SlicesDistribution: 1.68
+    FogSoftParticleScale: 1400
+  - Hour: 19.5
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0009
+    ColorMultiplier: {r: 0.8679, g: 0.8106, b: 0.7532, a: 0.6823}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0.59
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 19.5
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 0.8679, g: 0.8106, b: 0.7532, a: 1}
+    DensityMultiplier: 0.25
+    DensityPower: 0.59
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 19.5
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.004183242
+    ColorMultiplier: {r: 0.6932881, g: 0.657773, b: 0.62182575, a: 1}
+    DensityMultiplier: 0.25474617
+    DensityPower: 0.4286299
+    DensityBias: 0.56954145
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.3317003
+    FogSoftParticleScale: 646.58844
+  - Hour: 19.5
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.0066
+    ColorMultiplier: {r: 0.5, g: 0.4886, b: 0.4764, a: 1}
+    DensityMultiplier: 0.26
+    DensityPower: 0.25
+    DensityBias: 1.2
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.4
+    FogSoftParticleScale: 800
+  - Hour: 19.5
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 0.5, g: 0.4886, b: 0.4764, a: 1}
+    DensityMultiplier: 0.26
+    DensityPower: -3.26
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.68
+    FogSoftParticleScale: 1400
+  - Hour: 21.2
+    OriginalFogValue: 0.0161
+    NewFogValue: 0.0008
+    ColorMultiplier: {r: 1, g: 1, b: 1, a: 0.7254}
+    DensityMultiplier: 3.49
+    DensityPower: 2.37
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 21.2
+    OriginalFogValue: 0.0361
+    NewFogValue: 0.002
+    ColorMultiplier: {r: 0.8396, g: 0.8158, b: 0.8158, a: 1}
+    DensityMultiplier: 0.26
+    DensityPower: 0.25
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.27
+    FogSoftParticleScale: 508
+  - Hour: 21.2
+    OriginalFogValue: 0.06775701
+    NewFogValue: 0.004183242
+    ColorMultiplier: {r: 0.714206, g: 0.6836664, b: 0.6836664, a: 1}
+    DensityMultiplier: 0.8105567
+    DensityPower: 0.32593885
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.3317003
+    FogSoftParticleScale: 646.58844
+  - Hour: 21.2
+    OriginalFogValue: 0.1028
+    NewFogValue: 0.0066
+    ColorMultiplier: {r: 0.5754, g: 0.5374, b: 0.5374, a: 1}
+    DensityMultiplier: 1.42
+    DensityPower: 0.41
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.4
+    FogSoftParticleScale: 800
+  - Hour: 21.2
+    OriginalFogValue: 0.255
+    NewFogValue: 0.064
+    ColorMultiplier: {r: 0.4245, g: 0.4245, b: 0.4245, a: 1}
+    DensityMultiplier: 1.41
+    DensityPower: -2.86
+    DensityBias: 0
+    GreyscaleLerpFactor: 0
+    SlicesDistribution: 1.68
+    FogSoftParticleScale: 1400
