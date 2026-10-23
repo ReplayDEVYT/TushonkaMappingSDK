@@ -8,5 +8,25 @@ namespace EFT.Interactive
 {
     public class WindowBreakingConfig : global::UnityEngine.ScriptableObject
     {
+        public global::EFT.Interactive.WindowBreakingConfig.Crack[] Cracks;
+
+        [global::System.Serializable]
+        public class Crack
+        {
+            public global::EFT.Interactive.WindowBreakingConfig.Polygon[] Polygons;
+            public bool GetFromSelectedMeshes;
+            public float Scale = 1f;
+            public global::UnityEngine.GameObject Glass;
+        }
+
+        [global::System.Serializable]
+        public class Polygon
+        {
+            public global::UnityEngine.Vector2[] Points;
+            public float[] Distances;
+            public float[] RandomRanges;
+            public float Mass;
+            public bool Intersects;
+        }
     }
 }

@@ -8,8 +8,8 @@ using UnityEngine;
 
 namespace TarkovSDK.Editor
 {
-    // Builds working doors, lamps, lootable containers and switches from your own model, materials and
-    // sounds. Each is the SDK's ready-made object (GameObject > Tarkov SDK) with its placeholder replaced
+    // Builds working doors, lamps, lootable containers, switches and physics props from your own model,
+    // materials and sounds. Each is the SDK's ready-made object (GameObject > Tarkov SDK) with its placeholder replaced
     // by the model and its colliders fitted to the model's bounds; optionally saved as a prefab to reuse.
     //
     // Lamps can switch their look with the light, in one of the game's three ways:
@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
     //                  _EmissionColor on Unity's Standard shader.
     public class TarkovObjectBuilderWindow : EditorWindow
     {
-        private enum Kind { Door, Lamp, LootableContainer, Switch }
+        private enum Kind { Door, Lamp, LootableContainer, Switch, PhysicsProp }
         private enum Emission { None, SwapMaterials, FadeEmission, EmissionColor }
 
         // container types whose loot pools the server mod has (taken from Factory)
@@ -64,6 +64,14 @@ namespace TarkovSDK.Editor
         // switch
         private Door _switchDoor;
         private LampController _switchLamp;
+        // physics prop
+        private int _propType;
+        private float _mass = 1f;
+        private bool _convex;
+        private GameObject _fragmentedModel;
+        private string _particles = "";
+        private float _timeOfLife = -1f;
+        private float _shotSpeed = TarkovPhysicsProps.ShotSpeed, _touchSpeed = TarkovPhysicsProps.TouchSpeed, _explosionSpeed = TarkovPhysicsProps.ExplosionSpeed;
         // output
         private bool _savePrefab;
         private string _prefabFolder = "Assets/Prefabs";
@@ -85,6 +93,7 @@ namespace TarkovSDK.Editor
                 {
                     Kind.Lamp => (MaterialType.Glass, BaseBallistic.ESurfaceSound.Glass),
                     Kind.Switch => (MaterialType.MetalThin, BaseBallistic.ESurfaceSound.MetalThin),
+                    Kind.PhysicsProp => (TarkovPhysicsProps.Types[_propType].Bullets, TarkovPhysicsProps.Types[_propType].Impact),
                     _ => (MaterialType.WoodThin, BaseBallistic.ESurfaceSound.Wood),
                 };
             }
@@ -106,6 +115,7 @@ namespace TarkovSDK.Editor
                 case Kind.Lamp: DrawLamp(); break;
                 case Kind.LootableContainer: DrawContainer(); break;
                 case Kind.Switch: DrawSwitch(); break;
+                case Kind.PhysicsProp: DrawPhysicsProp(); break;
             }
 
             EditorGUILayout.Space();
@@ -117,7 +127,13 @@ namespace TarkovSDK.Editor
             EditorGUILayout.Space();
             using (new EditorGUI.DisabledScope(_model == null))
                 if (GUILayout.Button(_model == null ? "Pick a model first" : $"Create {ObjectNames.NicifyVariableName(_kind.ToString())}", GUILayout.Height(28f)))
-                    Create();
+                    // after this GUI pass: creating assets and prefabs inside the scroll view breaks
+                    // IMGUI's layout ("EndLayoutGroup: BeginLayoutGroup must be called first")
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (this != null)
+                            Create();
+                    };
             EditorGUILayout.EndScrollView();
         }
 
@@ -198,6 +214,33 @@ namespace TarkovSDK.Editor
             ClipList("Sounds", _openSounds);
         }
 
+        private void DrawPhysicsProp()
+        {
+            EditorGUILayout.LabelField("Physics Prop", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Pushed by players walking into it, knocked over by bullets, thrown by grenades. " +
+                                       "Its impact sounds are the game's, by type.", EditorStyles.wordWrappedMiniLabel);
+            int type = EditorGUILayout.Popup(new GUIContent("Sound Type", "Which of the game's impact sounds it makes."), _propType, TarkovPhysicsProps.TypeNames);
+            if (type != _propType)
+            {
+                _propType = type;
+                (_bulletMaterial, _surfaceSound) = (TarkovPhysicsProps.Types[type].Bullets, TarkovPhysicsProps.Types[type].Impact);
+            }
+            _mass = EditorGUILayout.FloatField(new GUIContent("Mass (kg)", "Heavier props move less when pushed or shot."), _mass);
+            _convex = EditorGUILayout.Popup(new GUIContent("Collider", "Box: the model's bounds. Convex Mesh: follows the model's first mesh."),
+                _convex ? 1 : 0, new[] { "Box", "Convex Mesh" }) == 1;
+            _fragmentedModel = (GameObject)EditorGUILayout.ObjectField(new GUIContent("Broken Model", "Optional: shown instead of the model once it's first disturbed " +
+                                                                                                    "(a shattered monitor, for instance)."), _fragmentedModel, typeof(GameObject), true);
+            _particles = EditorGUILayout.TextField(new GUIContent("Particle Effect", "Optional: a game effect name played when it's disturbed."), _particles);
+            _timeOfLife = EditorGUILayout.FloatField(new GUIContent("Remove After (s)", "Removed this long after it's first disturbed; -1 to keep it."), _timeOfLife);
+            EditorGUILayout.LabelField(new GUIContent("Push Speed (m/s)", "How fast each kind of push sends it, whatever its mass."));
+            using (new EditorGUI.IndentLevelScope())
+            {
+                _shotSpeed = EditorGUILayout.FloatField("Shot", _shotSpeed);
+                _touchSpeed = EditorGUILayout.FloatField("Walked Into", _touchSpeed);
+                _explosionSpeed = EditorGUILayout.FloatField(new GUIContent("Explosion", "At 1 m from the blast; less further out."), _explosionSpeed);
+            }
+        }
+
         private static void ClipList(string label, List<AudioClip> clips)
         {
             EditorGUILayout.LabelField(label);
@@ -230,6 +273,7 @@ namespace TarkovSDK.Editor
                 case Kind.Door: root = CreateDoor(); break;
                 case Kind.Lamp: root = CreateLamp(); break;
                 case Kind.LootableContainer: root = CreateContainer(); break;
+                case Kind.PhysicsProp: root = CreatePhysicsProp(); break;
                 default: root = CreateSwitch(); break;
             }
             root.name = string.IsNullOrWhiteSpace(_name) ? _model.name : _name.Trim();
@@ -374,6 +418,27 @@ namespace TarkovSDK.Editor
             sw.OpenSound = _openSounds.ToArray();
             sw.ShutSound = _openSounds.ToArray();
             return root.gameObject;
+        }
+
+        private GameObject CreatePhysicsProp()
+        {
+            var model = Model(null, out _);
+            GameObject broken = null;
+            if (_fragmentedModel != null)
+            {
+                // the broken model goes through the same copying (colliders stripped, unpacked)
+                var keep = _model;
+                _model = _fragmentedModel;
+                broken = Model(null, out _);
+                broken.name = _fragmentedModel.name + " (broken)";
+                _model = keep;
+            }
+            var prop = TarkovPhysicsProps.CreateProp(null, model, broken, _propType, _mass, _convex);
+            SetBallistic(prop.BallisticColliders[0].gameObject);
+            prop.ParticlesEffectName = _particles.Trim();
+            prop.TimeOfLife = _timeOfLife;
+            TarkovPhysicsProps.SetPushSpeeds(prop, _shotSpeed, _touchSpeed, _explosionSpeed);
+            return prop.gameObject;
         }
 
         // ------------------------------------------------------------ helpers

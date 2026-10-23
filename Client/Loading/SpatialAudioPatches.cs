@@ -67,4 +67,18 @@ namespace mizmii.CustomMapLoader.Loading
             return false;
         }
     }
+
+    // Interactive objects (breakable windows, doors) occlude their sounds through
+    // ProcessInteractiveObjectOcclusion, which also throws on an uninitialised system. For a window
+    // the throw comes from PlayHitSound inside WindowBreaker.BreakByHit, after the impact effect but
+    // before the glass breaks: only the first shot cracked it, later shots just spawned particles.
+    // Skipped until the system is initialised; the sound then plays unoccluded.
+    internal class InteractiveOcclusionWhenUninitializedPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod() =>
+            AccessTools.Method(typeof(SpatialAudioSystem), nameof(SpatialAudioSystem.ProcessInteractiveObjectOcclusion));
+
+        [PatchPrefix]
+        private static bool Prefix() => SpatialAudioSystem.Initialized;
+    }
 }

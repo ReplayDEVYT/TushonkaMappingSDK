@@ -154,6 +154,8 @@ namespace TarkovSDK.Editor
             sw.Door = door;
             sw.Interaction = EFT.EInteractionType.Open;
             sw.Lamps = new LampController[0];
+            // the game animates a switch by this curve and reads its keys unchecked: empty, interacting throws
+            sw.CustomProgressCurve = SwitchCurve();
             sw.NextSwitches = new Switch.SwitchAndOperation[0];
             sw.ConditionStatus = new EExfiltrationStatus[0];
             return sw;
@@ -212,6 +214,9 @@ namespace TarkovSDK.Editor
             // Id is assigned when the map is built
             return container;
         }
+
+        // the curve most retail switches use: linear, over one second
+        public static AnimationCurve SwitchCurve() => AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
         // ------------------------------------------------------------ colliders
 

@@ -1,4 +1,4 @@
-# Game types the SDK exposes as full stubs (every serialized field emitted).
+﻿# Game types the SDK exposes as full stubs (every serialized field emitted).
 # Types referenced by these are pulled in automatically: plain [Serializable] types and enums in
 # full, other components as empty "shallow" stubs. Add a line here to give a shallow stub its fields.
 # Nested types use '+' or '/', e.g. EFT.ScenesPreset+Guid.
@@ -137,3 +137,9 @@ CullingAdvancedLightObject
 MultiFlare.FlareLight
 MultiFlare.FlareSceneSettings
 MultiFlare.ProFlareAtlas
+
+# --- breakable windows (WindowBreaker above; its crack patterns) ---
+EFT.Interactive.WindowBreakingConfig
+
+# --- physics props (Arena's pushable, shootable small objects; SmallPhysicsSystem creates itself) ---
+SmallPhysicsObject

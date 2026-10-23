@@ -73,9 +73,9 @@ namespace TarkovSDK.Editor
             {
                 EditorGUILayout.HelpBox($"No base.json for '{_definition.MapId}' in the server mod folder.", MessageType.Warning);
                 if (GUILayout.Button("Create From sdk_example Template"))
-                    CreateFromTemplate();
+                    AfterGui(CreateFromTemplate);
                 if (GUILayout.Button("Reload"))
-                    Load();
+                    AfterGui(Load);
                 return;
             }
 
@@ -106,9 +106,13 @@ namespace TarkovSDK.Editor
             {
                 using (new EditorGUI.DisabledScope(!_dirty))
                     if (GUILayout.Button(_dirty ? "Save*" : "Save", GUILayout.Height(24f)))
-                        Save();
-                if (GUILayout.Button("Reload", GUILayout.Height(24f)) && ConfirmDiscard())
-                    Load();
+                        AfterGui(Save);
+                if (GUILayout.Button("Reload", GUILayout.Height(24f)))
+                    AfterGui(() =>
+                    {
+                        if (ConfirmDiscard())
+                            Load();
+                    });
                 if (GUILayout.Button("Open Folder", GUILayout.Height(24f)))
                     EditorUtility.RevealInFinder(BasePath);
             }
@@ -168,7 +172,20 @@ namespace TarkovSDK.Editor
             EditorGUILayout.LabelField("Map Select Icon (base.json)", EditorStyles.boldLabel);
             _iconX = EditorGUILayout.IntField(new GUIContent("Icon X", "Marker position on the map select screen, in pixels."), _iconX);
             _iconY = EditorGUILayout.IntField("Icon Y", _iconY);
-            EditorGUILayout.HelpBox("Retail for reference: Factory 470, 510 · Customs 550, 460 · Woods 460, 660 · Shoreline 220, 300 · Labs 700, 800", MessageType.None);
+            DrawIconPreview();
+        }
+
+        // dialogs and file writes from inside a layout group break IMGUI's layout ("EndLayoutGroup:
+        // BeginLayoutGroup must be called first"), so buttons run them after this GUI pass
+        private void AfterGui(Action action)
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null)
+                    return; // the window was closed in the meantime
+                action();
+                Repaint();
+            };
         }
 
         private bool ConfirmDiscard() =>

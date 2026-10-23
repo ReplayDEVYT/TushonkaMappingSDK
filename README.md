@@ -8,7 +8,7 @@ SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_expo
 ```
 
 **Author:** mizmii
-**Version:** 1.2.0
+**Version:** 1.3.0
 **SPT Version:** 4.1.6 (client Unity 2022.3.43f1)
 **License:** Unlicense
 
@@ -89,7 +89,7 @@ All game components are under `Assets/TarkovSDK/GameStubs`. They contain only th
   - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Tools**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
 - **SpawnPointMarker**: set `Sides`, `Categories` and, for PMC player spawns, `Infiltration` (the entry point name). Place it under a BotZone to assign it to that zone.
 - **BotZone**: its GameObject name is the zone name used by `waves` and `OpenZones` in `base.json`.
-- **PatrolWay** with child **PatrolPoint**s: an authored bot route. Zones without one get a generated route.
+- **PatrolWay** with child **PatrolPoint**s: an authored bot route. Zones without one get a generated route in the raid; **Tarkov SDK > Tools > Generate Patrol Routes** makes those routes in the editor instead, so you can see and adjust them: for every zone without a hand-made route, a `GeneratedPatrol` of 2-6 points 7-45 m apart around its spawn points, each reachable on the navmesh from the last. Running it again replaces the generated routes and leaves hand-made ones alone.
 - **ExfiltrationPoint**: needs a trigger collider. `Settings.Name` becomes the exit name; `Settings.EntryPoints` lists which infiltrations may use it.
 - **Door**, **LootableContainer**, **Switch**, etc. are available. The builder assigns missing ids.
 
@@ -122,6 +122,9 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
   - **Swap Materials**: two copies of the model with an On and an Off material; the lamp shows one or the other. Works with any shader.
   - **Fade Emission**: the lamp fades `_EmissionVisibility`, with flicker. Needs the game's emissive shader, `Tarkov/p0/Reflective/Bumped Emissive Specular SMap`.
   - **Emission Color**: the lamp sets a colour property (e.g. `_EmissionColor`) to an On or Off colour.
+- **Tarkov SDK > Tools > Quick Fixes > Fix Broken Interactables** checks every door, switch, lootable container and lamp in the open scenes and repairs what would break in the raid: empty animation curves (a switch without one does nothing when used), objects off the Interactive layer, empty or duplicate ids, deleted entries in lamp and switch lists, and light culling that lost its light. What it can't decide, like a container without a type or an object without a collider, is listed in the Console.
+- **GameObject > Tarkov SDK > Breakable Window** adds a 1.2 x 1 m glass pane that shatters when shot, set up like retail windows: mesh collider on the TransparentCollider layer, glass ballistics, and the game's own crack patterns (shipped in `Assets/TarkovSDK/Windows`). To use your own glass, add a `WindowBreaker` to a glass mesh with a `MeshCollider` and a `BallisticCollider` (Glass) on the TransparentCollider layer: **Build Map** computes the geometry the game needs from the mesh, fills its references and gives it an id. The glass must be thin along one axis and have UVs.
+- **GameObject > Tarkov SDK > Physics Prop** adds a small object that players push by walking into it, bullets knock over and grenades throw, with the game's impact sounds (Arena's `SmallPhysicsObject`; no Tarkov map uses them). Its **Sound Type** picks the sounds: medium generic, small box, small paper, small plastic, hard plastic, cup, cooler bottle, glass bottle, empty tin can, metal candlestick or monitor. It lands on Terrain, HighPolyCollider and Default geometry, like dropped loot, and settles where placed at raid start. Its push strengths are set from its mass so every prop reacts alike (3 m/s when shot, 1.5 m/s when walked into, 12 m/s at 1 m from a grenade); the Object Builder takes them as speeds. Build one from your own model, with an optional broken version shown once it's disturbed, in the **Interactive Object Builder**.
 - **GameObject > Tarkov SDK > Switch** adds a switch. Right-click a door to make a switch that opens it; otherwise set its `Door` or `Lamps`.
 - **Tarkov SDK > Tools > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
 
@@ -129,7 +132,7 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
 
 The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 
-- **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, locale keys, and the map select icon position.
+- **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, locale keys, and the map select icon position, with a preview of the map select screen showing where this map's button sits among the retail maps' (click it to move the button; `IconX`/`IconY` are thousandths of the map picture from its bottom-left corner).
 - **Access**: whether the map is enabled, locked or insured, the PMC level range, scav raids on or off, group sizes, and **required items** (`AccessKeys`, like the Labs keycard), searched by name from the SPT item database or added by template id. The list is written to `AccessKeysPvE` too unless **Same In PvE** is off.
 - **Bots**: bot limits and the scav mix, open zones, **waves** (bot type, difficulty, count, time and zones picked from the scene's bot zones) and **boss spawns** (boss, chance, escorts, zones). These are `base.json` values; restart the SPT server after saving.
 - **Spawns**: every spawn point in the open scenes, with buttons to add player and bot spawns.

@@ -148,7 +148,9 @@ Types:
   full    EFT.Interactive.Turnable/EState
   full    EFT.Interactive.WindowBreaker
   full    EFT.Interactive.WindowBreaker/RotationAngle
-  shallow EFT.Interactive.WindowBreakingConfig
+  full    EFT.Interactive.WindowBreakingConfig
+  full    EFT.Interactive.WindowBreakingConfig/Crack
+  full    EFT.Interactive.WindowBreakingConfig/Polygon
   full    EFT.Interactive.WorldInteractiveObject
   full    EFT.Interactive.WorldInteractiveObject/EDoorAxis
   full    EFT.Interactive.WorldInteractiveObject/MBOITRenderer
@@ -194,6 +196,7 @@ Types:
   full    GroupPointPath
   full    GroupPointWay
   shallow ISyncAble
+  full    InitialPosition
   shallow InteractiveProxy
   shallow JsonType.LocationSettings
   shallow JsonType.LocationSettings/Location
@@ -243,6 +246,8 @@ Types:
   full    SceneLights
   full    ScreenWater
   full    ShadowMaskExtractor
+  full    SmallPhysicsObject
+  full    SmallPhysicsObject/EPhysicsObjectType
   full    SnowFlakes
   full    SnowRippleController
   full    SnowWetRenderer

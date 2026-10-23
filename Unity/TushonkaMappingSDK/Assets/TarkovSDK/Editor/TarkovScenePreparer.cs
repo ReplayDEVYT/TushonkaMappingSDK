@@ -213,6 +213,12 @@ namespace TarkovSDK.Editor
                 }
                 if (wio is LootableContainer container && string.IsNullOrEmpty(container.Template))
                     report.Warnings.Add($"{scene.name}/{wio.name}: LootableContainer has no Template (item tpl id)");
+                // switches made before the SDK set this curve have an empty one, and the game throws on it
+                if (wio is Switch sw && (sw.CustomProgressCurve == null || sw.CustomProgressCurve.length == 0))
+                {
+                    sw.CustomProgressCurve = TarkovPrefabTools.SwitchCurve();
+                    EditorUtility.SetDirty(sw);
+                }
             }
             // lamps are switched and broken by id, like retail "lamp_<scene>_<name>"
             foreach (var lamp in All<Turnable>(roots))
@@ -222,6 +228,18 @@ namespace TarkovSDK.Editor
                     seen.Add(lamp.Id);
                     EditorUtility.SetDirty(lamp);
                 }
+            // breakable windows: their precomputed glass geometry and references, and ids like retail "window_<scene>_<n>"
+            foreach (var window in All<WindowBreaker>(roots))
+            {
+                if (!TarkovWindows.Setup(window, out var problem))
+                    report.Warnings.Add($"{scene.name}/{window.name}: breakable window can't break: {problem}");
+                if (string.IsNullOrEmpty(window.Id) || !seen.Add(window.Id))
+                {
+                    window.Id = $"window_{scene.name}_{window.gameObject.name}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                    seen.Add(window.Id);
+                    EditorUtility.SetDirty(window);
+                }
+            }
             // lens flares draw only through a FlareSceneSettings, in any scene of the map
             if (All<MultiFlare.FlareLight>(roots).Count > 0 && UnityEngine.Object.FindObjectsOfType<MultiFlare.FlareSceneSettings>(true).Length == 0)
                 report.Warnings.Add($"{scene.name}: has lens flares but no flare settings, so they don't show (Tarkov SDK > Map > Lens Flare Settings)");

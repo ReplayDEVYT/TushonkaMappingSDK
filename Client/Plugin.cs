@@ -7,7 +7,7 @@ using mizmii.CustomMapLoader.Loading;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.2.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.3.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -49,6 +49,9 @@ namespace mizmii.CustomMapLoader
             Enable(new LevelSettingsFixPatch());
             Enable(new SimpleTimeOfDayPatch());
             Enable(new RainCameraPatch());
+            Enable(new SwitchCurvePatch());
+            Enable(new PhysicsPropAwakePatch());
+            Enable(new PhysicsPropPushPatch());
             Enable(new MboitFogTimePatch());
             Enable(new WeatherFogDensityPatch());
             Enable(new Diagnostics.BotActivationDiagnostics());
@@ -57,6 +60,7 @@ namespace mizmii.CustomMapLoader
                 Enable(patch);
             foreach (var patch in OcclusionWhenUninitializedPatch.ForAllOverloads())
                 Enable(patch);
+            Enable(new InteractiveOcclusionWhenUninitializedPatch());
             Enable(new RestoreCoversPatch());
             Enable(new CachePointsPatch());
             Enable(new StartCorePointPatch());
