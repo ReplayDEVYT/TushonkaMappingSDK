@@ -14,6 +14,12 @@ namespace TarkovSDK.Editor
         [Tooltip("Scenes that make up the map. The first one is the active scene and holds LocationExportInfo.")]
         public List<SceneAsset> Scenes = new List<SceneAsset>();
 
+        [Header("Environment")]
+        [Tooltip("The whole map is indoors, like Labs. Build Map then covers it with one indoor trigger (indoor sound, exposure, " +
+                 "muffled rain), gives the simple time of day Labs' indoor lighting, and with the full weather system adds a " +
+                 "rain cover over everything so rain never falls on the screen.")]
+        public bool EntirelyIndoors;
+
         [Header("Output")]
         [Tooltip("Folder (relative to the Unity project, or absolute) that receives the bundles and sdk_export.json.")]
         public string OutputFolder = "Build";

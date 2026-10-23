@@ -23,7 +23,7 @@ namespace TarkovSDK.Editor
             CreateSkeleton();
         }
 
-        [MenuItem("Tarkov SDK/Map/Bake NavMesh For Active Scene", priority = 102)]
+        [MenuItem("Tarkov SDK/Tools/Bake NavMesh For Active Scene", priority = 220)]
         public static void BakeNavMesh()
         {
             // legacy scene bake with the "Humanoid" agent (type 0), the agent bots path with;
@@ -230,7 +230,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Collision/Make Selected Static Geometry (Terrain layer)", priority = 300)]
+        [MenuItem("Tarkov SDK/Tools/Make Selected Static Geometry (Terrain layer)", priority = 240)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -242,7 +242,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Collision/Add BallisticCollider To Selected Colliders", priority = 301)]
+        [MenuItem("Tarkov SDK/Tools/Add BallisticCollider To Selected Colliders", priority = 241)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -257,7 +257,7 @@ namespace TarkovSDK.Editor
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Map/Refresh Default Surface Material", priority = 141)]
+        [MenuItem("Tarkov SDK/Tools/Refresh Default Surface Material", priority = 260)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()

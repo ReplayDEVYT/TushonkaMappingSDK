@@ -7,7 +7,7 @@ using mizmii.CustomMapLoader.Loading;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("mizmii.CustomMapLoader", "CustomMapLoader", "1.0.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.2.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;

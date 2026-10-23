@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
         private const float CellSize = 1.5f;
         private const float HeadRoom = 1.8f;
 
-        [MenuItem("Tarkov SDK/Map/Generate Rain Cover", priority = 123)]
+        [MenuItem("Tarkov SDK/Tools/Generate Rain Cover", priority = 221)]
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();
@@ -120,6 +120,25 @@ namespace TarkovSDK.Editor
                 return null;
             }
 
+            var cover = CreateCover(scene, vertices, triangles, out var path);
+            Debug.Log($"[Tarkov SDK] Rain cover: {covered} covered cell(s) of {CellSize} m, {vertices.Count / 4} dry plane quad(s), mesh saved to {path}");
+            return cover;
+        }
+
+        // one dry plane above the whole area, so nowhere counts as under the sky (Entirely Indoors maps)
+        internal static GameObject GenerateWholeMap(Scene scene, Bounds bounds)
+        {
+            var old = Find(scene);
+            if (old != null)
+                Undo.DestroyObjectImmediate(old);
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            AddQuad(vertices, triangles, bounds.min.x, bounds.max.x, bounds.min.z, bounds.max.z, bounds.max.y);
+            return CreateCover(scene, vertices, triangles, out _);
+        }
+
+        private static GameObject CreateCover(Scene scene, List<Vector3> vertices, List<int> triangles, out string path)
+        {
             var mesh = new Mesh { name = scene.name + "_RainCover" };
             if (vertices.Count > 65535)
                 mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
@@ -127,7 +146,7 @@ namespace TarkovSDK.Editor
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            var path = Path.Combine(Path.GetDirectoryName(scene.path) ?? "Assets", scene.name + "_RainCover.asset").Replace('\\', '/');
+            path = Path.Combine(Path.GetDirectoryName(scene.path) ?? "Assets", scene.name + "_RainCover.asset").Replace('\\', '/');
             if (AssetDatabase.LoadAssetAtPath<Mesh>(path) != null)
                 AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(mesh, path);
@@ -140,7 +159,6 @@ namespace TarkovSDK.Editor
             plane.transform.SetParent(cover.transform, false);
             plane.AddComponent<DryPlane>().Mesh = mesh;
             Undo.RegisterCreatedObjectUndo(cover, "Generate rain cover");
-            Debug.Log($"[Tarkov SDK] Rain cover: {covered} covered cell(s) of {CellSize} m, {vertices.Count / 4} dry plane quad(s), mesh saved to {path}");
             return cover;
         }
 

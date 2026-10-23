@@ -62,6 +62,8 @@ namespace TarkovSDK.Editor
                 for (int i = 0; i < scenePaths.Count; i++)
                     scenes.Add(EditorSceneManager.OpenScene(scenePaths[i], i == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive));
 
+                // before Prepare, which sizes indoor triggers and checks the rain cover
+                TarkovIndoorMap.Apply(def, scenes, report);
                 for (int i = 0; i < scenes.Count; i++)
                     TarkovScenePreparer.Prepare(scenes[i], i == 0, report);
 

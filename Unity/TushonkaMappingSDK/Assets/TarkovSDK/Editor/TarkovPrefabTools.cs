@@ -55,24 +55,26 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ door
 
-        public static Door CreateDoor(Transform parent, float width, float height)
+        // hingeRight puts the hinge on the right edge (seen from -Z); reverseSwing opens it the other way
+        public static Door CreateDoor(Transform parent, float width, float height, float thickness = 0.05f, bool hingeRight = false, bool reverseSwing = false)
         {
             var root = new GameObject("Door");
             if (parent != null)
                 root.transform.SetParent(parent, false);
+            float side = hingeRight ? -1f : 1f; // the leaf extends along +X from a left hinge, -X from a right one
 
-            // the leaf rotates around its own Y axis at the hinge (its left edge)
+            // the leaf rotates around its own Y axis at the hinge
             var leaf = new GameObject("DoorLeaf") { layer = LayerMask.NameToLayer("Interactive") };
             leaf.transform.SetParent(root.transform, false);
-            leaf.transform.localPosition = new Vector3(-width * 0.5f, 0f, 0f);
+            leaf.transform.localPosition = new Vector3(-side * width * 0.5f, 0f, 0f);
 
             var interaction = leaf.AddComponent<BoxCollider>();
             interaction.isTrigger = true;
-            interaction.center = new Vector3(width * 0.55f, height * 0.5f, 0f);
-            interaction.size = new Vector3(width * 0.7f, 1.2f, 0.3f);
+            interaction.center = new Vector3(side * width * 0.55f, height * 0.5f, 0f);
+            interaction.size = new Vector3(width * 0.7f, 1.2f, Mathf.Max(0.3f, thickness + 0.2f));
 
-            var panelSize = new Vector3(width, height, 0.05f);
-            var panelCenter = new Vector3(width * 0.5f, height * 0.5f, 0f);
+            var panelSize = new Vector3(width, height, thickness);
+            var panelCenter = new Vector3(side * width * 0.5f, height * 0.5f, 0f);
 
             var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
             visual.name = "Panel (replace with your model)";
@@ -92,13 +94,14 @@ namespace TarkovSDK.Editor
 
             var handle = new GameObject("Handle");
             handle.transform.SetParent(leaf.transform, false);
-            handle.transform.localPosition = new Vector3(width * 0.88f, 1.0f, 0f);
+            handle.transform.localPosition = new Vector3(side * width * 0.88f, 1.0f, 0f);
             var doorHandle = handle.AddComponent<DoorHandle>();
 
             var door = leaf.AddComponent<Door>();
             door.DoorAxis = WorldInteractiveObject.EDoorAxis.Y;
             door.DoorForward = WorldInteractiveObject.EDoorAxis.Z;
-            door.OpenAngle = 95f;
+            // positive swings a left-hinged leaf towards -Z; a right hinge needs the opposite to swing the same way
+            door.OpenAngle = 95f * side * (reverseSwing ? -1f : 1f);
             door.CloseAngle = 0f;
             door._doorState = EDoorState.Shut;
             door.Snap = EDoorState.Locked | EDoorState.Shut;
@@ -107,9 +110,9 @@ namespace TarkovSDK.Editor
             door.CanInteractWithBreach = true;
             door._handle = doorHandle;
             // where the player stands on either side, and what they look at, in the leaf's space
-            door.interactPosition1 = new Vector3(width * 0.55f, 0f, -0.8f);
-            door.interactPosition2 = new Vector3(width * 0.55f, 0f, 0.8f);
-            door.viewTarget1 = new Vector3(width * 0.88f, 1.0f, 0f);
+            door.interactPosition1 = new Vector3(side * width * 0.55f, 0f, -0.8f);
+            door.interactPosition2 = new Vector3(side * width * 0.55f, 0f, 0.8f);
+            door.viewTarget1 = new Vector3(side * width * 0.88f, 1.0f, 0f);
             door.KickCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
             // Id is assigned when the map is built
             return door;
@@ -212,7 +215,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Collision/Add Low + High Poly Colliders To Selected", priority = 302)]
+        [MenuItem("Tarkov SDK/Tools/Add Low + High Poly Colliders To Selected", priority = 242)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

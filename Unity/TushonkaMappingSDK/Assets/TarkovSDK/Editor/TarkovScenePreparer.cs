@@ -169,7 +169,7 @@ namespace TarkovSDK.Editor
                 }
                 if (full && TarkovRainCover.Find(scene) == null)
                     report.Warnings.Add($"{scene.name}: no rain cover, so rain falls on the screen indoors too " +
-                                        "(Tarkov SDK > Map > Generate Rain Cover)");
+                                        "(Tarkov SDK > Tools > Generate Rain Cover)");
                 if (full && TarkovWeatherBuilder.Find(scene).activeSelf)
                 {
                     // the client activates it after swapping its shaders; active, it would wake on stand-ins
@@ -489,11 +489,11 @@ namespace TarkovSDK.Editor
             if (defaultLayer.Count > 0)
                 report.Warnings.Add($"{scene.name}: {defaultLayer.Count} solid collider(s) on the Default layer; bullets and bots ignore them " +
                                     $"({Names(defaultLayer)}). Use Terrain, or LowPolyCollider (movement) + HighPolyCollider (bullets, AI sight); " +
-                                    "Tarkov SDK > Collision > Make Selected Static Geometry does this");
+                                    "Tarkov SDK > Tools > Make Selected Static Geometry does this");
             if (missingBallistic.Count > 0)
                 report.Warnings.Add($"{scene.name}: {missingBallistic.Count} HighPolyCollider/Terrain collider(s) without a BallisticCollider " +
                                     $"({Names(missingBallistic)}); the game reads surface material and penetration from it. " +
-                                    "Tarkov SDK > Collision > Add BallisticCollider To Selected Colliders");
+                                    "Tarkov SDK > Tools > Add BallisticCollider To Selected Colliders");
         }
 
         private static string PathOf(Transform t)

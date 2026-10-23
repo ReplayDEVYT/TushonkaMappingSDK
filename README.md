@@ -8,7 +8,7 @@ SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_expo
 ```
 
 **Author:** mizmii
-**Version:** 1.0.0
+**Version:** 1.2.0
 **SPT Version:** 4.1.6 (client Unity 2022.3.43f1)
 **License:** Unlicense
 
@@ -73,7 +73,7 @@ The game finds geometry by layer. Solid colliders on `Default` are ignored by bu
 | Bullets and AI sight only | `HighPolyCollider` |
 | Spawn points, exfils, other triggers | `Triggers` |
 
-Add a `BallisticCollider` to every collider on `Terrain` or `HighPolyCollider`; the game reads surface material and penetration from it. **Tarkov SDK > Collision** sets layers and adds these components for the selection.
+Add a `BallisticCollider` to every collider on `Terrain` or `HighPolyCollider`; the game reads surface material and penetration from it. **Tarkov SDK > Tools** sets layers and adds these components for the selection.
 
 ### Components
 
@@ -86,17 +86,21 @@ All game components are under `Assets/TarkovSDK/GameStubs`. They contain only th
   - **Full weather system** (`SDK_Weather`): Customs' `TOD_Sky` sky dome, `WeatherController`, clouds, wind, rain and snow, driven by the server's weather and season. Its values come from your own game: the window's **Extract From Game** runs `Tools/WeatherExtract/extract_weather.py` (Python with `pip install UnityPy TypeTreeGeneratorAPI`), which writes `Assets/TarkovSDK/Weather/Extracted/`. That folder and the generated materials are gitignored and never shipped with the SDK. The root is saved inactive; the client swaps its stand-in shaders for the game's and then activates it. It also sets LevelSettings like Customs: no skybox, the TOD sky supplies the ambient light.
   - **Freeze Time** (both modes) keeps the time at the raid's start time for the whole raid.
   - **Fog** (full mode): the world fog follows the raid's weather, from the map's own density up to thick fog. The game's volumetric (MBOIT) weather fog only exists on Shoreline and Labyrinth: it needs a renderer whose shaders ship only in Shoreline's scene files, so SDK maps, like Customs or Woods, don't have it. For local volumetric-looking fog, place **Fog Volumes**.
-  - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Map**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
+  - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Tools**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
 - **SpawnPointMarker**: set `Sides`, `Categories` and, for PMC player spawns, `Infiltration` (the entry point name). Place it under a BotZone to assign it to that zone.
 - **BotZone**: its GameObject name is the zone name used by `waves` and `OpenZones` in `base.json`.
 - **PatrolWay** with child **PatrolPoint**s: an authored bot route. Zones without one get a generated route.
 - **ExfiltrationPoint**: needs a trigger collider. `Settings.Name` becomes the exit name; `Settings.EntryPoints` lists which infiltrations may use it.
 - **Door**, **LootableContainer**, **Switch**, etc. are available. The builder assigns missing ids.
 
+### Indoor maps
+
+Tick **Entirely Indoors** on the Map Definition for a map with no outside, like Labs. **Build Map** then covers the whole map with one indoor trigger (`SDK_WholeMapIndoor`: indoor sound, exposure, rain only heard muffled), gives the simple time of day Labs' indoor lighting (`TODSkySimple._forceIndoor` 1, `TodLightSetter._forceIndoorIntensity` 0.5), and with the full weather system puts a rain cover over everything, so rain never falls on the screen. Unticking it removes the trigger and restores the sky's outdoor values on the next build.
+
 ### Indoor areas and transits
 
 - **GameObject > Tarkov SDK > Indoor Trigger Group** adds a group (for example one per building) under the map's root trigger group, or inside the group you right-click. The game tests a group's bounds before its triggers.
-- **Tarkov SDK > Map > Generate Indoor Triggers** (also in the **Ambient Sounds** window) places indoor triggers for the whole map. It scans from above like the rain cover, on every storey, and treats a space as a room when it has a ceiling (seen from inside, so the ground over a basement never counts) with head room and walls on most sides; carports, overhangs and bridges stay outdoors. Each room is covered with one trigger box, or a few for an L-shaped room, with one trigger group per building, under `GeneratedIndoorTriggers`. Only real geometry counts: objects tagged **EditorOnly** (or under one) and colliders without a mesh, like invisible blockers, are ignored. Regenerating replaces only that group; hand-placed triggers are kept, and areas they cover are skipped. Check the result in the Scene view and fix odd boxes by hand.
+- **Tarkov SDK > Tools > Generate Indoor Triggers** (also in the **Ambient Sounds** window) places indoor triggers for the whole map. It scans from above like the rain cover, on every storey, and treats a space as a room when it has a ceiling (seen from inside, so the ground over a basement never counts) with head room and walls on most sides; carports, overhangs and bridges stay outdoors. Each room is covered with one trigger box, or a few for an L-shaped room, with one trigger group per building, under `GeneratedIndoorTriggers`. Only real geometry counts: objects tagged **EditorOnly** (or under one) and colliders without a mesh, like invisible blockers, are ignored. Regenerating replaces only that group; hand-placed triggers are kept, and areas they cover are skipped. Check the result in the Scene view and fix odd boxes by hand.
 - **GameObject > Tarkov SDK > Indoor Trigger** marks an interior (indoor audio, exposure, rain volume). The trigger is its own box: scale the object to cover the room. The SDK creates it under an `IndoorTriggers` TriggerGroup inside the EnvironmentManager, where the game looks for it, and computes its bounds at build. Keep triggers in that group.
 - **GameObject > Tarkov SDK > Transit Point** adds a transit to another map: a trigger box with a unique `id`. Set `parameters.location` to the destination's map id (`bigmap`, `Woods`, or a custom map's id); the server mod fills in its `_Id` (`target`). Use **Edit Server Data > Add Missing Locale Keys** to give the transit its displayed name.
 
@@ -114,8 +118,12 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
 
 - **GameObject > Tarkov SDK > Door** adds a working door laid out like retail ones: the leaf pivots at its hinge on the Interactive layer, with an interaction trigger, a high poly collider (bullets, wood) and a door low poly collider (movement). Replace the placeholder panel with your model and resize the colliders to match.
 - **GameObject > Tarkov SDK > Lootable Container** adds a searchable wooden crate on the Interactive layer, with high and low poly colliders and a placeholder model to replace. `Template` sets the container type (an item template id; it starts as the Wooden crate). The server mod doesn't spawn loot in containers yet, so they open empty.
+- **Tarkov SDK > Tools > Interactive Object Builder...** makes a working **Door**, **Lamp**, **Lootable Container** or **Switch** from your own model: pick the model (a model or prefab asset, or a scene object), an optional material override, the bullet material and impact sound, and the sounds. The object is fitted to the model's bounds (door width and thickness, collider sizes, light position) and can also be saved as a prefab. Doors take a hinge side, swing direction and an optional key (the door then starts locked); containers a container type; switches a door and a lamp to operate. Lamps take the light's type, colour, intensity and range, night-only, a lens flare, turn on/off/hum/flicker sounds, and an **On / Off Look**:
+  - **Swap Materials**: two copies of the model with an On and an Off material; the lamp shows one or the other. Works with any shader.
+  - **Fade Emission**: the lamp fades `_EmissionVisibility`, with flicker. Needs the game's emissive shader, `Tarkov/p0/Reflective/Bumped Emissive Specular SMap`.
+  - **Emission Color**: the lamp sets a colour property (e.g. `_EmissionColor`) to an On or Off colour.
 - **GameObject > Tarkov SDK > Switch** adds a switch. Right-click a door to make a switch that opens it; otherwise set its `Door` or `Lamps`.
-- **Tarkov SDK > Collision > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
+- **Tarkov SDK > Tools > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
 
 ### Bots, spawns and loot
 
@@ -132,7 +140,7 @@ The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 
 ### Keeping bots out of an area
 
-Bots path only on the navmesh, and the client generates their cover points and patrols from it. To block an area, use **GameObject > Tarkov SDK > Nav Blocker**: a translucent red box set to the **Not Walkable** navigation area, with no collider and the **EditorOnly** tag, so it cuts the navmesh but never ships with the map. Scale it over the area, then rebake with **Tarkov SDK > Map > Bake NavMesh For Active Scene**. To block a whole object instead, set its **Navigation Area** to **Not Walkable** in the Navigation window; to make bots avoid an area without forbidding it, use **Danger**.
+Bots path only on the navmesh, and the client generates their cover points and patrols from it. To block an area, use **GameObject > Tarkov SDK > Nav Blocker**: a translucent red box set to the **Not Walkable** navigation area, with no collider and the **EditorOnly** tag, so it cuts the navmesh but never ships with the map. Scale it over the area, then rebake with **Tarkov SDK > Tools > Bake NavMesh For Active Scene**. To block a whole object instead, set its **Navigation Area** to **Not Walkable** in the Navigation window; to make bots avoid an area without forbidding it, use **Danger**.
 
 ### Lights
 
@@ -167,7 +175,7 @@ The skeleton's ground and cover blocks use `Assets/TarkovSDK/Materials/SDK_Defau
 
 ### Importing models
 
-**Tarkov SDK > Model > Convert Selected Model For Tarkov** turns an imported model (GLB/glTF, FBX, OBJ, such as a Source map exported from Blender) into map geometry. Select its object in the scene, or the model file in the Project window to place it first. It:
+**Tarkov SDK > Tools > Convert Selected Model For Tarkov** turns an imported model (GLB/glTF, FBX, OBJ, such as a Source map exported from Blender) into map geometry. Select its object in the scene, or the model file in the Project window to place it first. It:
 
 - replaces every material with one on a Tarkov stand-in shader, saved in a `Materials` folder next to the model; textures, colours and tiling carry over, and alpha-blended materials become cutout
 - adds a MeshCollider, the Terrain layer, static flags and a BallisticCollider to every mesh, with the surface type guessed from the material name (metal, grass, glass, wood ...)

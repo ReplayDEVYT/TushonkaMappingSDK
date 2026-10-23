@@ -34,7 +34,7 @@ namespace TarkovSDK.Editor
         private static readonly string[] ToolCollisionNames = { "toolsskybox", "toolsclip", "toolsplayerclip", "toolsinvisible", "toolsblack", "toolsblock" };
         private static readonly string[] ToolHiddenNames = { "toolsnodraw", "toolstrigger", "toolshint", "toolsskip", "toolsareaportal", "toolsoccluder", "toolsfog", "toolsnpcclip" };
 
-        [MenuItem("Tarkov SDK/Model/Convert Selected Model For Tarkov", priority = 200)]
+        [MenuItem("Tarkov SDK/Tools/Convert Selected Model For Tarkov", priority = 201)]
         private static void ConvertSelectedMenu()
         {
             var roots = new List<GameObject>();
