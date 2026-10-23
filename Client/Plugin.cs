@@ -4,10 +4,11 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using mizmii.CustomMapLoader.AI;
 using mizmii.CustomMapLoader.Loading;
+using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.3.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.4.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -37,6 +38,7 @@ namespace mizmii.CustomMapLoader
                 LogSource.LogInfo($"Custom maps: {string.Join(", ", MapRegistry.MapIds)}");
             }
 
+            MenuConfig.Load();
             ShaderSwap.Install();
             Diagnostics.RaidDiagnostics.Install();
             Enable(new BundleHostPatch());
@@ -53,6 +55,11 @@ namespace mizmii.CustomMapLoader
             Enable(new PhysicsPropAwakePatch());
             Enable(new PhysicsPropPushPatch());
             Enable(new MboitFogTimePatch());
+            Enable(new TimeSelectionLocationsPatch());
+            Enable(new KeepSelectedTimePatch());
+            Enable(new MapSelectShowPatch());
+            Enable(new DisplayLocationPatch());
+            Enable(new LocationIconPatch());
             Enable(new WeatherFogDensityPatch());
             Enable(new Diagnostics.BotActivationDiagnostics());
             Enable(new CameraEffectsPatch());

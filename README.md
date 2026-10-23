@@ -8,7 +8,7 @@ SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_expo
 ```
 
 **Author:** mizmii
-**Version:** 1.3.0
+**Version:** 1.4.0
 **SPT Version:** 4.1.6 (client Unity 2022.3.43f1)
 **License:** Unlicense
 
@@ -132,7 +132,8 @@ SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, 
 
 The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 
-- **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, locale keys, and the map select icon position, with a preview of the map select screen showing where this map's button sits among the retail maps' (click it to move the button; `IconX`/`IconY` are thousandths of the map picture from its bottom-left corner).
+- **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, and locale keys.
+- **Map Select**: how the map shows on the map select and loading screens; see [Map select and loading screens](#map-select-and-loading-screens).
 - **Access**: whether the map is enabled, locked or insured, the PMC level range, scav raids on or off, group sizes, and **required items** (`AccessKeys`, like the Labs keycard), searched by name from the SPT item database or added by template id. The list is written to `AccessKeysPvE` too unless **Same In PvE** is off.
 - **Bots**: bot limits and the scav mix, open zones, **waves** (bot type, difficulty, count, time and zones picked from the scene's bot zones) and **boss spawns** (boss, chance, escorts, zones). These are `base.json` values; restart the SPT server after saving.
 - **Spawns**: every spawn point in the open scenes, with buttons to add player and bot spawns.
@@ -140,6 +141,28 @@ The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 - **JSON**: the whole `base.json` as text, including the other tabs' unsaved changes, for values no tab covers. **Apply** checks the JSON and passes the edits to the other tabs; leaving the tab or pressing **Save** applies them too, and broken JSON is never saved.
 
 **GameObject > Tarkov SDK > Loot Spawn** places a loose loot spot. Search items by name in its inspector (it reads the SPT install's item database), weight them, and set a chance or **Always Spawn**. Loot spawns are editor-only; **Build Map** exports them and the server builds the map's loose loot from them.
+
+### Map select and loading screens
+
+The Server Data Editor's **Map Select** tab sets everything about the map's place on the map select screen. Its settings are saved to the map's `menu.json`, and its pictures are copied into the map's `images/` folder. Pictures must be **PNG or JPG** files in the project: the game loads them from the SPT server as they are. Restart the SPT server after saving.
+
+- **Map Pack**: the page the map sits on. **Tarkov (no pack)** puts it on the normal map select screen, among the retail maps.
+- **Icon X / Icon Y**: where the map's button sits, in thousandths of the page's picture from its bottom-left corner. The preview shows the page: on Tarkov's page, the retail maps (grey) and your other custom maps (blue); on a pack's page, its background and the pack's other maps. Click or drag in it to move the button. Lines show this map's connections.
+- **Time Selection**: players pick the raid's time in the bar under the map: now, or 12 hours later. Retail maps all have it except Labs. Off, the raid always starts at the current time.
+- **Location Icon**: replaces the white dot on the map's button. Use a PNG with transparency; it is drawn 49x49. When empty, the map uses its pack's icon, or else the game's dot.
+- **Preview**: the picture in the location panel when the map is selected, which is otherwise the game's Factory placeholder. It is also the first loading screen banner. Retail ones are 764x460.
+- **Loading Screen Banners**: more pictures the loading screen cycles through while the raid loads, each with a title (the map's name if empty) and a description.
+- **Connections**: the dotted lines from this map to other locations, like the game's routes between maps. A line only shows when both ends are on the same page. Transits (**GameObject > Tarkov SDK > Transit**) are what actually move players between maps.
+
+#### Map packs
+
+A map pack is an extra page of the map select screen with its own background, for maps that aren't in Tarkov or that belong together. Players turn the pages with the **PREVIOUS** and **NEXT** buttons at the far left and right of the bottom button row, which show once at least one pack is installed. Tarkov's own page is always first, and a map without a pack stays on it.
+
+1. **Tarkov SDK > Map > New Map Pack...** asks where to save a pack and selects it. Set its **Pack Id** (lowercase, used as its folder name), the **Display Name** shown under SELECT LOCATION while its page is open, an **Order** among the other packs, and a **Background** picture to replace the Tarkov map. Tarkov's is 800x800, but any shape works: the game fits it into the map area. An optional **Location Icon** replaces the dot on all the pack's maps that have none of their own.
+2. On each of its maps, pick the pack in the Server Data Editor's **Map Select** tab and place the map's button on the background.
+3. **Build Map** deploys the pack along with the map and puts it in the map's package. **Deploy To SPT** in the pack's inspector deploys it alone, to `SPT_Runtime/user/mods/CustomMapLoader/packs/<Pack Id>/`.
+
+A map whose pack isn't installed shows on Tarkov's page.
 
 ### Keeping bots out of an area
 
@@ -196,15 +219,15 @@ The **Build Map** button:
 2. writes `Assets/TarkovSDK/Generated/<id>/<id>.ScenesPreset.asset`;
 3. builds `maps/<id>.bundle` and `maps/<id>_scenes.bundle` into `Build/`;
 4. writes `Build/maps/<id>/sdk_export.json`;
-5. if **Deploy To Game** is ticked, copies the bundles to `BepInEx/plugins/CustomMapLoader/bundles/maps/` and the export to `SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/`. These folders are fixed; the build warns if CustomMapLoader itself isn't installed there.
+5. if **Deploy To Game** is ticked, copies the bundles to `BepInEx/plugins/CustomMapLoader/bundles/maps/` and the export to `SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/`, and deploys the map's pack if it is in the project. These folders are fixed; the build warns if CustomMapLoader itself isn't installed there.
 
 Restart the SPT server after a build, because it reads `sdk_export.json` at startup. Warnings and errors from the build appear in the Unity console.
 
 ### Sharing a map
 
-**Create Package** (on by default) writes `<Output Folder>/<MapId>.zip`: the map bundles, `base.json`, `locale.json`, `sdk_export.json` and a short readme, laid out like an SPT install. It contains no DLLs. Players install CustomMapLoader once, then extract map packages into their SPT folder.
+**Create Package** (on by default) writes `<Output Folder>/<MapId>.zip`: the map bundles, `base.json`, `locale.json`, `sdk_export.json`, the map select settings and pictures (`menu.json`, `images/`), the map's pack if it has one, and a short readme, all laid out like an SPT install. It contains no DLLs. Players install CustomMapLoader once, then extract map packages into their SPT folder.
 
-`base.json` and `locale.json` are taken from the SPT install the definition deploys to, so set them up with **Edit Server Data** first.
+The server files are taken from the SPT install the definition deploys to, so set them up with **Edit Server Data** first.
 
 ## Updating the stubs
 

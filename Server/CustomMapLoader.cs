@@ -8,6 +8,7 @@ using SPTarkov.Server.Core.Models.Eft.Common;
 using Upd = SPTarkov.Server.Core.Models.Eft.Common.Tables.Upd;
 using SPTarkov.Server.Core.Models.Spt.Config;
 using SPTarkov.Server.Core.Models.Spt.Tables;
+using SPTarkov.Server.Core.Routers;
 using SPTarkov.Server.Core.Utils;
 using SPTarkov.Server.Core.Utils.Cloners;
 using SPTarkov.Server.Core.Utils.Json;
@@ -19,6 +20,7 @@ namespace mizmii.CustomMapLoader;
 //   base.json         location settings (copy maps/sdk_example/base.json as a template)
 //   sdk_export.json   written by the Unity SDK build: spawn points, exits, export timestamp
 //   locale.json       optional: { "Name": "...", "Description": "...", "Keys": { "<key>": "<text>" } }
+//   menu.json         optional: map select screen settings and pictures (see MapMenu.cs)
 //
 // SPT 4.1's LocationTable.GetDictionary() returns the live dictionary that GetLocation and the
 // client's location list read, so adding an entry is enough to make the map selectable.
@@ -32,8 +34,13 @@ public class CustomMapLoader(
     PmcConfig pmcConfig,
     ICloner cloner,
     JsonUtil jsonUtil,
+    ImageRouter imageRouter,
+    MapMenuData menuData,
     ISptLogger<CustomMapLoader> logger) : IOnLoad
 {
+    // map id -> location ids it connects to on the map select screen, resolved once every map is in
+    private readonly Dictionary<string, List<string>> _connections = new(StringComparer.OrdinalIgnoreCase);
+
     // loot pools and ammo are borrowed from this map until a map ships its own
     private const string DonorLocation = "factory4_day";
 
@@ -60,9 +67,79 @@ public class CustomMapLoader(
             }
         }
 
-        // after every map is registered, so a transit can lead to another custom map
+        // after every map is registered, so a transit or connection can lead to another custom map
         foreach (var dir in Directory.GetDirectories(mapsDir))
             ResolveTransitTargets(Path.GetFileName(dir));
+        AddConnections();
+        await LoadPacks(Path.Combine(modDir, "packs"), cancellationToken);
+    }
+
+    // Map packs: extra pages of the map select screen, each with its own background
+    private async Task LoadPacks(string packsDir, CancellationToken cancellationToken)
+    {
+        var packs = menuData.Response.Packs;
+        if (Directory.Exists(packsDir))
+            foreach (var dir in Directory.GetDirectories(packsDir))
+            {
+                var id = Path.GetFileName(dir).ToLowerInvariant();
+                var path = Path.Combine(dir, "pack.json");
+                if (!File.Exists(path))
+                    continue;
+                try
+                {
+                    var pack = await jsonUtil.DeserializeFromFileAsync<MapPackFile>(path, cancellationToken)
+                               ?? throw new InvalidDataException("pack.json could not be parsed");
+                    var background = MenuImages.Register(imageRouter, dir, $"packs/{id}", pack.Background);
+                    if (background == null)
+                        logger.Warning($"[MappingSDK] Map pack '{id}' has no background picture; it shows Tarkov's map");
+                    packs.Add(new MenuPack
+                    {
+                        Id = id,
+                        Name = string.IsNullOrWhiteSpace(pack.Name) ? id : pack.Name,
+                        Order = pack.Order,
+                        Background = background,
+                        Icon = MenuImages.Register(imageRouter, dir, $"packs/{id}", pack.Icon),
+                    });
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    logger.Error($"[MappingSDK] Map pack in {dir} was not loaded: {e.Message}");
+                }
+            }
+        packs.Sort((a, b) => a.Order != b.Order ? a.Order.CompareTo(b.Order) : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var (mapId, map) in menuData.Response.Maps)
+            if (!string.IsNullOrEmpty(map.Pack) && packs.All(p => p.Id != map.Pack))
+                logger.Warning($"[MappingSDK] {mapId}: map pack '{map.Pack}' is not installed, so the map shows on Tarkov's page");
+        if (packs.Count > 0)
+            logger.Success($"[MappingSDK] Map packs: {string.Join(", ", packs.Select(p => p.Name))}");
+    }
+
+    // A map's connections draw the dotted lines between locations on the map select screen, like
+    // retail's (LocationsBase.Paths, by _Id). Only lines between locations on the same page show.
+    private void AddConnections()
+    {
+        var locations = locationTable.GetDictionary();
+        var paths = locationTable.Base!.Paths ??= [];
+        foreach (var (mapId, targets) in _connections)
+        {
+            if (!locations.TryGetValue(mapId, out var source) || source?.Base == null)
+                continue;
+            foreach (var target in targets)
+            {
+                var destination = locations.Values.FirstOrDefault(l =>
+                    l?.Base != null && string.Equals(l.Base.Id, target, StringComparison.OrdinalIgnoreCase));
+                if (destination == null)
+                {
+                    logger.Warning($"[MappingSDK] {mapId}: connection to unknown location '{target}' skipped");
+                    continue;
+                }
+                string from = source.Base.IdField.ToString(), to = destination.Base!.IdField.ToString();
+                if (from == to || paths.Any(p => p.Source == from && p.Destination == to && p.Event != true))
+                    continue;
+                paths.Add(new SPTarkov.Server.Core.Models.Eft.Common.Tables.Path { Source = from, Destination = to, Event = false });
+            }
+        }
     }
 
     // The SDK exports a transit's destination as "location" (a map id); the game also needs
@@ -110,8 +187,13 @@ public class CustomMapLoader(
             Path = $"maps/{mapId}.bundle",
             Rcid = $"{mapId}.scenespreset.asset",
         };
-        // retail banner rows point at files nothing serves; the client then shows an empty error
+        // retail banner rows point at files nothing serves; the client then shows an empty error.
+        // The map's own pictures come from menu.json.
         locationBase.Banners = [];
+        var menuPath = Path.Combine(dir, "menu.json");
+        var menu = File.Exists(menuPath)
+            ? await jsonUtil.DeserializeFromFileAsync<MapMenuFile>(menuPath, cancellationToken)
+            : null;
         // ServerAirdropManager.Init reads AirdropParameters[0] unconditionally at raid start, and an
         // explicit [] replaces the client's one-entry default, so an empty list fails the raid load
         if (locationBase.AirdropParameters is not { Count: > 0 })
@@ -158,11 +240,56 @@ public class CustomMapLoader(
 
         locationTable.GetDictionary().Add(mapId, location);
         ConfigureLocation(mapId);
-        await RegisterLocales(dir, locationBase, cancellationToken);
+        var bannerTexts = ApplyMenu(dir, mapId, locationBase, menu);
+        await RegisterLocales(dir, locationBase, bannerTexts, cancellationToken);
 
         logger.Success($"[MappingSDK] Registered map '{mapId}' ({locationBase.IdField}): " +
                        $"{locationBase.SpawnPointParams?.Count() ?? 0} spawn point(s), {locationBase.Exits?.Count() ?? 0} exit(s), " +
                        $"{lootSpawns.Count} loot spawn(s)");
+    }
+
+    // menu.json's pictures as the location's banners: the preview first (the map select screen's
+    // info panel shows Banners[0]), then the loading screen banners (the loading screen cycles
+    // through all of them). Returns each banner's title and description; null ones take the map's.
+    private List<(string Id, string? Name, string? Description)> ApplyMenu(string dir, string mapId, LocationBase locationBase, MapMenuFile? menu)
+    {
+        var texts = new List<(string, string?, string?)>();
+        if (menu == null)
+            return texts;
+        var images = Path.Combine(dir, "images");
+        var banners = new List<Banner>();
+        void Add(string? file, string? name, string? description)
+        {
+            var path = MenuImages.Register(imageRouter, images, mapId, file);
+            if (path == null)
+            {
+                if (!string.IsNullOrWhiteSpace(file))
+                    logger.Warning($"[MappingSDK] {mapId}: picture images/{file} is missing");
+                return;
+            }
+            // the client reads "<id> Name" / "<id> Description" from locales
+            var id = $"{locationBase.IdField}_banner{banners.Count}";
+            banners.Add(new Banner
+            {
+                Id = id,
+                Picture = new Pic { File = Path.GetFileName(path), Path = path, Rcid = "", Type = "banners" },
+            });
+            texts.Add((id, name, description));
+        }
+        Add(menu.Preview, null, null);
+        foreach (var banner in menu.Banners ?? [])
+            Add(banner.Image, string.IsNullOrWhiteSpace(banner.Name) ? null : banner.Name, banner.Description ?? "");
+        locationBase.Banners = banners;
+
+        if (menu.Connections is { Count: > 0 })
+            _connections[mapId] = menu.Connections;
+        menuData.Response.Maps[mapId] = new MenuMap
+        {
+            Pack = string.IsNullOrWhiteSpace(menu.Pack) ? null : menu.Pack.ToLowerInvariant(),
+            TimeSelection = menu.TimeSelection,
+            Icon = MenuImages.Register(imageRouter, images, mapId, menu.Icon),
+        };
+        return texts;
     }
 
     // SDK loot spawns as SPT loose loot, in retail's layout: every candidate item is a root item in
@@ -287,7 +414,8 @@ public class CustomMapLoader(
     }
 
     // the map select screen reads "<_Id> Name" / "<_Id> Description" from locales, not base.json
-    private async Task RegisterLocales(string dir, LocationBase locationBase, CancellationToken cancellationToken)
+    private async Task RegisterLocales(string dir, LocationBase locationBase, List<(string Id, string? Name, string? Description)> banners,
+                                       CancellationToken cancellationToken)
     {
         var path = Path.Combine(dir, "locale.json");
         var locale = File.Exists(path)
@@ -307,6 +435,11 @@ public class CustomMapLoader(
                 entries[$"{id} Name"] = name;
                 entries[$"{id} Description"] = description;
                 entries[locationBase.Id] = name;
+                foreach (var banner in banners)
+                {
+                    entries[$"{banner.Id} Name"] = banner.Name ?? name;
+                    entries[$"{banner.Id} Description"] = banner.Description ?? description;
+                }
                 if (locale?.Keys != null)
                     foreach (var (key, text) in locale.Keys)
                         entries[key] = text;

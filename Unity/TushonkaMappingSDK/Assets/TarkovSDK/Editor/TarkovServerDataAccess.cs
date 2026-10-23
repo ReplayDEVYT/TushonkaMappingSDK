@@ -10,7 +10,7 @@ using UnityEngine;
 namespace TarkovSDK.Editor
 {
     // _Id, raid time and the Access tab of the Server Data Editor: who may enter the map
-    // (PMC level range, scav raids, required items) and how it shows on the map select screen.
+    // (PMC level range, scav raids, required items).
     public partial class TarkovServerDataWindow
     {
         private string _mongoId = "";
@@ -42,11 +42,11 @@ namespace TarkovSDK.Editor
         }
 
         // _Ids of every other custom map next to this one and every retail location in the SPT install,
-        // and where each enabled one puts its button on the map select screen
+        // and how each shows on the map select screen (for the Map Select tab)
         private void LoadUsedIds()
         {
             _usedIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            _mapIcons = new List<(string, Vector2, bool)>();
+            _others = new List<(string, string, Vector2, bool, bool, string)>();
             var dirs = new List<string>();
             var modMaps = Path.GetDirectoryName(MapDir);
             if (Directory.Exists(modMaps))
@@ -70,9 +70,15 @@ namespace TarkovSDK.Editor
                         _usedIds[id] = folder;
                     int x = data.Value<int?>("IconX") ?? 0, y = data.Value<int?>("IconY") ?? 0;
                     bool custom = NormalizePath(Path.GetDirectoryName(dir)) == NormalizePath(modMaps);
-                    // sandbox_high shares Ground Zero's button
-                    if ((data.Value<bool?>("Enabled") ?? false) && (x != 0 || y != 0) && folder != "sandbox_high")
-                        _mapIcons.Add((RetailNames.TryGetValue(folder, out var name) ? name : folder, new Vector2(x, y), custom));
+                    var locationId = data.Value<string>("Id");
+                    // sandbox_high shares Ground Zero's button, factory4_night Factory's; hideout isn't a raid
+                    if (string.IsNullOrEmpty(locationId) || folder == "sandbox_high" || folder == "factory4_night" || folder == "hideout")
+                        continue;
+                    string name = RetailNames.TryGetValue(folder, out var retailName) ? retailName : folder;
+                    if (custom && File.Exists(Path.Combine(dir, "locale.json")))
+                        name = JObject.Parse(File.ReadAllText(Path.Combine(dir, "locale.json"))).Value<string>("Name") ?? folder;
+                    string pack = custom ? TarkovMapBuilder.MenuPackId(dir) ?? "" : "";
+                    _others.Add((locationId, name, new Vector2(x, y), custom, data.Value<bool?>("Enabled") ?? false, pack));
                 }
                 catch (Exception)
                 {
@@ -81,67 +87,17 @@ namespace TarkovSDK.Editor
             }
         }
 
-        // ------------------------------------------------------------ map select icon
+        // ------------------------------------------------------------ other locations
 
-        private List<(string Name, Vector2 Icon, bool Custom)> _mapIcons = new List<(string, Vector2, bool)>();
+        private List<(string Id, string Name, Vector2 Icon, bool Custom, bool Enabled, string Pack)> _others =
+            new List<(string, string, Vector2, bool, bool, string)>();
 
         private static readonly Dictionary<string, string> RetailNames = new Dictionary<string, string>
         {
-            { "bigmap", "Customs" }, { "factory4_day", "Factory" }, { "factory4_night", "Factory (night)" }, { "interchange", "Interchange" },
+            { "bigmap", "Customs" }, { "factory4_day", "Factory" }, { "interchange", "Interchange" },
             { "laboratory", "Labs" }, { "labyrinth", "Labyrinth" }, { "lighthouse", "Lighthouse" }, { "rezervbase", "Reserve" },
             { "sandbox", "Ground Zero" }, { "shoreline", "Shoreline" }, { "tarkovstreets", "Streets" }, { "terminal", "Terminal" }, { "woods", "Woods" },
         };
-
-        // the map select screen in miniature: the game puts each location's button at (IconX, IconY)
-        // thousandths of the map picture, from its bottom-left corner (LocationButton anchors at
-        // Location.RelativeMapPos). Click to move this map's button there.
-        private void DrawIconPreview()
-        {
-            const float size = 260f;
-            Rect rect;
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.FlexibleSpace();
-                rect = GUILayoutUtility.GetRect(size, size, GUILayout.ExpandWidth(false));
-                GUILayout.FlexibleSpace();
-            }
-            EditorGUI.DrawRect(rect, new Color(0.11f, 0.12f, 0.11f));
-            var grid = new Color(1f, 1f, 1f, 0.06f);
-            for (int i = 1; i < 4; i++)
-            {
-                EditorGUI.DrawRect(new Rect(rect.x + rect.width * i / 4f, rect.y, 1f, rect.height), grid);
-                EditorGUI.DrawRect(new Rect(rect.x, rect.y + rect.height * i / 4f, rect.width, 1f), grid);
-            }
-
-            Vector2 ToScreen(Vector2 icon) => new Vector2(rect.x + icon.x / 1000f * rect.width, rect.yMax - icon.y / 1000f * rect.height);
-            var label = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = new Color(0.75f, 0.75f, 0.72f) } };
-            foreach (var (name, icon, custom) in _mapIcons)
-            {
-                var p = ToScreen(icon);
-                EditorGUI.DrawRect(new Rect(p.x - 3f, p.y - 3f, 6f, 6f), custom ? new Color(0.45f, 0.7f, 0.95f) : new Color(0.6f, 0.6f, 0.58f));
-                GUI.Label(new Rect(p.x + 5f, p.y - 8f, 110f, 16f), name, label);
-            }
-
-            // this map's button: a small plate like the game's location buttons
-            var me = ToScreen(new Vector2(_iconX, _iconY));
-            var plate = new Rect(me.x - 9f, me.y - 6f, 18f, 12f);
-            EditorGUI.DrawRect(new Rect(plate.x - 1f, plate.y - 1f, plate.width + 2f, plate.height + 2f), Color.black);
-            EditorGUI.DrawRect(plate, new Color(0.95f, 0.75f, 0.25f));
-            var mine = new GUIStyle(EditorStyles.miniBoldLabel) { normal = { textColor = new Color(0.95f, 0.8f, 0.35f) } };
-            GUI.Label(new Rect(me.x + 11f, me.y - 8f, 140f, 16f), string.IsNullOrEmpty(_name) ? _definition.MapId : _name, mine);
-
-            var e = Event.current;
-            if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0 && rect.Contains(e.mousePosition))
-            {
-                _iconX = Mathf.RoundToInt((e.mousePosition.x - rect.x) / rect.width * 1000f);
-                _iconY = Mathf.RoundToInt((rect.yMax - e.mousePosition.y) / rect.height * 1000f);
-                GUI.changed = true;
-                e.Use();
-            }
-            if (_iconX < 0 || _iconX > 1000 || _iconY < 0 || _iconY > 1000)
-                EditorGUILayout.HelpBox("Off the map picture: the button won't be visible. Keep both between 0 and 1000.", MessageType.Warning);
-            EditorGUILayout.LabelField("Grey: retail maps. Blue: your other custom maps. Click to move this map's button.", EditorStyles.centeredGreyMiniLabel);
-        }
 
         private string NewMongoId()
         {

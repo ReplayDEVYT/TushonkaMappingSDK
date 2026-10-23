@@ -270,6 +270,18 @@ namespace TarkovSDK.Editor
             if (!File.Exists(Path.Combine(serverMapDir, "base.json")))
                 Debug.LogWarning($"[Tarkov SDK] {serverMapDir} has no base.json. Open Edit Server Data on the Map Definition and use Create From sdk_example Template.");
 
+            // the map's pack, when it is made in this project
+            var packId = MenuPackId(serverMapDir);
+            if (packId != null)
+            {
+                var pack = TarkovMapPack.Find(packId);
+                if (pack != null)
+                    pack.Deploy(root);
+                else if (!Directory.Exists(TarkovMapPack.PackDirectory(root, packId)))
+                    Debug.LogWarning($"[Tarkov SDK] '{def.MapId}' is on map pack '{packId}', which is neither in this project nor installed in {root}. " +
+                                     "The map shows on Tarkov's page until the pack is installed.");
+            }
+
             Debug.Log($"[Tarkov SDK] Deployed '{def.MapId}' to {root}. Restart the SPT server to pick up spawn/exfil changes.");
         }
 
@@ -290,6 +302,25 @@ namespace TarkovSDK.Editor
         public static string ServerMapDirectory(TarkovMapDefinition def) =>
             Path.Combine(def.SptRoot, ServerModRelative, "maps", def.MapId);
 
+        public static string ServerModDirectory(string sptRoot) => Path.Combine(sptRoot, ServerModRelative);
+
+        // the pack a map joins in its menu.json, or null
+        public static string MenuPackId(string serverMapDir)
+        {
+            var path = Path.Combine(serverMapDir, "menu.json");
+            if (!File.Exists(path))
+                return null;
+            try
+            {
+                var id = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path)).Value<string>("Pack");
+                return string.IsNullOrWhiteSpace(id) ? null : id.Trim().ToLowerInvariant();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static bool LoaderInstalled(string sptRoot, out string missing)
         {
             var parts = new List<string>();
@@ -304,10 +335,11 @@ namespace TarkovSDK.Editor
         // Writes <output>/<MapId>.zip, laid out like an SPT install so players extract it into theirs:
         //
         //   BepInEx/plugins/CustomMapLoader/bundles/maps/<id>.bundle, <id>_scenes.bundle
-        //   SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_export.json
+        //   SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_export.json, menu.json, images/
+        //   SPT_Runtime/user/mods/CustomMapLoader/packs/<pack>/            the map's pack, if it has one
         //   <id>_README.txt
         //
-        // base.json and locale.json come from the SPT install the definition deploys to.
+        // The server files come from the SPT install the definition deploys to.
         private static void Package(TarkovMapDefinition def, string outDir)
         {
             var staging = Path.Combine(outDir, "package", def.MapId);
@@ -328,13 +360,23 @@ namespace TarkovSDK.Editor
 
             var missing = new List<string>();
             var serverMapDir = ServerMapDirectory(def);
-            foreach (var file in new[] { "base.json", "locale.json" })
+            foreach (var file in new[] { "base.json", "locale.json", "menu.json" })
             {
                 var src = Path.Combine(serverMapDir, file);
                 if (File.Exists(src))
                     File.Copy(src, Path.Combine(mapDir, file), true);
                 else if (file == "base.json")
                     missing.Add("base.json (create it with Edit Server Data)");
+            }
+            CopyFolder(Path.Combine(serverMapDir, "images"), Path.Combine(mapDir, "images"));
+            var packId = MenuPackId(serverMapDir);
+            if (packId != null)
+            {
+                var packDir = TarkovMapPack.PackDirectory(def.SptRoot, packId);
+                if (Directory.Exists(packDir))
+                    CopyFolder(packDir, Path.Combine(staging, ServerModRelative, "packs", packId));
+                else
+                    missing.Add($"map pack '{packId}' (deploy it from its Map Pack asset)");
             }
 
             var zip = Path.Combine(outDir, def.MapId + ".zip");
@@ -346,6 +388,15 @@ namespace TarkovSDK.Editor
                 Debug.LogWarning($"[Tarkov SDK] Package {zip} is incomplete, missing: {string.Join(", ", missing)}");
             else
                 Debug.Log($"[Tarkov SDK] Packaged '{def.MapId}' to {zip}. Extract it into an SPT install folder to play the map.");
+        }
+
+        private static void CopyFolder(string source, string destination)
+        {
+            if (!Directory.Exists(source))
+                return;
+            Directory.CreateDirectory(destination);
+            foreach (var file in Directory.GetFiles(source))
+                File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), true);
         }
     }
 }

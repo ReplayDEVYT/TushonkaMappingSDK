@@ -13,9 +13,10 @@ namespace TarkovSDK.Editor
     // Edits the server-side files of a map in the SPT install the Map Definition deploys to:
     //
     //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/locale.json   name, description, extra keys
-    //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/base.json     ids, raid time, access, bots, icon
+    //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/base.json     ids, raid time, access, bots, button position
+    //   <SptRoot>/SPT_Runtime/user/mods/CustomMapLoader/maps/<MapId>/menu.json     map pack, time selection, pictures, connections
     //
-    // base.json is loaded as a whole and written back with every other value untouched.
+    // base.json and menu.json are loaded as a whole and written back with every other value untouched.
     // The SPT server reads both files at startup, so restart it after saving.
     public partial class TarkovServerDataWindow : EditorWindow
     {
@@ -29,8 +30,8 @@ namespace TarkovSDK.Editor
         private string _loadedFrom;
         private Vector2 _scroll;
         private int _tab;
-        private static readonly string[] Tabs = { "General", "Access", "Bots", "Spawns", "Loot", "JSON" };
-        private const int JsonTab = 5;
+        private static readonly string[] Tabs = { "General", "Map Select", "Access", "Bots", "Spawns", "Loot", "JSON" };
+        private const int JsonTab = 6;
 
         [MenuItem("Tarkov SDK/Map/Server Data Editor", priority = 140)]
         public static void Open() => Open(Selection.activeObject as TarkovMapDefinition);
@@ -90,10 +91,11 @@ namespace TarkovSDK.Editor
             EditorGUI.BeginChangeCheck();
             switch (_tab)
             {
-                case 1: DrawAccess(); break;
-                case 2: DrawBots(); break;
-                case 3: DrawSpawns(); break;
-                case 4: DrawLoot(); break;
+                case 1: DrawMapSelect(); break;
+                case 2: DrawAccess(); break;
+                case 3: DrawBots(); break;
+                case 4: DrawSpawns(); break;
+                case 5: DrawLoot(); break;
                 case JsonTab: DrawJson(); break;
                 default: DrawGeneral(); break;
             }
@@ -167,12 +169,6 @@ namespace TarkovSDK.Editor
                 if (GUILayout.Button(new GUIContent("Add Missing Locale Keys", "Adds the name keys of every exfil and transit in the open scenes that have none yet.")))
                     AddExfilKeys();
             }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Map Select Icon (base.json)", EditorStyles.boldLabel);
-            _iconX = EditorGUILayout.IntField(new GUIContent("Icon X", "Marker position on the map select screen, in pixels."), _iconX);
-            _iconY = EditorGUILayout.IntField("Icon Y", _iconY);
-            DrawIconPreview();
         }
 
         // dialogs and file writes from inside a layout group break IMGUI's layout ("EndLayoutGroup:
@@ -209,6 +205,7 @@ namespace TarkovSDK.Editor
                     _base = JObject.Parse(File.ReadAllText(BasePath));
                     PullFieldsFromBase();
                 }
+                LoadMenu();
                 if (File.Exists(LocalePath))
                 {
                     var locale = JObject.Parse(File.ReadAllText(LocalePath));
@@ -290,6 +287,7 @@ namespace TarkovSDK.Editor
                     for (int i = 0; i < waves.Count; i++)
                         waves[i]["number"] = i;
                 File.WriteAllText(BasePath, _base.ToString(Formatting.Indented));
+                SaveMenu();
 
                 _dirty = false;
                 _jsonText = null;
