@@ -67,7 +67,7 @@ namespace TarkovSDK.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Map/Ambient Sounds...", priority = 121)]
+        [MenuItem("Tarkov SDK/Map/Ambient Sounds...", priority = 114)]
         private static void Open()
         {
             var window = GetWindow<TarkovAmbienceWindow>(true, "Ambient Sounds");
@@ -102,7 +102,7 @@ namespace TarkovSDK.Editor
                 DrawBeds(scene);
 
             EditorGUILayout.Space();
-            EditorGUILayout.HelpBox("For a sound at one place (a generator, birds in a tree), use GameObject > Tarkov SDK > Ambient Sound Point.", MessageType.None);
+            EditorGUILayout.HelpBox("For a sound at one place (a generator, birds in a tree), use GameObject > Tarkov SDK > Sound > Ambient Sound Point.", MessageType.None);
             EditorGUILayout.EndScrollView();
         }
 
@@ -379,7 +379,7 @@ namespace TarkovSDK.Editor
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        [MenuItem("GameObject/Tarkov SDK/Ambient Sound Point", priority = 90)]
+        [MenuItem("GameObject/Tarkov SDK/Sound/Ambient Sound Point", priority = 34)]
         private static void MenuSoundPoint(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("[Nature] Ambient Sound Point");

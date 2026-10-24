@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using SPTarkov.Common.Models.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
@@ -43,6 +44,12 @@ public class CustomMapLoader(
 
     // loot pools and ammo are borrowed from this map until a map ships its own
     private const string DonorLocation = "factory4_day";
+
+    // the maps this mod registered, and the container types they use
+    private readonly HashSet<string> _customMaps = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<MongoId> _containerTypes = [];
+    private readonly object _staticLootLock = new();
+    private Dictionary<MongoId, StaticLootDetails>? _staticLoot;
 
     public async Task OnLoadAsync(CancellationToken cancellationToken)
     {
@@ -201,11 +208,22 @@ public class CustomMapLoader(
 
         var exportPath = Path.Combine(dir, "sdk_export.json");
         List<SdkLootSpawn> lootSpawns = [];
+        List<SdkContainer> containers = [];
         if (File.Exists(exportPath))
         {
             var export = await jsonUtil.DeserializeFromFileAsync<SdkExport>(exportPath, cancellationToken)
                          ?? throw new InvalidDataException("sdk_export.json could not be parsed");
             lootSpawns = export.LootSpawns ?? [];
+            foreach (var container in export.Containers ?? [])
+            {
+                if (string.IsNullOrEmpty(container.Id) || !Regex.IsMatch(container.Template, "^[0-9a-fA-F]{24}$"))
+                {
+                    logger.Warning($"[MappingSDK] {mapId}: container '{container.Id}' has no valid Template, so it can't be searched");
+                    continue;
+                }
+                containers.Add(container);
+                _containerTypes.Add(new MongoId(container.Template));
+            }
             locationBase.SpawnPointParams = export.SpawnPointParams ?? [];
             locationBase.Exits = export.Exits ?? [];
             if (export.Transits is { Count: > 0 })
@@ -223,29 +241,104 @@ public class CustomMapLoader(
         {
             Base = locationBase,
             StaticAmmo = donor?.StaticAmmo ?? new Dictionary<string, IEnumerable<StaticAmmoDetails>>(),
-            // container pools are keyed by container template, so sharing them is safe;
-            // they are only read, never mutated
-            StaticLoot = donor?.StaticLoot,
-            // no containers or loose loot until the map ships its own lists
-            StaticContainers = new LazyLoad<StaticContainerDetails>(() => new StaticContainerDetails
-            {
-                StaticWeapons = [],
-                StaticContainers = [],
-                StaticForced = [],
-            }, cacheValue: true),
+            // every retail map's container pools, keyed by container type; only read, never mutated
+            StaticLoot = new LazyLoad<Dictionary<MongoId, StaticLootDetails>>(MergedStaticLoot, cacheValue: true),
+            // not cached: each raid rolls which containers spawn
+            StaticContainers = new LazyLoad<StaticContainerDetails>(() => BuildStaticContainers(containers), cacheValue: false),
             // not cached: SPT's loot generator mutates the loose loot it reads each raid
             LooseLoot = new LazyLoad<LooseLoot>(() => BuildLooseLoot(lootSpawns), cacheValue: false),
             AllExtracts = [],
         };
 
         locationTable.GetDictionary().Add(mapId, location);
+        _customMaps.Add(mapId);
         ConfigureLocation(mapId);
         var bannerTexts = ApplyMenu(dir, mapId, locationBase, menu);
         await RegisterLocales(dir, locationBase, bannerTexts, cancellationToken);
 
         logger.Success($"[MappingSDK] Registered map '{mapId}' ({locationBase.IdField}): " +
                        $"{locationBase.SpawnPointParams?.Count() ?? 0} spawn point(s), {locationBase.Exits?.Count() ?? 0} exit(s), " +
-                       $"{lootSpawns.Count} loot spawn(s)");
+                       $"{lootSpawns.Count} loot spawn(s), {containers.Count} container(s)");
+    }
+
+    // The scene's lootable containers in retail's staticContainers layout: the root item is the
+    // container type and the Id is the LootableContainer's. SPT spawns every container on a map
+    // without container randomisation, so the spawn chance is rolled here, once per raid.
+    private static StaticContainerDetails BuildStaticContainers(List<SdkContainer> containers)
+    {
+        var list = new List<StaticContainerData>();
+        foreach (var container in containers)
+        {
+            if (!container.AlwaysSpawn && Random.Shared.NextDouble() >= container.Probability)
+                continue;
+            var root = new MongoId();
+            list.Add(new StaticContainerData
+            {
+                Probability = 1,
+                Template = new SpawnpointTemplate
+                {
+                    Id = container.Id,
+                    IsContainer = true,
+                    UseGravity = false,
+                    RandomRotation = false,
+                    Position = new Vector3(0, 0, 0),
+                    Rotation = new Vector3(0, 0, 0),
+                    IsGroupPosition = false,
+                    GroupPositions = [],
+                    IsAlwaysSpawn = true,
+                    Root = root.ToString(),
+                    Items =
+                    [
+                        new SptLootItem
+                        {
+                            Id = root,
+                            Template = new MongoId(container.Template),
+                            Upd = new Upd { StackObjectsCount = 1 },
+                        },
+                    ],
+                },
+            });
+        }
+        return new StaticContainerDetails { StaticWeapons = [], StaticContainers = list, StaticForced = [] };
+    }
+
+    // Container pools from every retail map (factory first), so any retail container type gets its
+    // loot. SPT indexes the pool by container type unchecked, so a type no map has gets an empty
+    // pool: it opens empty instead of failing the raid's loot.
+    private Dictionary<MongoId, StaticLootDetails> MergedStaticLoot()
+    {
+        lock (_staticLootLock)
+        {
+            if (_staticLoot != null)
+                return _staticLoot;
+            var merged = new Dictionary<MongoId, StaticLootDetails>();
+            var locations = locationTable.GetDictionary();
+            foreach (var (id, location) in locations.OrderBy(l => l.Key == DonorLocation ? 0 : 1))
+            {
+                if (_customMaps.Contains(id) || location?.StaticLoot == null)
+                    continue;
+                try
+                {
+                    foreach (var (type, pool) in location.StaticLoot.Value ?? [])
+                        merged.TryAdd(type, pool);
+                }
+                catch (Exception e)
+                {
+                    logger.Warning($"[MappingSDK] Container loot of '{id}' could not be read: {e.Message}");
+                }
+            }
+            foreach (var type in _containerTypes)
+                if (!merged.ContainsKey(type))
+                {
+                    logger.Warning($"[MappingSDK] No retail map has loot for container type {type}; those containers open empty");
+                    merged[type] = new StaticLootDetails
+                    {
+                        ItemCountDistribution = [new ItemCountDistribution { Count = 0, RelativeProbability = 1 }],
+                        ItemDistribution = [],
+                    };
+                }
+            return _staticLoot = merged;
+        }
     }
 
     // menu.json's pictures as the location's banners: the preview first (the map select screen's
@@ -467,6 +560,17 @@ public class CustomMapLoader(
 
         [JsonPropertyName("LootSpawns")]
         public List<SdkLootSpawn>? LootSpawns { get; init; }
+
+        [JsonPropertyName("Containers")]
+        public List<SdkContainer>? Containers { get; init; }
+    }
+
+    private sealed record SdkContainer
+    {
+        [JsonPropertyName("Id")] public string Id { get; init; } = "";
+        [JsonPropertyName("Template")] public string Template { get; init; } = "";
+        [JsonPropertyName("Probability")] public double Probability { get; init; } = 1;
+        [JsonPropertyName("AlwaysSpawn")] public bool AlwaysSpawn { get; init; } = true;
     }
 
     private sealed record SdkLootSpawn

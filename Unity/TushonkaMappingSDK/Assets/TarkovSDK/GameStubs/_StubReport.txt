@@ -30,6 +30,7 @@ Types:
   full    AmbientHighlight/HighlightSettings
   full    AmbientHighlight/StencilType
   full    AmbientLight
+  full    AnimatorSync
   full    AreaLight
   full    AreaLight/TextureSize
   full    Audio.AmbientSubsystem.AmbientAudioSystem
@@ -61,6 +62,7 @@ Types:
   full    Audio.AmbientSubsystem.SeasonAmbientSoundPlayer/SeasonSoundBanks
   full    Audio.AmbientSubsystem.WindAmbientBlender
   shallow Audio.RadioSystem.ClientBroadcastPlayer
+  full    AutoDoorSound
   full    BaseBallistic
   full    BaseBallistic/ESurfaceSound
   full    BaseLight
@@ -72,7 +74,7 @@ Types:
   full    BotZoneEntrance
   full    BotZoneEntranceInfo
   full    BotZoneNavMeshCutter
-  shallow ControlledLampGroup
+  full    ControlledLampGroup
   full    CoverLevel
   full    CoverPointDefenceInfo
   full    CoverType
@@ -83,7 +85,7 @@ Types:
   shallow DisablerCullingObject
   full    DisablerCullingObject/ComponentState
   shallow DisablerCullingObjectBase
-  shallow DoorHandle
+  full    DoorHandle
   full    EBodyPart
   full    ECoverPointSpecial
   full    EFT.Airdrop.AirdropPoint
@@ -107,6 +109,23 @@ Types:
   full    EFT.Game.Spawning.ESpawnCategoryMask
   full    EFT.Game.Spawning.SpawnPoint
   full    EFT.Game.Spawning.SpawnPointMarker
+  full    EFT.GameTriggers.BaseTriggerHandler
+  full    EFT.GameTriggers.HandlerAnimator
+  full    EFT.GameTriggers.HandlerAnimator/AnimatorAction
+  full    EFT.GameTriggers.HandlerAnimator/AnimatorActionBool
+  full    EFT.GameTriggers.HandlerAnimator/AnimatorActionFloat
+  full    EFT.GameTriggers.HandlerAnimator/AnimatorActionInt
+  full    EFT.GameTriggers.HandlerAnimator/AnimatorActionTrigger
+  full    EFT.GameTriggers.HandlerFilterOnce
+  full    EFT.GameTriggers.HandlerInteractable
+  full    EFT.GameTriggers.HandlerLamp
+  full    EFT.GameTriggers.HandlerPlaySoundAdvanced
+  full    EFT.GameTriggers.HandlerPlaySoundAdvanced/PlaySoundConfig
+  full    EFT.GameTriggers.TriggerZone
+  full    EFT.GameTriggers.TriggerZone/EBotPolitic
+  full    EFT.GameTriggers.TriggerZone/ETriggerTag
+  full    EFT.GameTriggers.TriggerZone/ETriggerZoneMode
+  full    EFT.GameTriggers.TriggersPrefab
   shallow EFT.Hideout.HideoutController
   shallow EFT.Interactive.BaseRestrictableZone
   full    EFT.Interactive.BorderZone
@@ -119,8 +138,11 @@ Types:
   full    EFT.Interactive.ELootableContainerSpawnType
   full    EFT.Interactive.ERequirementState
   full    EFT.Interactive.ESpecificInteractionContext
+  full    EFT.Interactive.ExfiltrationDoor
+  full    EFT.Interactive.ExfiltrationDoor/DoorTransform
   full    EFT.Interactive.ExfiltrationPoint
   full    EFT.Interactive.ExfiltrationRequirement
+  full    EFT.Interactive.ExfiltrationSubscriber
   full    EFT.Interactive.ExitTriggerSettings
   shallow EFT.Interactive.FlameDamageTrigger
   full    EFT.Interactive.InteractableObject
@@ -189,15 +211,19 @@ Types:
   full    EFT.Weather.WiresController
   full    EFT.WildSpawnType
   full    EInteraction
+  full    EOcclusionTest
   full    EWarnBehaviour
   full    EnvironmentManagerBase
   full    EnvironmentType
   full    GroupPoint
   full    GroupPointPath
   full    GroupPointWay
-  shallow ISyncAble
+  full    ISyncAble
   full    InitialPosition
   shallow InteractiveProxy
+  full    InteractiveSubscriber
+  full    InteractiveSubscriber/PlaySettings
+  full    InteractiveSubscriber/ViewPerState
   shallow JsonType.LocationSettings
   shallow JsonType.LocationSettings/Location
   full    JsonType.LocationSettings/Location/TransitParameters
@@ -235,6 +261,7 @@ Types:
   full    Prism.Utils.SampleCount
   full    Prism.Utils.TonemapType
   full    PrismEffects
+  full    QueuePlayer
   full    RainController
   full    RainFallDrops
   full    RainScreenDrops
@@ -284,10 +311,12 @@ Types:
   shallow ThrowGrenadePlace
   full    TubeLight
   full    UnspawnPoint
+  shallow VolumetricLight
   full    WeatherObstacle
   full    WetRenderer
   full    WinterEventVisual
 
 Warnings:
   EFT.Interactive.LootableContainer.ItemOwner: skipped (not [Serializable])
+  QueuePlayer.Queue: skipped (generic type Diz.Binding.BindableList`1<UnityEngine.AudioClip>)
   Sirenix.OdinInspector.SerializedMonoBehaviour.serializationData: skipped (type from Sirenix.Serialization (Sirenix.Serialization.SerializationData))

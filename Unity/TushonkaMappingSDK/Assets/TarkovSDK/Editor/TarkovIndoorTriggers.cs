@@ -55,7 +55,7 @@ namespace TarkovSDK.Editor
             public float Floor = float.MaxValue, Ceiling = float.MinValue;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Generate Indoor Triggers", priority = 222)]
+        [MenuItem("Tarkov SDK/Tools/Generate/Indoor Triggers", priority = 222)]
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();

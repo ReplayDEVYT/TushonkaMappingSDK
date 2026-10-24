@@ -45,6 +45,8 @@ EFT.Interactive.DoorSwitch
 EFT.Interactive.LootableContainer
 EFT.Interactive.WindowBreaker
 EFT.Interactive.LampController
+# a door's handle animation, played before the door swings
+DoorHandle
 
 # --- extracts, transits, borders ---
 EFT.Interactive.ExfiltrationPoint
@@ -143,3 +145,23 @@ EFT.Interactive.WindowBreakingConfig
 
 # --- physics props (Arena's pushable, shootable small objects; SmallPhysicsSystem creates itself) ---
 SmallPhysicsObject
+
+# --- Labs-style systems: game triggers (zones and handlers), automatic doors, PA announcements, elevator doors ---
+# TriggerZone emits trigger ids as players enter or leave; handlers subscribe to them (TriggersEmitter)
+EFT.GameTriggers.TriggerZone
+EFT.GameTriggers.HandlerAnimator
+EFT.GameTriggers.HandlerPlaySoundAdvanced
+EFT.GameTriggers.HandlerInteractable
+EFT.GameTriggers.HandlerFilterOnce
+EFT.GameTriggers.HandlerLamp
+ControlledLampGroup
+EFT.GameTriggers.TriggersPrefab
+# automatic doors animate through an Animator; AnimatorSync (an ISyncAble) syncs it, _random is its scene id
+ISyncAble
+AnimatorSync
+AutoDoorSound
+# PA: QueuePlayer plays queued clips on all its child speakers; InteractiveSubscriber queues them on a state change
+InteractiveSubscriber
+QueuePlayer
+# elevator doors follow their exfil's status
+EFT.Interactive.ExfiltrationDoor

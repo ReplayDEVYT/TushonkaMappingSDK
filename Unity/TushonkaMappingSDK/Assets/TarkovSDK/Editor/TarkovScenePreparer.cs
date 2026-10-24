@@ -24,6 +24,7 @@ namespace TarkovSDK.Editor
             public readonly List<ExfiltrationPoint> Exfils = new List<ExfiltrationPoint>();
             public readonly List<TransitPoint> Transits = new List<TransitPoint>();
             public readonly List<TarkovSDK.TarkovLootSpawn> LootSpawns = new List<TarkovSDK.TarkovLootSpawn>();
+            public readonly List<LootableContainer> Containers = new List<LootableContainer>();
             public long UnixDateTime;
         }
 
@@ -33,7 +34,7 @@ namespace TarkovSDK.Editor
         // LocationScene arrays that BSG fills from interfaces we do not stub; empty is valid for them
         private static readonly HashSet<string> AlwaysEmptyArrays = new HashSet<string>
         {
-            "TriggerEntities", "AudioSources", "BroadcastPlayers", "EventSoundContentChangers", "treeWindSettingsPresets",
+            "AudioSources", "BroadcastPlayers", "EventSoundContentChangers", "treeWindSettingsPresets",
         };
 
         public static void Prepare(Scene scene, bool isActiveScene, Report report)
@@ -169,7 +170,7 @@ namespace TarkovSDK.Editor
                 }
                 if (full && TarkovRainCover.Find(scene) == null)
                     report.Warnings.Add($"{scene.name}: no rain cover, so rain falls on the screen indoors too " +
-                                        "(Tarkov SDK > Tools > Generate Rain Cover)");
+                                        "(Tarkov SDK > Tools > Generate > Rain Cover)");
                 if (full && TarkovWeatherBuilder.Find(scene).activeSelf)
                 {
                     // the client activates it after swapping its shaders; active, it would wake on stand-ins
@@ -211,8 +212,22 @@ namespace TarkovSDK.Editor
                     seen.Add(wio.Id);
                     EditorUtility.SetDirty(wio);
                 }
-                if (wio is LootableContainer container && string.IsNullOrEmpty(container.Template))
-                    report.Warnings.Add($"{scene.name}/{wio.name}: LootableContainer has no Template (item tpl id)");
+                if (wio is LootableContainer container)
+                {
+                    // the server fills listed containers with loot; one it doesn't list opens with no inventory
+                    if (string.IsNullOrEmpty(container.Template))
+                        report.Warnings.Add($"{scene.name}/{wio.name}: LootableContainer has no Template (item tpl id), so it can't be searched");
+                    else if (!System.Text.RegularExpressions.Regex.IsMatch(container.Template.Trim(), "^[0-9a-fA-F]{24}$"))
+                        report.Warnings.Add($"{scene.name}/{wio.name}: LootableContainer Template '{container.Template}' is not a 24-character item id, so it can't be searched");
+                    else
+                        report.Containers.Add(container);
+                    // opening moves it to ClosedPosition/OpenPosition; zero sends it to its parent's origin
+                    if (TarkovPrefabTools.KeepContainerInPlace(container))
+                        EditorUtility.SetDirty(container);
+                    // a HighPoly box flush with the interaction box makes the interact prompt flicker
+                    if (container.GetComponent<Collider>() is BoxCollider box && TarkovPrefabTools.EncloseHighPoly(box))
+                        EditorUtility.SetDirty(box);
+                }
                 // switches made before the SDK set this curve have an empty one, and the game throws on it
                 if (wio is Switch sw && (sw.CustomProgressCurve == null || sw.CustomProgressCurve.length == 0))
                 {
@@ -240,6 +255,65 @@ namespace TarkovSDK.Editor
                     EditorUtility.SetDirty(window);
                 }
             }
+            // game triggers (automatic doors, elevators, PA announcements, sound zones)
+            foreach (var press in All<EFT.GameTriggers.HandlerInteractable>(roots))
+            {
+                // the zone finds the object it presses by id, which may have just been assigned above
+                if (press._interactable == null)
+                    report.Warnings.Add($"{scene.name}/{press.name}: HandlerInteractable has no Interactable, so its trigger does nothing");
+                else if (press._interactableId != press._interactable.Id)
+                {
+                    press._interactableId = press._interactable.Id;
+                    EditorUtility.SetDirty(press);
+                }
+            }
+            // an ISyncAble's scene id is its path hash with this random part
+            foreach (var sync in All<ISyncAble>(roots))
+                if (sync._random == 0)
+                {
+                    sync._random = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0) | 1u;
+                    EditorUtility.SetDirty(sync);
+                }
+            foreach (var pa in All<QueuePlayer>(roots))
+                foreach (var speaker in pa.GetComponentsInChildren<AudioSource>(true))
+                {
+                    int tag = speaker.name.LastIndexOf('@');
+                    if (tag >= 0 && TarkovFacilitySystems.AmbientOnlyGroup(speaker.name.Substring(tag + 1).Trim()))
+                        report.Warnings.Add($"{scene.name}/{speaker.name}: PA speaker is on an indoor or outdoor ambience mixer group, so it goes quiet on the other side; " +
+                                            "use @CommonSounds (Fix Broken Interactables does this)");
+                }
+            var lampHandlers = All<EFT.GameTriggers.HandlerLamp>(roots);
+            foreach (var group in All<ControlledLampGroup>(roots))
+            {
+                if (TarkovLights.LampGroupIsEmpty(group))
+                    report.Warnings.Add($"{scene.name}/{group.name}: lamp group switches nothing (press Fill in its inspector)");
+                // only HandlerLamp switches a group (references here; the game's id list holds scene ids)
+                if (!lampHandlers.Any(h => h._controlledLampGroups != null && h._controlledLampGroups.Contains(group)))
+                    report.Warnings.Add($"{scene.name}/{group.name}: nothing switches this lamp group, so it stays {(group._initialLightState ? "on" : "off")} " +
+                                        "(Add Light Switch in its inspector, or Tools > Interactables > Triggers & Sounds)");
+            }
+            foreach (var subscriber in All<InteractiveSubscriber>(roots))
+                if (subscriber.Subscribee == null)
+                    report.Errors.Add($"{scene.name}/{subscriber.name}: InteractiveSubscriber has no Subscribee; the game throws on it at raid start");
+            int triggersLayer = LayerMask.NameToLayer("Triggers");
+            foreach (var zone in All<EFT.GameTriggers.TriggerZone>(roots))
+            {
+                var collider = zone.GetComponent<Collider>();
+                if (collider == null || !collider.isTrigger)
+                    report.Warnings.Add($"{scene.name}/{zone.name}: TriggerZone needs a trigger collider on its object, or players never set it off");
+                else if (zone.gameObject.layer != triggersLayer)
+                    report.Warnings.Add($"{scene.name}/{zone.name}: TriggerZone is not on the Triggers layer, so players may not set it off");
+                if (string.IsNullOrEmpty(zone._triggerId))
+                    report.Warnings.Add($"{scene.name}/{zone.name}: TriggerZone has no trigger id");
+            }
+            // trigger ids nothing sends (it never fires) or nothing hears
+            foreach (var (where, problem) in TarkovTriggerLinks.Problems())
+                if (where != null && where.gameObject.scene == scene)
+                    report.Warnings.Add($"{scene.name}/{where.name}: {problem}");
+            foreach (var sound in All<EFT.GameTriggers.HandlerPlaySoundAdvanced>(roots))
+                if (sound._soundsPool != null && sound._soundsPool.Any(c => c.AudioClip != null && Mathf.Approximately(c.Pitch, 0f)))
+                    report.Warnings.Add($"{scene.name}/{sound.name}: a sound has Pitch 0, which the game plays silent; use 1");
+
             // lens flares draw only through a FlareSceneSettings, in any scene of the map
             if (All<MultiFlare.FlareLight>(roots).Count > 0 && UnityEngine.Object.FindObjectsOfType<MultiFlare.FlareSceneSettings>(true).Length == 0)
                 report.Warnings.Add($"{scene.name}: has lens flares but no flare settings, so they don't show (Tarkov SDK > Map > Lens Flare Settings)");
@@ -385,7 +459,7 @@ namespace TarkovSDK.Editor
                 var group = trigger.GetComponentInParent<EFT.EnvironmentEffect.TriggerGroup>(true);
                 if (group == null || group.GetComponentInParent<EFT.EnvironmentEffect.EnvironmentManager>(true) == null)
                     report.Warnings.Add($"{scene.name}/{trigger.name}: IndoorTrigger is not under a TriggerGroup inside the EnvironmentManager, " +
-                                        "so the game never checks it. Create it with GameObject > Tarkov SDK > Indoor Trigger");
+                                        "so the game never checks it. Create it with GameObject > Tarkov SDK > Environment > Indoor Trigger");
             }
             // deepest groups first, so a parent encloses its children's final bounds
             foreach (var group in All<EFT.EnvironmentEffect.TriggerGroup>(roots).OrderByDescending(Depth))
@@ -466,7 +540,11 @@ namespace TarkovSDK.Editor
                     continue;
                 var element = field.FieldType.GetElementType();
                 Array value;
-                if (AlwaysEmptyArrays.Contains(field.Name) || element == null || !typeof(Component).IsAssignableFrom(element))
+                if (field.Name == "TriggerEntities")
+                {
+                    value = TriggerEntities(roots);
+                }
+                else if (AlwaysEmptyArrays.Contains(field.Name) || element == null || !typeof(Component).IsAssignableFrom(element))
                 {
                     value = Array.CreateInstance(element ?? typeof(object), 0);
                 }
@@ -485,6 +563,30 @@ namespace TarkovSDK.Editor
                 field.SetValue(locationScene, value);
             }
             EditorUtility.SetDirty(locationScene);
+        }
+
+        // LocationScene.FillArraysFrom: the objects with an ITriggerEntity that has trigger ids (the stubs
+        // don't carry the interface, so these are the game's implementers)
+        private static GameObject[] TriggerEntities(GameObject[] roots)
+        {
+            var found = new List<GameObject>();
+            foreach (var root in roots)
+                foreach (var c in root.GetComponentsInChildren<Component>(true))
+                {
+                    bool hasIds = c switch
+                    {
+                        EFT.GameTriggers.TriggerZone z => !string.IsNullOrEmpty(z._triggerId),
+                        EFT.GameTriggers.BaseTriggerHandler h => !string.IsNullOrEmpty(h._triggerId),
+                        EFT.GameTriggers.HandlerAnimator a => a._animatorActions != null && a._animatorActions.Length > 0,
+                        EFT.GameTriggers.HandlerPlaySoundAdvanced p => !string.IsNullOrEmpty(p._playTriggerId) || !string.IsNullOrEmpty(p._stopTriggerId),
+                        EFT.GameTriggers.HandlerFilterOnce f => f._inputTriggerIds != null && f._inputTriggerIds.Length > 0,
+                        WorldInteractiveObject w => w.TriggersMap != null && w.TriggersMap.Length > 0,
+                        _ => false,
+                    };
+                    if (hasIds && !found.Contains(c.gameObject))
+                        found.Add(c.gameObject);
+                }
+            return found.ToArray();
         }
 
         private static void Validate(Scene scene, GameObject[] roots, Report report)
@@ -507,11 +609,11 @@ namespace TarkovSDK.Editor
             if (defaultLayer.Count > 0)
                 report.Warnings.Add($"{scene.name}: {defaultLayer.Count} solid collider(s) on the Default layer; bullets and bots ignore them " +
                                     $"({Names(defaultLayer)}). Use Terrain, or LowPolyCollider (movement) + HighPolyCollider (bullets, AI sight); " +
-                                    "Tarkov SDK > Tools > Make Selected Static Geometry does this");
+                                    "Tarkov SDK > Tools > Geometry > Make Selected Static Geometry does this");
             if (missingBallistic.Count > 0)
                 report.Warnings.Add($"{scene.name}: {missingBallistic.Count} HighPolyCollider/Terrain collider(s) without a BallisticCollider " +
                                     $"({Names(missingBallistic)}); the game reads surface material and penetration from it. " +
-                                    "Tarkov SDK > Tools > Add BallisticCollider To Selected Colliders");
+                                    "Tarkov SDK > Tools > Geometry > Add BallisticCollider To Selected Colliders");
         }
 
         private static string PathOf(Transform t)

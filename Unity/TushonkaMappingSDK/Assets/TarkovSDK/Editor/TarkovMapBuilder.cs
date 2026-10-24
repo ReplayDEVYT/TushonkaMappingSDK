@@ -48,6 +48,8 @@ namespace TarkovSDK.Editor
 
         private static bool Run(TarkovMapDefinition def, bool buildBundles)
         {
+            // a running preview has moved objects; put them back before anything is saved or built
+            TarkovPreview.StopAll();
             if (!ValidateDefinition(def, out var scenePaths))
                 return false;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())

@@ -10,12 +10,17 @@ namespace mizmii.CustomMapLoader.Loading
 {
     // Scene-level managers that retail maps ship and the game dereferences without checks.
     // Maps built with the current SDK include an EnvironmentManager; this covers maps built
-    // without one, and adds the ObservedCullingManager the SDK cannot author yet.
+    // without one, and adds the culling managers the SDK cannot author yet (retail maps have both
+    // on one "CullingManager" object).
     //
     //  - EnvironmentManager: Player.Init reads EnvironmentManager.Instance (indoor/outdoor state).
     //    A bare one treats the whole map as outdoors.
     //  - ObservedCullingManager: drives visibility of observed bodies (bots); without it they can
     //    render invisible.
+    //  - CullingManager: sets the visibility of every CullingObject. Without it none is ever visible:
+    //    Fika's other players (FollowerCullingObject) then skip their arm IK and weapon animation
+    //    pass, and hold their guns wrong. Objects that started before it (lamps' CullingLightObject)
+    //    wait in its early list and join when it wakes.
     //
     // Runs before every Player.Init (player and bots); after the first call it is two null checks.
     // Approach from ManimalIcebreaker's Patch_EnsureEnvBeforeAnyPlayerInit, used with permission.
@@ -36,6 +41,12 @@ namespace mizmii.CustomMapLoader.Loading
             {
                 new GameObject("SDK_EnvironmentManager").AddComponent<EnvironmentManager>();
                 Plugin.LogSource.LogWarning("Custom map has no EnvironmentManager; added one (the whole map counts as outdoors). Rebuild the map with the current SDK.");
+            }
+
+            if (CullingManager.Instance == null)
+            {
+                new GameObject("SDK_CullingManager").AddComponent<CullingManager>();
+                Plugin.Verbose("Added CullingManager for the custom map");
             }
 
             if (!Singleton<ObservedCullingManager>.Instantiated)

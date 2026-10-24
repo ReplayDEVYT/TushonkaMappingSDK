@@ -14,7 +14,7 @@ namespace TarkovSDK.Editor
     // not run in the game): which mesh axes span the pane (WindowBreakingConfig.DetectPlane: the
     // thinnest is the normal), the pane's two surfaces, the UV mapping of its corners and its 2D box.
     // Setup ports that exactly (checked against retail windows), so any glass mesh works: GameObject >
-    // Tarkov SDK > Breakable Window makes a pane, and Build Map sets up every WindowBreaker.
+    // GameObject > Tarkov SDK > Interactables > Breakable Window makes a pane, and Build Map sets up every WindowBreaker.
     //
     // The crack patterns are the game's own (Customs' BrokenWindow config, shipped in Windows/BrokenWindow.json).
     public static class TarkovWindows
@@ -24,7 +24,7 @@ namespace TarkovSDK.Editor
         private const string MaterialPath = "Assets/TarkovSDK/Materials/SDK_Glass.mat";
         private const float Thickness = 0.004f;
 
-        [MenuItem("GameObject/Tarkov SDK/Breakable Window", priority = 34)]
+        [MenuItem("GameObject/Tarkov SDK/Interactables/Breakable Window", priority = 26)]
         private static void MenuWindow(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateWindow(p, 1.2f, 1f).gameObject);
 
         // a pane width x height, its pivot in the middle, facing -Z

@@ -19,7 +19,7 @@ namespace TarkovSDK.Editor
     // pictures). Build Map deploys the pack of the map it builds and puts it in the map's package.
     public class TarkovMapPack : ScriptableObject
     {
-        [MenuItem("Tarkov SDK/Map/New Map Pack...", priority = 141)]
+        [MenuItem("Tarkov SDK/Map/New Map Pack...", priority = 126)]
         private static void Create()
         {
             var path = EditorUtility.SaveFilePanelInProject("New Map Pack", "NewMapPack", "asset", "Where to save the map pack.");

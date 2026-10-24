@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using EFT.Ballistics;
+using EFT.GameTriggers;
 using EFT.Interactive;
 using MultiFlare;
 using UnityEditor;
@@ -22,6 +23,9 @@ namespace TarkovSDK.Editor
     //          scene's FlareSceneSettings (Lens Flare Settings), built from the flare atlas in Lights/Flares.
     //  Advanced Light  the game's AdvancedLight: a shadowless point light drawn in one pass. Retail
     //          maps hardly use it; prefer a Lamp.
+    //  Controlled Lamp Group  the game's ControlledLampGroup: switches many lights, glowing materials
+    //          and lamps at once, with one on and one off sound, and keeps every player's state in step.
+    //          Only trigger handlers (HandlerLamp) switch it; a light switch is made from its inspector.
     //
     // Right-clicking a lamp adds the new light to it, so the lamp switches it too.
     public static class TarkovLights
@@ -32,16 +36,16 @@ namespace TarkovSDK.Editor
         private const string AreaSourceMaterialPath = "Assets/TarkovSDK/Materials/AreaLightSource.mat";
         private static readonly Color Warm = new Color(1f, 0.86f, 0.68f);
 
-        [MenuItem(Menu + "Lamp", priority = 70)]
+        [MenuItem(Menu + "Lamp", priority = 28)]
         private static void MenuLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Point).gameObject);
 
-        [MenuItem(Menu + "Spot Lamp", priority = 71)]
+        [MenuItem(Menu + "Spot Lamp", priority = 29)]
         private static void MenuSpotLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Spot).gameObject);
 
-        [MenuItem(Menu + "Area Light", priority = 72)]
+        [MenuItem(Menu + "Area Light", priority = 30)]
         private static void MenuAreaLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAreaLight(p, LampOf(cmd)).gameObject);
 
-        [MenuItem(Menu + "Lens Flare", priority = 73)]
+        [MenuItem(Menu + "Lens Flare", priority = 32)]
         private static void MenuFlare(MenuCommand cmd)
         {
             TarkovSceneTools.Place(cmd, p => CreateFlare(p, LampOf(cmd)).gameObject);
@@ -50,10 +54,27 @@ namespace TarkovSDK.Editor
                 EditorApplication.delayCall += AddFlareSettingsMenu;
         }
 
-        [MenuItem(Menu + "Advanced Light", priority = 74)]
+        [MenuItem(Menu + "Advanced Light", priority = 31)]
         private static void MenuAdvancedLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAdvancedLight(p, LampOf(cmd)).gameObject);
 
-        [MenuItem("Tarkov SDK/Map/Lens Flare Settings", priority = 122)]
+        // right-clicking an object that holds lights makes it the group, as retail's INTERACTIVE_Light
+        [MenuItem(Menu + "Controlled Lamp Group", priority = 33)]
+        private static void MenuLampGroup(MenuCommand cmd)
+        {
+            var target = cmd.context as GameObject;
+            if (target != null && target.GetComponent<ControlledLampGroup>() == null
+                && (target.GetComponentInChildren<Light>(true) != null || target.GetComponentInChildren<BaseLight>(true) != null))
+            {
+                var group = Undo.AddComponent<ControlledLampGroup>(target);
+                FillLampGroup(group, target);
+                Selection.activeGameObject = target;
+                Debug.Log($"[Tarkov SDK] {target.name} is now a lamp group: {LampGroupSummary(group)}.");
+                return;
+            }
+            TarkovSceneTools.Place(cmd, p => CreateLampGroup(p).gameObject);
+        }
+
+        [MenuItem("Tarkov SDK/Map/Lens Flare Settings", priority = 115)]
         public static void AddFlareSettingsMenu()
         {
             var scene = SceneManager.GetActiveScene();
@@ -75,32 +96,7 @@ namespace TarkovSDK.Editor
             if (parent != null)
                 root.transform.SetParent(parent, false);
 
-            var lightObject = new GameObject("Light");
-            lightObject.transform.SetParent(root.transform, false);
-            if (type == LightType.Spot)
-                lightObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // pointing down
-            var light = lightObject.AddComponent<Light>();
-            light.type = type;
-            light.range = 10f;
-            light.spotAngle = 80f;
-            light.intensity = 1.4f;
-            light.color = Warm;
-            light.shadows = LightShadows.Soft;
-            light.lightmapBakeType = LightmapBakeType.Realtime;
-
-            var culling = lightObject.AddComponent<CullingLightObject>();
-            culling._light = light;
-            culling._transform = lightObject.transform;
-            culling.CullDistance = 50f;
-            culling._fadeStartDistance = 40f;
-            culling._fadeEndDistance = 50f;
-            culling._fadeCurve = new AnimationCurve();
-            culling._useLightIntensityFromEditor = true;
-            culling._maxLightIntensity = light.intensity;
-            culling._cullShadowsByDistance = true;
-            culling._shadowsFadeStartDistance = 10f;
-            culling._shadowsFadeEndDistance = 16f;
-            culling._initialShadowsMode = light.shadows;
+            var light = CreateLight(root.transform, type);
 
             // the bulb is what gets shot: glass on the bullets' layer; it casts no shadow over its own light
             var bulb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -130,6 +126,118 @@ namespace TarkovSDK.Editor
             lamp.TurnOnClips = new AudioClip[0];
             // Id is assigned when the map is built
             return lamp;
+        }
+
+        // a Unity Light with the CullingLightObject retail lights carry
+        public static Light CreateLight(Transform parent, LightType type, string name = "Light")
+        {
+            var lightObject = new GameObject(name);
+            lightObject.transform.SetParent(parent, false);
+            if (type == LightType.Spot)
+                lightObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // pointing down
+            var light = lightObject.AddComponent<Light>();
+            light.type = type;
+            light.range = 10f;
+            light.spotAngle = 80f;
+            light.intensity = 1.4f;
+            light.color = Warm;
+            light.shadows = LightShadows.Soft;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+
+            var culling = lightObject.AddComponent<CullingLightObject>();
+            culling._light = light;
+            culling._transform = lightObject.transform;
+            culling.CullDistance = 50f;
+            culling._fadeStartDistance = 40f;
+            culling._fadeEndDistance = 50f;
+            culling._fadeCurve = new AnimationCurve();
+            culling._useLightIntensityFromEditor = true;
+            culling._maxLightIntensity = light.intensity;
+            culling._cullShadowsByDistance = true;
+            culling._shadowsFadeStartDistance = 10f;
+            culling._shadowsFadeEndDistance = 16f;
+            culling._initialShadowsMode = light.shadows;
+            return light;
+        }
+
+        // ------------------------------------------------------------ controlled lamp group
+
+        // two plain lights (Light + CullingLightObject, like retail's group) to replace or add to
+        public static ControlledLampGroup CreateLampGroup(Transform parent)
+        {
+            var root = new GameObject("LampGroup");
+            if (parent != null)
+                root.transform.SetParent(parent, false);
+            CreateLight(root.transform, LightType.Point, "Light 1").transform.localPosition = new Vector3(-1.5f, 2.5f, 0f);
+            CreateLight(root.transform, LightType.Point, "Light 2").transform.localPosition = new Vector3(1.5f, 2.5f, 0f);
+            var group = root.AddComponent<ControlledLampGroup>();
+            group._sfxRootPosition = root.transform;
+            group._soundRolloff = 20;
+            FillLampGroup(group, root);
+            return group;
+        }
+
+        // everything under root the group can switch (what its "Drag root light object here" field is for)
+        public static void FillLampGroup(ControlledLampGroup group, GameObject root)
+        {
+            Undo.RecordObject(group, "Fill lamp group");
+            group._lampControllers = root.GetComponentsInChildren<LampController>(true);
+            group._lights = root.GetComponentsInChildren<Light>(true);
+            group._cullingLightObjects = root.GetComponentsInChildren<CullingLightObject>(true);
+            group._cullingAdvancedLightObjects = root.GetComponentsInChildren<CullingAdvancedLightObject>(true);
+            group._baseLights = root.GetComponentsInChildren<BaseLight>(true);
+            group._volumetricLights = root.GetComponentsInChildren<VolumetricLight>(true);
+            group._multiFlareLights = root.GetComponentsInChildren<FlareLight>(true);
+            group._meshRenderers = root.GetComponentsInChildren<MeshRenderer>(true).Where(r => r.sharedMaterials.Any(Glows)).ToArray();
+            if (group._sfxRootPosition == null)
+                group._sfxRootPosition = group.transform;
+            EditorUtility.SetDirty(group);
+        }
+
+        // the game dims _EmissionVisibility, or else _EmissionColor; only materials that glow are worth listing
+        private static bool Glows(Material m) =>
+            m != null && (m.HasProperty("_EmissionVisibility")
+                          || m.HasProperty("_EmissionColor") && m.IsKeywordEnabled("_EMISSION") && m.GetColor("_EmissionColor").maxColorComponent > 0.01f);
+
+        public static string LampGroupSummary(ControlledLampGroup g)
+        {
+            int Count<T>(T[] a) => a?.Count(x => x != null) ?? 0;
+            int culled = Count(g._cullingLightObjects) + Count(g._cullingAdvancedLightObjects);
+            return $"{Count(g._lights)} lights, {Count(g._baseLights)} area/tube lights, {Count(g._meshRenderers)} glowing renderers, " +
+                   $"{Count(g._lampControllers)} lamps, {Count(g._multiFlareLights)} flares, {culled} culling";
+        }
+
+        public static bool LampGroupIsEmpty(ControlledLampGroup g) =>
+            (g._lights?.All(x => x == null) ?? true) && (g._baseLights?.All(x => x == null) ?? true) && (g._meshRenderers?.All(x => x == null) ?? true)
+            && (g._cullingLightObjects?.All(x => x == null) ?? true) && (g._cullingAdvancedLightObjects?.All(x => x == null) ?? true)
+            && (g._multiFlareLights?.All(x => x == null) ?? true) && (g._volumetricLights?.All(x => x == null) ?? true);
+
+        // a switch beside the group: pressed (open) turns it on, pressed again (shut) off; the other way
+        // round for a group that starts on
+        public static Switch CreateLightSwitch(ControlledLampGroup group)
+        {
+            var sw = TarkovPrefabTools.CreateSwitch(null, null);
+            sw.name = "LightSwitch_" + group.name;
+            sw.transform.position = group.transform.position + Vector3.up * 1.2f;
+            Undo.RegisterCreatedObjectUndo(sw.gameObject, "Create light switch");
+            bool startsOn = group._initialLightState;
+            AddLampHandler(sw.transform, TarkovTriggerWiringWindow.StateId(sw, EDoorState.Open), group, !startsOn);
+            AddLampHandler(sw.transform, TarkovTriggerWiringWindow.StateId(sw, EDoorState.Shut), group, startsOn);
+            return sw;
+        }
+
+        private static void AddLampHandler(Transform parent, string triggerId, ControlledLampGroup group, bool on)
+        {
+            var go = new GameObject(on ? "Lights On" : "Lights Off");
+            go.transform.SetParent(parent, false);
+            var handler = go.AddComponent<HandlerLamp>();
+            handler._triggerId = triggerId;
+            handler._state = on;
+            handler._controlledLampGroups = new[] { group };
+            handler._lampControllers = new LampController[0];
+            handler._lampControllerIDs = new string[0];
+            handler._controlledLampGroupIDs = new ulong[0];
+            Undo.RegisterCreatedObjectUndo(go, "Create lamp handler");
         }
 
         // ------------------------------------------------------------ area light

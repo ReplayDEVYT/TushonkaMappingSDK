@@ -6,4 +6,6 @@
 
 public abstract class ISyncAble : global::UnityEngine.MonoBehaviour
 {
+    [global::UnityEngine.SerializeField]
+    public uint _random;
 }

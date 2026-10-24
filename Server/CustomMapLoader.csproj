@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RootNamespace>mizmii.CustomMapLoader</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Authors>mizmii</Authors>
     <Company>mizmii</Company>
     <Product>CustomMapLoader</Product>

@@ -6,4 +6,13 @@
 
 public class DoorHandle : global::UnityEngine.MonoBehaviour
 {
+    public global::UnityEngine.Quaternion OpenRotation;
+    public global::UnityEngine.Quaternion DefaultRotation;
+    public global::UnityEngine.AnimationCurve OpenAnimation;
+    public global::UnityEngine.AnimationCurve LockedAnimation;
+    public bool pos;
+    public global::UnityEngine.Vector3 OpenPosition;
+    public global::UnityEngine.Vector3 DefaultPosition;
+    public global::UnityEngine.AudioClip[] DownSound;
+    public global::UnityEngine.AudioClip[] UpSound;
 }

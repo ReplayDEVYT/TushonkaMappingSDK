@@ -23,7 +23,7 @@ namespace TarkovSDK.Editor
             CreateSkeleton();
         }
 
-        [MenuItem("Tarkov SDK/Tools/Bake NavMesh For Active Scene", priority = 220)]
+        [MenuItem("Tarkov SDK/Tools/Generate/Bake NavMesh For Active Scene", priority = 220)]
         public static void BakeNavMesh()
         {
             // legacy scene bake with the "Humanoid" agent (type 0), the agent bots path with;
@@ -179,33 +179,33 @@ namespace TarkovSDK.Editor
             spawn.Items.Add(new TarkovLootSpawn.Item { Template = "544fb45d4bdc2dee738b4568", Name = "Salewa first aid kit", Weight = 1 });
         }
 
-        [MenuItem(Menu + "Spawn Point (PMC)", priority = 10)]
+        [MenuItem(Menu + "Spawns/Spawn Point (PMC)", priority = 10)]
         private static void MenuSpawnPmc(MenuCommand cmd) => Place(cmd, p => CreateSpawnPoint(p, "Spawn_PMC", Vector3.zero, pmc: true).gameObject);
 
-        [MenuItem(Menu + "Spawn Point (Bot)", priority = 11)]
+        [MenuItem(Menu + "Spawns/Spawn Point (Bot)", priority = 11)]
         private static void MenuSpawnBot(MenuCommand cmd) => Place(cmd, p => CreateSpawnPoint(p, "Spawn_Bot", Vector3.zero, pmc: false).gameObject);
 
-        [MenuItem(Menu + "Bot Zone", priority = 12)]
+        [MenuItem(Menu + "AI/Bot Zone", priority = 18)]
         private static void MenuZone(MenuCommand cmd) => Place(cmd, p => CreateBotZone(p, "ZoneNew", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "Patrol Way", priority = 13)]
+        [MenuItem(Menu + "AI/Patrol Way", priority = 19)]
         private static void MenuWay(MenuCommand cmd) => Place(cmd, p => CreatePatrolWay(p, "PatrolWay", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "Patrol Point", priority = 14)]
+        [MenuItem(Menu + "AI/Patrol Point", priority = 20)]
         private static void MenuPoint(MenuCommand cmd) => Place(cmd, p => CreatePatrolPoint(p, Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "Exfil", priority = 15)]
+        [MenuItem(Menu + "Exfils/Exfil", priority = 13)]
         private static void MenuExfil(MenuCommand cmd) => Place(cmd, p => CreateExfil(p, "SDK_Exit", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "Nav Blocker", priority = 17)]
+        [MenuItem(Menu + "AI/Nav Blocker", priority = 21)]
         private static void MenuNavBlocker(MenuCommand cmd) => Place(cmd, p => CreateNavBlocker(p, Vector3.zero));
 
-        [MenuItem(Menu + "Transit Point", priority = 16)]
+        [MenuItem(Menu + "Exfils/Transit Point", priority = 14)]
         private static void MenuTransit(MenuCommand cmd) => Place(cmd, p => CreateTransit(p, Vector3.zero).gameObject);
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Indoor Trigger Group", priority = 51)]
+        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 43)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -220,7 +220,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Indoor Trigger", priority = 50)]
+        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 42)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -230,7 +230,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Make Selected Static Geometry (Terrain layer)", priority = 240)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 241)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -242,7 +242,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Tools/Add BallisticCollider To Selected Colliders", priority = 241)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 243)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -257,7 +257,7 @@ namespace TarkovSDK.Editor
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Tools/Refresh Default Surface Material", priority = 260)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 254)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()

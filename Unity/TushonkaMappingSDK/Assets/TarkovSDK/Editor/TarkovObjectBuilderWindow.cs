@@ -77,7 +77,7 @@ namespace TarkovSDK.Editor
         private string _prefabFolder = "Assets/Prefabs";
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Interactive Object Builder...", priority = 200)]
+        [MenuItem("Tarkov SDK/Tools/Interactables/Interactive Object Builder...", priority = 200)]
         private static void Open() => GetWindow<TarkovObjectBuilderWindow>("Object Builder").minSize = new Vector2(380f, 420f);
 
         private void OnGUI()
@@ -391,9 +391,11 @@ namespace TarkovSDK.Editor
             var root = container.transform;
             Object.DestroyImmediate(root.Find("Crate (replace with your model)").gameObject);
             Model(root, out var b);
-            FitBox(root.GetComponent<BoxCollider>(), b);
             FitBox(root.Find("HighPoly").GetComponent<BoxCollider>(), b);
             FitBox(root.Find("LowPoly").GetComponent<BoxCollider>(), b);
+            var interaction = root.GetComponent<BoxCollider>();
+            FitBox(interaction, b);
+            TarkovPrefabTools.EncloseHighPoly(interaction);
             SetBallistic(root.Find("HighPoly").gameObject);
             container.Template = _container < Containers.Length ? Containers[_container].Template : _customTemplate.Trim();
             container.interactPosition1 = new Vector3(b.center.x, 0f, b.min.z - 0.6f);

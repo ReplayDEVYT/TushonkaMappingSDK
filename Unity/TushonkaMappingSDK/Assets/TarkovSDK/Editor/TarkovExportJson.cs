@@ -46,6 +46,12 @@ namespace TarkovSDK.Editor
                 WriteLootSpawn(w, spawn);
             w.EndArray();
 
+            w.Name("Containers");
+            w.BeginArray();
+            foreach (var container in report.Containers)
+                WriteContainer(w, container);
+            w.EndArray();
+
             w.EndObject();
             return w.ToString();
         }
@@ -162,6 +168,19 @@ namespace TarkovSDK.Editor
                 w.EndObject();
             }
             w.EndArray();
+            w.EndObject();
+        }
+
+        // CustomMapLoader turns these into SPT static containers: the game only gives a container an
+        // inventory (LootableContainer.Init) when the raid's loot lists it by Id. As in
+        // LootableContainer.AsLootPointParameters, CanBeEmpty and AlwaysHasLoot always spawn.
+        private static void WriteContainer(JsonWriter w, LootableContainer container)
+        {
+            w.BeginObject();
+            w.Property("Id", container.Id);
+            w.Property("Template", container.Template.Trim().ToLowerInvariant());
+            w.Property("Probability", Mathf.Clamp(container.SpawnChance, 0, 100) / 100f);
+            w.Property("AlwaysSpawn", container.SpawnType != ELootableContainerSpawnType.MayNotSpawn);
             w.EndObject();
         }
 

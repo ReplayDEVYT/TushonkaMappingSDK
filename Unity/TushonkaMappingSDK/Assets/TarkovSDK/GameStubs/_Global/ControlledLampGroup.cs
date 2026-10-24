@@ -6,4 +6,35 @@
 
 public class ControlledLampGroup : global::ISyncAble
 {
+    [global::UnityEngine.SerializeField]
+    public global::EFT.Interactive.LampController[] _lampControllers;
+    [global::UnityEngine.SerializeField]
+    public global::CullingAdvancedLightObject[] _cullingAdvancedLightObjects;
+    [global::UnityEngine.SerializeField]
+    public global::CullingLightObject[] _cullingLightObjects;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.Light[] _lights;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.MeshRenderer[] _meshRenderers;
+    [global::UnityEngine.SerializeField]
+    public global::VolumetricLight[] _volumetricLights;
+    [global::UnityEngine.SerializeField]
+    public global::BaseLight[] _baseLights;
+    [global::UnityEngine.Tooltip("Drag root light object here")]
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.GameObject _fillLightFrom;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.AudioClip _turnOnSFX;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.AudioClip _turnOffSFX;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.Transform _sfxRootPosition;
+    [global::UnityEngine.SerializeField]
+    public int _soundRolloff = 20;
+    [global::UnityEngine.SerializeField]
+    public global::EOcclusionTest _occlusionTest;
+    [global::UnityEngine.SerializeField]
+    public global::MultiFlare.FlareLight[] _multiFlareLights;
+    [global::UnityEngine.SerializeField]
+    public bool _initialLightState;
 }

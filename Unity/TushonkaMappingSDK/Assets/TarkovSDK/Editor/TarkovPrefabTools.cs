@@ -19,10 +19,10 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/";
 
-        [MenuItem(Menu + "Door", priority = 30)]
+        [MenuItem(Menu + "Interactables/Door", priority = 22)]
         private static void MenuDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateDoor(p, 1f, 2.1f).gameObject);
 
-        [MenuItem(Menu + "Switch", priority = 31)]
+        [MenuItem(Menu + "Interactables/Switch", priority = 23)]
         private static void MenuSwitch(MenuCommand cmd)
         {
             // right-clicking a door makes a switch that opens it
@@ -40,7 +40,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = sw.gameObject;
         }
 
-        [MenuItem(Menu + "Loot Spawn", priority = 33)]
+        [MenuItem(Menu + "Spawns/Loot Spawn", priority = 12)]
         private static void MenuLootSpawn(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("LootSpawn") { tag = "EditorOnly" };
@@ -50,7 +50,7 @@ namespace TarkovSDK.Editor
             return go;
         });
 
-        [MenuItem(Menu + "Lootable Container", priority = 32)]
+        [MenuItem(Menu + "Interactables/Lootable Container", priority = 24)]
         private static void MenuContainer(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateContainer(p).gameObject);
 
         // ------------------------------------------------------------ door
@@ -173,10 +173,10 @@ namespace TarkovSDK.Editor
             var go = new GameObject("LootableContainer") { layer = LayerMask.NameToLayer("Interactive") };
             if (parent != null)
                 go.transform.SetParent(parent, false);
-            // the player's interaction ray looks for this box
+            // the player's interaction ray looks for this box; it stands clear of the HighPoly box (see EncloseHighPoly)
             var box = go.AddComponent<BoxCollider>();
             box.center = center;
-            box.size = size;
+            box.size = size + Vector3.one * (2f * InteractMargin);
 
             var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
             visual.name = "Crate (replace with your model)";
@@ -211,8 +211,78 @@ namespace TarkovSDK.Editor
             container.viewTarget1 = center;
             container.FilterExtended = new System.Collections.Generic.List<LootableContainerParameters>();
             container.GameObjectsToDestroy = new System.Collections.Generic.List<GameObject>();
-            // Id is assigned when the map is built
+            // Id, ClosedPosition and OpenPosition are set when the map is built
             return container;
+        }
+
+        // How far a container's interaction box stands out from its HighPoly colliders.
+        public const float InteractMargin = 0.05f;
+
+        // GameWorld.FindInteractable drops what the player looks at when a HighPolyCollider lies between
+        // the eye and the hit point. A HighPoly box flush with the interaction box makes that test flip
+        // frame to frame (the prompt flickers), so the interaction box is grown to enclose them.
+        public static bool EncloseHighPoly(BoxCollider box)
+        {
+            var t = box.transform;
+            int highPoly = LayerMask.NameToLayer("HighPolyCollider");
+            bool any = false;
+            var inner = new Bounds();
+            foreach (var c in t.GetComponentsInChildren<Collider>(true))
+            {
+                if (c.gameObject.layer != highPoly)
+                    continue;
+                foreach (var corner in Corners(c))
+                {
+                    var p = t.InverseTransformPoint(corner);
+                    if (!any)
+                        inner = new Bounds(p, Vector3.zero);
+                    inner.Encapsulate(p);
+                    any = true;
+                }
+            }
+            if (!any)
+                return false;
+            var s = t.lossyScale;
+            var margin = new Vector3(InteractMargin / Mathf.Max(1e-4f, Mathf.Abs(s.x)), InteractMargin / Mathf.Max(1e-4f, Mathf.Abs(s.y)),
+                                     InteractMargin / Mathf.Max(1e-4f, Mathf.Abs(s.z)));
+            var current = new Bounds(box.center, box.size);
+            // already clear by at least a fifth of the margin on every side
+            var needed = new Bounds(inner.center, inner.size + margin * 0.4f);
+            if (current.Contains(needed.min) && current.Contains(needed.max))
+                return false;
+            current.Encapsulate(new Bounds(inner.center, inner.size + margin * 2f));
+            box.center = current.center;
+            box.size = current.size;
+            return true;
+        }
+
+        private static Vector3[] Corners(Collider c)
+        {
+            var corners = new Vector3[8];
+            if (c is BoxCollider b)
+            {
+                for (int i = 0; i < 8; i++)
+                    corners[i] = b.transform.TransformPoint(b.center + Vector3.Scale(b.size * 0.5f,
+                        new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1)));
+                return corners;
+            }
+            var w = c.bounds;
+            for (int i = 0; i < 8; i++)
+                corners[i] = w.center + Vector3.Scale(w.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+            return corners;
+        }
+
+        // Opening a container moves it between ClosedPosition and OpenPosition (made for drawers), so
+        // left at zero it jumps to its parent's origin and its interaction state breaks. One that
+        // doesn't slide (both equal) gets its current position.
+        public static bool KeepContainerInPlace(LootableContainer container)
+        {
+            var here = container.transform.localPosition;
+            if (container.ClosedPosition != container.OpenPosition || container.ClosedPosition == here)
+                return false;
+            container.ClosedPosition = here;
+            container.OpenPosition = here;
+            return true;
         }
 
         // the curve most retail switches use: linear, over one second
@@ -220,7 +290,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Tools/Add Low + High Poly Colliders To Selected", priority = 242)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 242)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

@@ -8,7 +8,9 @@ using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.4.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.5.0")]
+    // loaded after SAIN when it is installed, so SainLocationPatch can find it; never required
+    [BepInDependency("me.sol.sain", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -16,6 +18,8 @@ namespace mizmii.CustomMapLoader
         public static ConfigEntry<bool> GenerateAiData;
         public static ConfigEntry<bool> VerboseLogging;
         public static ConfigEntry<bool> RaidDiagnostics;
+        public static ConfigEntry<string> SainMapType;
+        public static ConfigEntry<bool> AudioProbe;
 
         private void Awake()
         {
@@ -27,6 +31,11 @@ namespace mizmii.CustomMapLoader
                 "Log every bundle served and per-stage AI generation counts.");
             RaidDiagnostics = Config.Bind("Debug", "Raid diagnostics", true,
                 "On custom maps, log the lighting, camera, material and bot state 8 and 30 seconds into the raid.");
+
+            AudioProbe = Config.Bind("Debug", "Audio probe", false,
+                "On custom maps, log every playing positional sound near the listener once a second (distance, volume, rolloff, spatializer, mixer).");
+            SainMapType = Config.Bind("Compatibility", "SAIN map type", "Customs",
+                "With SAIN installed: the retail map SAIN treats custom maps as, for its per-map settings (Customs, Factory, Labs, Woods, Reserve, Shoreline, Interchange, Lighthouse, Streets, GroundZero ...).");
 
             MapRegistry.Init(Info.Location);
             if (MapRegistry.MapIds.Count == 0)
@@ -41,6 +50,7 @@ namespace mizmii.CustomMapLoader
             MenuConfig.Load();
             ShaderSwap.Install();
             Diagnostics.RaidDiagnostics.Install();
+            Diagnostics.AudioProbe.Install();
             Enable(new BundleHostPatch());
             Enable(new SpatialAudioInitPatch());
             Enable(new SceneSingletonPatch());
@@ -71,6 +81,8 @@ namespace mizmii.CustomMapLoader
             Enable(new RestoreCoversPatch());
             Enable(new CachePointsPatch());
             Enable(new StartCorePointPatch());
+            if (SainLocationPatch.Available())
+                Enable(new SainLocationPatch());
         }
 
         // one failing patch must not stop the others from attaching

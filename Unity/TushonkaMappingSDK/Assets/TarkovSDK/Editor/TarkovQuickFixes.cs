@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 namespace TarkovSDK.Editor
 {
-    // Tools > Quick Fixes: repairs that make older or hand-made objects work in the raid.
+    // Tools > Interactables > Fix Broken Interactables: repairs that make older or hand-made objects work in the raid.
     //
     // Fix Broken Interactables checks every door, switch, lootable container and lamp in the open scenes
     // and fixes what the game would trip over:
@@ -22,9 +22,9 @@ namespace TarkovSDK.Editor
     // What it can't decide (a container without a type, an object without a collider) is reported.
     public static class TarkovQuickFixes
     {
-        private const string Menu = "Tarkov SDK/Tools/Quick Fixes/";
+        private const string Menu = "Tarkov SDK/Tools/Interactables/";
 
-        [MenuItem(Menu + "Fix Broken Interactables", priority = 280)]
+        [MenuItem(Menu + "Fix Broken Interactables", priority = 212)]
         public static void FixInteractables()
         {
             var fixes = new List<string>();
@@ -69,8 +69,9 @@ namespace TarkovSDK.Editor
                             sw.ConditionStatus ??= new EExfiltrationStatus[0];
                             fixes.Add($"{where}: empty lists filled in");
                         }
-                        if (sw.Door == null && (sw.Lamps == null || sw.Lamps.Length == 0) && sw.ExfiltrationPoint == null)
-                            problems.Add($"{where}: switch operates nothing (set its Door or Lamps)");
+                        if (sw.Door == null && (sw.Lamps == null || sw.Lamps.Length == 0) && sw.ExfiltrationPoint == null
+                            && (sw.TriggersMap == null || sw.TriggersMap.Length == 0) && (sw.NextSwitches == null || sw.NextSwitches.Length == 0))
+                            problems.Add($"{where}: switch operates nothing (set its Door or Lamps, or connect it in Triggers & Sounds)");
                         break;
                     case Door door:
                         if (door.KickCurve == null || door.KickCurve.length == 0)
@@ -89,6 +90,15 @@ namespace TarkovSDK.Editor
                             container.FilterExtended ??= new List<LootableContainerParameters>();
                             container.GameObjectsToDestroy ??= new List<GameObject>();
                             fixes.Add($"{where}: empty lists filled in");
+                        }
+                        Record(container);
+                        if (TarkovPrefabTools.KeepContainerInPlace(container))
+                            fixes.Add($"{where}: closed/open positions set to where it stands (opening it moved it to its parent's origin)");
+                        if (container.GetComponent<Collider>() is BoxCollider box)
+                        {
+                            Record(box);
+                            if (TarkovPrefabTools.EncloseHighPoly(box))
+                                fixes.Add($"{where}: interaction box grown around its HighPoly colliders (the interact prompt flickered)");
                         }
                         break;
                 }
@@ -168,6 +178,71 @@ namespace TarkovSDK.Editor
                     problems.Add($"{Where(prop)}: physics prop has no Rigidbody, so it can't move");
                 if (prop.GetComponentsInChildren<BallisticCollider>(true).Length == 0)
                     problems.Add($"{Where(prop)}: physics prop has no BallisticCollider, so bullets don't move it");
+            }
+
+            // game triggers: automatic doors, elevators, PA announcements, sound zones
+            foreach (var press in All<EFT.GameTriggers.HandlerInteractable>())
+            {
+                if (press._interactable == null)
+                    problems.Add($"{Where(press)}: zone presses nothing (set its Interactable)");
+                else if (press._interactableId != press._interactable.Id && !string.IsNullOrEmpty(press._interactable.Id))
+                {
+                    Record(press);
+                    press._interactableId = press._interactable.Id;
+                    fixes.Add($"{Where(press)}: zone's interactable id relinked");
+                }
+            }
+            foreach (var sync in All<ISyncAble>())
+                if (sync._random == 0)
+                {
+                    Record(sync);
+                    sync._random = System.BitConverter.ToUInt32(System.Guid.NewGuid().ToByteArray(), 0) | 1u;
+                    fixes.Add($"{Where(sync)}: new sync id");
+                }
+            foreach (var sound in All<EFT.GameTriggers.HandlerPlaySoundAdvanced>())
+                if (sound._soundsPool != null && sound._soundsPool.Any(c => Mathf.Approximately(c.Pitch, 0f)))
+                {
+                    Record(sound);
+                    for (int i = 0; i < sound._soundsPool.Length; i++)
+                        if (Mathf.Approximately(sound._soundsPool[i].Pitch, 0f))
+                            sound._soundsPool[i].Pitch = 1f;
+                    fixes.Add($"{Where(sound)}: sound pitch 0 (silent in the game) set to 1");
+                }
+            // PA speakers on the game's indoor or outdoor ambience groups go quiet on the other side
+            foreach (var pa in All<QueuePlayer>())
+                foreach (var speaker in pa.GetComponentsInChildren<AudioSource>(true))
+                {
+                    int tag = speaker.name.LastIndexOf('@');
+                    if (tag < 0 || !TarkovFacilitySystems.AmbientOnlyGroup(speaker.name.Substring(tag + 1).Trim()))
+                        continue;
+                    Undo.RecordObject(speaker.gameObject, "Fix speaker mixer");
+                    speaker.name = speaker.name.Substring(0, tag).TrimEnd() + " " + TarkovFacilitySystems.SpeakerMixerTag;
+                    fixes.Add($"{Where(speaker)}: PA speaker moved to the CommonSounds mixer group (its indoor/outdoor ambience group went quiet on the other side)");
+                }
+
+            foreach (var (where, problem) in TarkovTriggerLinks.Problems())
+                if (where != null)
+                    problems.Add($"{Where(where)}: {problem}");
+            foreach (var subscriber in All<InteractiveSubscriber>())
+                if (subscriber.Subscribee == null)
+                    problems.Add($"{Where(subscriber)}: announcement follows nothing (set its Subscribee); the game throws on it");
+            foreach (var zone in All<EFT.GameTriggers.TriggerZone>())
+            {
+                var collider = zone.GetComponent<Collider>();
+                if (collider == null)
+                    problems.Add($"{Where(zone)}: trigger zone has no collider");
+                else if (!collider.isTrigger)
+                {
+                    Record(collider);
+                    collider.isTrigger = true;
+                    fixes.Add($"{Where(zone)}: trigger zone's collider made a trigger");
+                }
+                if (zone.gameObject.layer != LayerMask.NameToLayer("Triggers"))
+                {
+                    Record(zone.gameObject);
+                    zone.gameObject.layer = LayerMask.NameToLayer("Triggers");
+                    fixes.Add($"{Where(zone)}: trigger zone moved to the Triggers layer");
+                }
             }
 
             foreach (var culling in All<CullingLightObject>())
