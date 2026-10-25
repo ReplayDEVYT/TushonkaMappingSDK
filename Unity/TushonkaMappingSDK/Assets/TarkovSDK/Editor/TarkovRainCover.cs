@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
         private const float CellSize = 1.5f;
         private const float HeadRoom = 1.8f;
 
-        [MenuItem("Tarkov SDK/Tools/Generate/Rain Cover", priority = 223)]
+        [MenuItem("Tarkov SDK/Generation/Geometry/Rain Cover", priority = 110)]
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();

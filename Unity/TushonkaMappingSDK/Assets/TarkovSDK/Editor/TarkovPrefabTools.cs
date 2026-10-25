@@ -19,10 +19,10 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/";
 
-        [MenuItem(Menu + "Interactables/Door", priority = 22)]
+        [MenuItem(Menu + "Interactables/Door", priority = 26)]
         private static void MenuDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateDoor(p, 1f, 2.1f).gameObject);
 
-        [MenuItem(Menu + "Interactables/Switch", priority = 23)]
+        [MenuItem(Menu + "Interactables/Switch", priority = 28)]
         private static void MenuSwitch(MenuCommand cmd)
         {
             // right-clicking a door makes a switch that opens it
@@ -50,13 +50,14 @@ namespace TarkovSDK.Editor
             return go;
         });
 
-        [MenuItem(Menu + "Interactables/Lootable Container", priority = 24)]
+        [MenuItem(Menu + "Interactables/Lootable Container", priority = 29)]
         private static void MenuContainer(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateContainer(p).gameObject);
 
         // ------------------------------------------------------------ door
 
         // hingeRight puts the hinge on the right edge (seen from -Z); reverseSwing opens it the other way
-        public static Door CreateDoor(Transform parent, float width, float height, float thickness = 0.05f, bool hingeRight = false, bool reverseSwing = false)
+        public static Door CreateDoor(Transform parent, float width, float height, float thickness = 0.05f, bool hingeRight = false, bool reverseSwing = false,
+                                      bool keycard = false)
         {
             var root = new GameObject("Door");
             if (parent != null)
@@ -97,7 +98,7 @@ namespace TarkovSDK.Editor
             handle.transform.localPosition = new Vector3(side * width * 0.88f, 1.0f, 0f);
             var doorHandle = handle.AddComponent<DoorHandle>();
 
-            var door = leaf.AddComponent<Door>();
+            var door = keycard ? leaf.AddComponent<KeycardDoor>() : leaf.AddComponent<Door>();
             door.DoorAxis = WorldInteractiveObject.EDoorAxis.Y;
             door.DoorForward = WorldInteractiveObject.EDoorAxis.Z;
             // positive swings a left-hinged leaf towards -Z; a right hinge needs the opposite to swing the same way
@@ -290,7 +291,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 242)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 118)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

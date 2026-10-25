@@ -165,3 +165,69 @@ InteractiveSubscriber
 QueuePlayer
 # elevator doors follow their exfil's status
 EFT.Interactive.ExfiltrationDoor
+
+# --- traps (Labyrinth): damage triggers, trap handlers, per-raid random traps (LabyrinthSyncableTraps) ---
+EFT.Interactive.BarbedWire
+EFT.Interactive.ObstacleCollider
+EFT.GameTriggers.HandlerDamage
+EFT.GameTriggers.HandlerEffect
+EFT.GameTriggers.HandlerTriggerState
+CommonAssets.Scripts.Game.GameTriggers.Handlers.HandlerGameObjectState
+GameObjectStateSync
+CommonAssets.Scripts.Game.LabyrinthEvent.TrapSyncable
+
+# --- keycard doors: the card reader is an InteractiveProxy with a GripPose for the swipe ---
+InteractiveProxy
+GripPose
+
+# --- quest zones: visit / in-zone (ExperienceTrigger), place an item (PlaceItemTrigger) ---
+EFT.Interactive.TriggerWithId
+EFT.Interactive.ExperienceTrigger
+EFT.Interactive.PlaceItemTrigger
+
+# --- spatial audio (each map's sound scene): rooms and portals under a cross-scene group, baked routes ---
+Audio.SpatialSystem.SpatialAudioSystem
+SpatialAudioRoom
+Audio.SpatialSystem.BaseSpatialAudioPortal
+Audio.SpatialSystem.SpatialAudioPortal
+Audio.SpatialSystem.UniversalTriggerSpatialAudioPortal
+ServerRoomColliderArea
+Audio.SpatialSystem.AudioTriggerArea
+Audio.SpatialSystem.SpatialAudioCrossSceneGroup
+GuidComponent
+Audio.SpatialSystem.Data.SpatialAudioLocationInfo
+Audio.SpatialSystem.Data.AudioOcclusionSettings
+# indoor/outdoor blend of the ambience through portals (needs the rooms above)
+Audio.AmbientSubsystem.EnvironmentSoundBlendSystem
+Audio.AmbientSubsystem.AmbientSoundBlender
+Audio.Data.AudioMixerParametersData
+Audio.Data.AudioMixerParamsContainer
+
+# --- extracts: car (CarExtraction drives a WheelDrive car along a spline), flare (zone + sniper immunity), scav/shared ---
+EFT.Interactive.CarExtraction
+WheelDrive
+EasySuspension
+RigidbodySpawner
+BezierSplineTools.BezierSpline
+EFT.Interactive.FlareShootDetectorZone
+PhysicsTriggerHandler
+EFT.Interactive.PlayersWithImmuneToSniperFireCollector
+EFT.Interactive.ScavExfiltrationPoint
+EFT.Interactive.SharedExfiltrationPoint
+
+# --- border zones and mines: sniper zones (+ their shot effects), minefields, claymores ---
+EFT.Interactive.BorderZone
+EFT.Interactive.SniperFiringZone
+EFT.Interactive.SniperImitator
+EFT.Interactive.Minefield
+EFT.Interactive.MinefieldView
+MineDirectional
+MineDirectionalColliders
+
+# --- airdrops and the BTR (MapPathConfig: stops = PathDestination, roads = PathSpline) ---
+EFT.Airdrop.AirdropPoint
+EFT.Vehicle.MapPathConfig
+EFT.Vehicle.PathDestination
+EFT.Vehicle.PathSpline
+# physics broadphase bounds; the airdrop plane flies within them (ServerPlane.Init reads them unchecked)
+LevelPhysicsSettings

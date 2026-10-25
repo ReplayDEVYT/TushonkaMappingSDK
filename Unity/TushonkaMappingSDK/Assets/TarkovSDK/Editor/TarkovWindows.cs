@@ -24,7 +24,7 @@ namespace TarkovSDK.Editor
         private const string MaterialPath = "Assets/TarkovSDK/Materials/SDK_Glass.mat";
         private const float Thickness = 0.004f;
 
-        [MenuItem("GameObject/Tarkov SDK/Interactables/Breakable Window", priority = 26)]
+        [MenuItem("GameObject/Tarkov SDK/Interactables/Breakable Window", priority = 31)]
         private static void MenuWindow(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateWindow(p, 1.2f, 1f).gameObject);
 
         // a pane width x height, its pivot in the middle, facing -Z

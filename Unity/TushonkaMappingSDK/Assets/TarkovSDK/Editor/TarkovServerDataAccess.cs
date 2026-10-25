@@ -216,6 +216,109 @@ namespace TarkovSDK.Editor
 
             if (_sameKeysPvE && !JToken.DeepEquals(_base["AccessKeysPvE"], keys))
                 _base["AccessKeysPvE"] = keys.DeepClone();
+
+            DrawRandomTraps();
+        }
+
+        // base.json AirdropParameters[0] (the client reads index 0; later entries take over by PlaneAirdropEnd).
+        // ServerAirdropManager counts only human players for MinPlayersCountToSpawnAirdrop, so retail's 6
+        // means no plane drops in a solo SPT raid
+        private void DrawAirdrops()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Plane drops", EditorStyles.boldLabel);
+            var list = EnsureArray("AirdropParameters");
+            if (list.Count == 0)
+                list.Add(new JObject { ["AirdropPointDeactivateDistance"] = 60, ["MinPlayersCountToSpawnAirdrop"] = 1, ["PlaneAirdropChance"] = 0, ["PlaneAirdropCooldownMax"] = 850,
+                                       ["PlaneAirdropCooldownMin"] = 550, ["PlaneAirdropEnd"] = 2200, ["PlaneAirdropMax"] = 0, ["PlaneAirdropStartMax"] = 550,
+                                       ["PlaneAirdropStartMin"] = 250, ["UnsuccessfulTryPenalty"] = 120 });
+            var p = (JObject)list[0];
+            bool on = (p.Value<double?>("PlaneAirdropChance") ?? 0) > 0 && (p.Value<int?>("PlaneAirdropMax") ?? 0) > 0;
+            bool newOn = EditorGUILayout.Toggle(new GUIContent("Plane Drops", "A plane drops crates on its own during the raid."), on);
+            if (newOn != on)
+            {
+                p["PlaneAirdropChance"] = newOn ? 0.5 : 0;
+                p["PlaneAirdropMax"] = newOn ? 1 : 0;
+                if (newOn)
+                    p["MinPlayersCountToSpawnAirdrop"] = 1;
+                GUI.changed = true;
+            }
+            if (!newOn)
+                return;
+            using (new EditorGUI.IndentLevelScope())
+            {
+                float chance = EditorGUILayout.Slider(new GUIContent("Chance Per Try", "PlaneAirdropChance: each try drops a crate with this chance; a miss waits the Retry Delay."),
+                                                      (float)(p.Value<double?>("PlaneAirdropChance") ?? 0), 0.01f, 1f);
+                if (!Mathf.Approximately(chance, (float)(p.Value<double?>("PlaneAirdropChance") ?? 0)))
+                    p["PlaneAirdropChance"] = System.Math.Round(chance, 2);
+                AirdropInt(p, "Max Crates", "PlaneAirdropMax", "How many plane drops a raid can have.");
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    AirdropInt(p, "First Try After (s) Min", "PlaneAirdropStartMin", "Seconds into the raid of the first try: between Min and Max.");
+                    AirdropInt(p, "Max", "PlaneAirdropStartMax", null);
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    AirdropInt(p, "Between Drops (s) Min", "PlaneAirdropCooldownMin", "Seconds after a drop before the next try.");
+                    AirdropInt(p, "Max", "PlaneAirdropCooldownMax", null);
+                }
+                AirdropInt(p, "Retry Delay (s)", "UnsuccessfulTryPenalty", "UnsuccessfulTryPenalty: seconds after a try that rolled no drop.");
+                AirdropInt(p, "No Drops After (s)", "PlaneAirdropEnd", "PlaneAirdropEnd: no plane drops after this many seconds.");
+                AirdropInt(p, "Min Players", "MinPlayersCountToSpawnAirdrop", "Living human players needed (bots don't count). Retail uses 6; keep 1 for solo SPT.");
+            }
+        }
+
+        private static void AirdropInt(JObject p, string label, string key, string tooltip)
+        {
+            int value = p.Value<int?>(key) ?? 0;
+            int next = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent(label, tooltip), value));
+            if (next != value)
+                p[key] = next;
+        }
+
+        // base.json EventTrapsData: when present, the game (LabyrinthSyncableTraps) picks the scene's
+        // TrapSyncables each raid; Random.Range's max is exclusive
+        private void DrawRandomTraps()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Random traps", EditorStyles.boldLabel);
+            var data = _base["EventTrapsData"] as JObject;
+            bool on = EditorGUILayout.Toggle(new GUIContent("Random Traps",
+                "EventTrapsData: each raid opens some trap doors and keeps only some of the wires and spike traps marked Random Per Raid, as Labyrinth does. " +
+                "Off: every trap stays as placed."), data != null);
+            if (on != (data != null))
+            {
+                if (on)
+                    _base["EventTrapsData"] = data = new JObject { ["MinTrapDoors"] = 1, ["MaxTrapDoors"] = 3, ["MinBarbedWires"] = 3, ["MaxBarbedWires"] = 6 };
+                else
+                {
+                    _base.Remove("EventTrapsData");
+                    data = null;
+                }
+                GUI.changed = true;
+            }
+            if (data == null)
+                return;
+            using (new EditorGUI.IndentLevelScope())
+            {
+                TrapRange(data, "Open Trap Doors", "MinTrapDoors", "MaxTrapDoors");
+                TrapRange(data, "Wires And Spikes", "MinBarbedWires", "MaxBarbedWires");
+                EditorGUILayout.LabelField("Each raid picks a count from Min up to one below Max (never more than the map has). Labyrinth: 5-9 trap doors, 10-20 wires and spikes.",
+                                           EditorStyles.wordWrappedMiniLabel);
+            }
+        }
+
+        private static void TrapRange(JObject data, string label, string minKey, string maxKey)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                int min = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent(label + " Min"), data.Value<int?>(minKey) ?? 0));
+                int max = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Max"), data.Value<int?>(maxKey) ?? 0));
+                if (min != (data.Value<int?>(minKey) ?? 0))
+                    data[minKey] = min;
+                if (max != (data.Value<int?>(maxKey) ?? 0))
+                    data[maxKey] = max;
+            }
         }
 
         private static void DrawKeyList(JArray keys)

@@ -30,6 +30,8 @@ namespace mizmii.CustomMapLoader;
 public class CustomMapLoader(
     LocationTable locationTable,
     LocaleTable localeTable,
+    GlobalTable globalTable,
+    TemplateTable templateTable,
     LocationConfig locationConfig,
     BotConfig botConfig,
     PmcConfig pmcConfig,
@@ -209,6 +211,7 @@ public class CustomMapLoader(
         var exportPath = Path.Combine(dir, "sdk_export.json");
         List<SdkLootSpawn> lootSpawns = [];
         List<SdkContainer> containers = [];
+        var extraLocales = new Dictionary<string, string>();
         if (File.Exists(exportPath))
         {
             var export = await jsonUtil.DeserializeFromFileAsync<SdkExport>(exportPath, cancellationToken)
@@ -230,6 +233,8 @@ public class CustomMapLoader(
                 locationBase.Transits = export.Transits;
             // the client only accepts backend spawn points when the scene is not newer than this
             locationBase.UnixDateTime = Math.Max(locationBase.UnixDateTime, export.UnixDateTime);
+            if (export.Btr != null)
+                RegisterBtr(mapId, export.Btr, extraLocales);
         }
         else
         {
@@ -254,7 +259,7 @@ public class CustomMapLoader(
         _customMaps.Add(mapId);
         ConfigureLocation(mapId);
         var bannerTexts = ApplyMenu(dir, mapId, locationBase, menu);
-        await RegisterLocales(dir, locationBase, bannerTexts, cancellationToken);
+        await RegisterLocales(dir, locationBase, bannerTexts, extraLocales, cancellationToken);
 
         logger.Success($"[MappingSDK] Registered map '{mapId}' ({locationBase.IdField}): " +
                        $"{locationBase.SpawnPointParams?.Count() ?? 0} spawn point(s), {locationBase.Exits?.Count() ?? 0} exit(s), " +
@@ -508,7 +513,7 @@ public class CustomMapLoader(
 
     // the map select screen reads "<_Id> Name" / "<_Id> Description" from locales, not base.json
     private async Task RegisterLocales(string dir, LocationBase locationBase, List<(string Id, string? Name, string? Description)> banners,
-                                       CancellationToken cancellationToken)
+                                       Dictionary<string, string> extra, CancellationToken cancellationToken)
     {
         var path = Path.Combine(dir, "locale.json");
         var locale = File.Exists(path)
@@ -533,12 +538,95 @@ public class CustomMapLoader(
                     entries[$"{banner.Id} Name"] = banner.Name ?? name;
                     entries[$"{banner.Id} Description"] = banner.Description ?? description;
                 }
+                foreach (var (key, text) in extra)
+                    entries[key] = text;
                 if (locale?.Keys != null)
                     foreach (var (key, text) in locale.Keys)
                         entries[key] = text;
                 return entries;
             });
         }
+    }
+
+    // The BTR (BaseLocalGame creates its BtrController when globals BTRSettings.LocationsWithBTR lists the map):
+    // the routes go in BTRSettings.MapsConfigs (the client reads them by mapID), the timing in locationServices
+    // ServerMapBTRSettings (sent with the raid), both copied from Woods' for the wheel and suspension values;
+    // the taxi menu names the stops from Trading/Dialog/PlayerTaxi/<map>/<stop>/Name
+    private void RegisterBtr(string mapId, SdkBtr btr, Dictionary<string, string> locales)
+    {
+        var settings = globalTable.Configuration.BTRSettings;
+        var template = settings.MapsConfigs.Values.FirstOrDefault(m => m.MapID == "Woods") ?? settings.MapsConfigs.Values.FirstOrDefault();
+        var server = templateTable.LocationServices.BtrServerSettings;
+        var serverTemplate = server.ServerMapBTRSettings.Values.FirstOrDefault(m => m.MapID == "Woods") ?? server.ServerMapBTRSettings.Values.FirstOrDefault();
+        if (template == null || serverTemplate == null)
+        {
+            logger.Warning($"[MappingSDK] {mapId}: SPT has no BTR settings to copy, so the map has no BTR");
+            return;
+        }
+        var config = cloner.Clone(template)!;
+        config.MapID = mapId;
+        config.BtrSkin = string.IsNullOrEmpty(btr.Skin) ? template.BtrSkin : btr.Skin;
+        config.PathsConfigurations = (btr.Routes ?? []).Select(r => new PathConfig
+        {
+            Active = r.Active,
+            Id = r.Id,
+            EnterPoint = r.EnterPoint,
+            ExitPoint = r.ExitPoint,
+            PathPoints = r.PathPoints ?? [],
+            Once = r.Once,
+            Circle = r.Circle,
+            CircleCount = r.CircleCount,
+            SkinType = [],
+        }).ToList();
+        settings.MapsConfigs[mapId] = config;
+        settings.LocationsWithBTR = settings.LocationsWithBTR.Where(l => l != mapId).Append(mapId).ToList();
+
+        var timing = cloner.Clone(serverTemplate)!;
+        timing.MapID = mapId;
+        timing.ChanceSpawn = btr.ChanceSpawn;
+        timing.SpawnPeriod = new Vector3((float)btr.SpawnPeriodMin, (float)btr.SpawnPeriodMax, 0);
+        timing.MoveSpeed = btr.MoveSpeed;
+        timing.PauseDurationRange = new Vector3((float)btr.PauseMin, (float)btr.PauseMax, 0);
+        server.ServerMapBTRSettings[mapId] = timing;
+
+        foreach (var stop in btr.Stops ?? [])
+        {
+            locales[$"Trading/Dialog/PlayerTaxi/{mapId}/{stop.Id}/Name"] = stop.Name;
+            locales[$"Trading/Dialog/PlayerTaxi/{mapId}/{stop.Id}/Description"] = stop.Description;
+        }
+        logger.Info($"[MappingSDK] {mapId}: BTR with {config.PathsConfigurations.Count()} route(s), {btr.Stops?.Count ?? 0} stop(s)");
+    }
+
+    private sealed record SdkBtr
+    {
+        [JsonPropertyName("ChanceSpawn")] public double ChanceSpawn { get; init; } = 100;
+        [JsonPropertyName("SpawnPeriodMin")] public double SpawnPeriodMin { get; init; } = 300;
+        [JsonPropertyName("SpawnPeriodMax")] public double SpawnPeriodMax { get; init; } = 600;
+        [JsonPropertyName("MoveSpeed")] public float MoveSpeed { get; init; } = 8;
+        [JsonPropertyName("PauseMin")] public double PauseMin { get; init; } = 90;
+        [JsonPropertyName("PauseMax")] public double PauseMax { get; init; } = 150;
+        [JsonPropertyName("Skin")] public string? Skin { get; init; }
+        [JsonPropertyName("Routes")] public List<SdkBtrRoute>? Routes { get; init; }
+        [JsonPropertyName("Stops")] public List<SdkBtrStop>? Stops { get; init; }
+    }
+
+    private sealed record SdkBtrRoute
+    {
+        [JsonPropertyName("id")] public string Id { get; init; } = "";
+        [JsonPropertyName("active")] public bool Active { get; init; } = true;
+        [JsonPropertyName("enterPoint")] public string EnterPoint { get; init; } = "";
+        [JsonPropertyName("exitPoint")] public string ExitPoint { get; init; } = "";
+        [JsonPropertyName("once")] public bool Once { get; init; }
+        [JsonPropertyName("circle")] public bool Circle { get; init; }
+        [JsonPropertyName("circleCount")] public double CircleCount { get; init; }
+        [JsonPropertyName("pathPoints")] public List<string>? PathPoints { get; init; }
+    }
+
+    private sealed record SdkBtrStop
+    {
+        [JsonPropertyName("Id")] public string Id { get; init; } = "";
+        [JsonPropertyName("Name")] public string Name { get; init; } = "";
+        [JsonPropertyName("Description")] public string Description { get; init; } = "";
     }
 
     private sealed record SdkExport
@@ -563,6 +651,9 @@ public class CustomMapLoader(
 
         [JsonPropertyName("Containers")]
         public List<SdkContainer>? Containers { get; init; }
+
+        [JsonPropertyName("Btr")]
+        public SdkBtr? Btr { get; init; }
     }
 
     private sealed record SdkContainer

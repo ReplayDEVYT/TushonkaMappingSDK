@@ -22,9 +22,9 @@ namespace TarkovSDK.Editor
     // What it can't decide (a container without a type, an object without a collider) is reported.
     public static class TarkovQuickFixes
     {
-        private const string Menu = "Tarkov SDK/Tools/Interactables/";
+        private const string Menu = "Tarkov SDK/Quick Fixes/";
 
-        [MenuItem(Menu + "Fix Broken Interactables", priority = 212)]
+        [MenuItem(Menu + "Fix Broken Interactables", priority = 200)]
         public static void FixInteractables()
         {
             var fixes = new List<string>();

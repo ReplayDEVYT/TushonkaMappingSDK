@@ -77,7 +77,7 @@ namespace TarkovSDK.Editor
         private string _prefabFolder = "Assets/Prefabs";
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Interactive Object Builder...", priority = 200)]
+        [MenuItem("Tarkov SDK/Generation/Interactables/Interactive Object Builder...", priority = 104)]
         private static void Open() => GetWindow<TarkovObjectBuilderWindow>("Object Builder").minSize = new Vector2(380f, 420f);
 
         private void OnGUI()
@@ -157,7 +157,7 @@ namespace TarkovSDK.Editor
             _intensity = EditorGUILayout.FloatField("Intensity", _intensity);
             _range = EditorGUILayout.FloatField("Range (m)", _range);
             _nightOnly = EditorGUILayout.Toggle(new GUIContent("Only At Night", "On from 22:00 to 7:00, like retail street lights."), _nightOnly);
-            _addFlare = EditorGUILayout.Toggle(new GUIContent("Lens Flare", "A glow sprite on the light (needs Tarkov SDK > Map > Lens Flare Settings)."), _addFlare);
+            _addFlare = EditorGUILayout.Toggle(new GUIContent("Lens Flare", "A glow sprite on the light (needs Tarkov SDK > Generation > Misc > Lens Flare Settings)."), _addFlare);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("On / Off Look", EditorStyles.boldLabel);
@@ -372,6 +372,7 @@ namespace TarkovSDK.Editor
                 source.spatialBlend = 1f;
                 source.rolloffMode = AudioRolloffMode.Linear;
                 source.maxDistance = lamp.Rolloff;
+                TarkovAudioSources.SetUp(source, undo: false);
                 lamp.AudioSource = source;
                 lamp.TurnOnClips = _turnOnSounds.ToArray();
                 lamp.TurnOffClip = _turnOffSound;

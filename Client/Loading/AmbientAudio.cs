@@ -152,9 +152,10 @@ namespace mizmii.CustomMapLoader.Loading
 
     // BetterAudio mutes the ambient mixers ("AmbientInVolume", "AmbientOutVolume" at -80 dB) when a
     // raid starts. On retail maps the game's spatial audio opens them per room the player is in,
-    // blending outdoor ambience in through doors and windows; SDK maps have no spatial audio rooms,
-    // so this opens them from the map's indoor triggers: the outdoor mixer outdoors, the indoor one
-    // indoors, crossfaded.
+    // blending outdoor ambience in through doors and windows (EnvironmentSoundBlendSystem). A map with
+    // the SDK's spatial audio and the game's ambient system works the same way, and this steps aside
+    // once the spatial audio is initialised. Without them, this opens the mixers from the map's indoor
+    // triggers: the outdoor mixer outdoors, the indoor one indoors, crossfaded.
     //
     // Without the game's AmbientAudioSystem it also applies the headphones template and opens the
     // day/night mixers (the SDK's [Day]/[Night] tags fade the sources instead). With it, the system
@@ -167,11 +168,25 @@ namespace mizmii.CustomMapLoader.Loading
         private bool _templateApplied;
         private int _templateAttempts;
         private int _roomSent = -1; // -1 none yet, 0 outdoor, 1 indoor
+        private int _nextNativeCheck;
 
         private void Update()
         {
             if (!MonoBehaviourSingleton<BetterAudio>.Instantiated)
                 return;
+            // the map's own spatial audio rooms: the game sends the real room events, and its blend system
+            // (when the map has one) drives the ambient mixers
+            bool native = Audio.SpatialSystem.SpatialAudioSystem.Initialized;
+            if (native && Time.frameCount >= _nextNativeCheck)
+            {
+                _nextNativeCheck = Time.frameCount + 60;
+                if (FindObjectOfType<Audio.AmbientSubsystem.EnvironmentSoundBlendSystem>() != null)
+                {
+                    Plugin.Verbose("Ambient audio: the map's spatial audio and blend system drive the ambience");
+                    Destroy(gameObject);
+                    return;
+                }
+            }
             var audio = MonoBehaviourSingleton<BetterAudio>.Instance;
             var mixer = audio.Master;
             if (mixer == null)
@@ -206,7 +221,7 @@ namespace mizmii.CustomMapLoader.Loading
             float target = outdoor ? 1f : 0f;
             _outdoor = _outdoor < 0f ? target : Mathf.MoveTowards(_outdoor, target, Time.deltaTime * FadeSpeed);
 
-            if (system != null && system.Initialized && _roomSent != (outdoor ? 0 : 1))
+            if (!native && system != null && system.Initialized && _roomSent != (outdoor ? 0 : 1))
             {
                 try
                 {

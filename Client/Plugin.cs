@@ -8,7 +8,7 @@ using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.5.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.6.0")]
     // loaded after SAIN when it is installed, so SainLocationPatch can find it; never required
     [BepInDependency("me.sol.sain", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -29,7 +29,7 @@ namespace mizmii.CustomMapLoader
                 "On custom maps without baked AI data, generate cover points, voxels, door links and patrols from the navmesh at raid start.");
             VerboseLogging = Config.Bind("Debug", "Verbose logging", false,
                 "Log every bundle served and per-stage AI generation counts.");
-            RaidDiagnostics = Config.Bind("Debug", "Raid diagnostics", true,
+            RaidDiagnostics = Config.Bind("Debug", "Raid diagnostics", false,
                 "On custom maps, log the lighting, camera, material and bot state 8 and 30 seconds into the raid.");
 
             AudioProbe = Config.Bind("Debug", "Audio probe", false,
@@ -53,6 +53,14 @@ namespace mizmii.CustomMapLoader
             Diagnostics.AudioProbe.Install();
             Enable(new BundleHostPatch());
             Enable(new SpatialAudioInitPatch());
+            Enable(new SpatialAudioDataPathPatch());
+            Enable(new AmbientBlendExitDelayPatch());
+            Enable(new BtrMapPathPatch());
+            Enable(new BtrOnceRoutePatch());
+            Enable(new SniperImmuneItemsPatch());
+            Enable(new SniperImitatorEffectsPatch());
+            foreach (var patch in MetaAcousticPathPatch.All())
+                Enable(patch);
             Enable(new SceneSingletonPatch());
             Enable(new StationaryControllerPatch());
             Enable(new AmbientLightShaderPatch());
@@ -81,6 +89,9 @@ namespace mizmii.CustomMapLoader
             Enable(new RestoreCoversPatch());
             Enable(new CachePointsPatch());
             Enable(new StartCorePointPatch());
+            Enable(new NullClipPatch());
+            Enable(new NullClipQueuedPatch());
+            Enable(new BarbedWireSoundPatch());
             if (SainLocationPatch.Available())
                 Enable(new SainLocationPatch());
         }

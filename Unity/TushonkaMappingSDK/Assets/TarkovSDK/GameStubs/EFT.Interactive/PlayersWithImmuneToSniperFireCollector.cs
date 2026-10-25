@@ -8,5 +8,7 @@ namespace EFT.Interactive
 {
     public class PlayersWithImmuneToSniperFireCollector : global::UnityEngine.MonoBehaviour
     {
+        [global::UnityEngine.SerializeField]
+        public global::EFT.InventoryLogic.FlareEventType flareTypeForImmune = global::EFT.InventoryLogic.FlareEventType.ExitActivate;
     }
 }

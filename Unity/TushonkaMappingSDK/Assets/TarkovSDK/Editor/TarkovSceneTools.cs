@@ -14,7 +14,7 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/";
 
-        [MenuItem("Tarkov SDK/Map/Create Map Skeleton In Active Scene", priority = 101)]
+        [MenuItem("Tarkov SDK/Generation/Essential/Map Skeleton In Active Scene", priority = 100)]
         private static void CreateSkeletonMenu()
         {
             if (Object.FindObjectOfType<LocationScene>() != null &&
@@ -23,7 +23,7 @@ namespace TarkovSDK.Editor
             CreateSkeleton();
         }
 
-        [MenuItem("Tarkov SDK/Tools/Generate/Bake NavMesh For Active Scene", priority = 220)]
+        [MenuItem("Tarkov SDK/Generation/Essential/Bake NavMesh", priority = 101)]
         public static void BakeNavMesh()
         {
             // legacy scene bake with the "Humanoid" agent (type 0), the agent bots path with;
@@ -58,7 +58,7 @@ namespace TarkovSDK.Editor
             settings.NightVisionGroundColor = settings.GroundColor;
             settings.NightVisionAmbientIntensity = 0.6f;
             settings.skybox = TarkovLightingRig.DefaultSkybox();
-            settings.RainBounds = new Bounds(Vector3.zero, new Vector3(200f, 100f, 200f));
+            settings.RainBounds = new Bounds(Vector3.zero, new Vector3(220f, 100f, 220f));
             // the camera's GlobalFog always applies these; an unset fogMode (0) fogs everything black
             settings.fog = true;
             settings.fogMode = FogMode.Exponential;
@@ -81,7 +81,8 @@ namespace TarkovSDK.Editor
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = "Ground";
             ground.transform.SetParent(geometry.transform, false);
-            ground.transform.localScale = new Vector3(10f, 1f, 10f);
+            // 200 x 200 m: room for the BTR's route and turns, and the extracts at the edges
+            ground.transform.localScale = new Vector3(20f, 1f, 20f);
             MakeStaticGeometry(ground, MaterialType.Concrete);
             if (surface != null)
                 ground.GetComponent<Renderer>().sharedMaterial = surface;
@@ -109,6 +110,7 @@ namespace TarkovSDK.Editor
             TarkovPrefabTools.AddLowHigh(geometry.transform.Find("CoverBlock_4").GetComponent<MeshFilter>(), true);
 
             CreateExampleBuilding(geometry.transform, new Vector3(-28f, 0f, 0f), surface);
+            CreateExampleBunker(geometry.transform, new Vector3(-30f, 0f, -40f), surface);
 
             var zones = new GameObject("BotZones");
             var zone = CreateBotZone(zones.transform, "ZoneMain", Vector3.zero);
@@ -122,10 +124,37 @@ namespace TarkovSDK.Editor
 
             var exfils = new GameObject("Exfils");
             CreateExfil(exfils.transform, "SDK_Exit_Main", new Vector3(40f, 0f, 40f));
+            // one of each of the other kinds the Extracts window makes; their rules go to the server with Build Map
+            TarkovExtracts.Create(TarkovExtracts.Kind.Scav, exfils.transform).transform.position = new Vector3(90f, 0f, -90f);
+            TarkovExtracts.Create(TarkovExtracts.Kind.Coop, exfils.transform).transform.position = new Vector3(-50f, 0f, -90f);
+            // the stand-in car drives north (+Z) along its Drive Path when it leaves
+            var car = TarkovExtracts.Create(TarkovExtracts.Kind.Car, exfils.transform);
+            car.transform.position = new Vector3(-85f, 0f, -60f);
+            TarkovExtracts.UpdateDrivePath(car.GetComponentInChildren<CarExtraction>(true));
+            // flare zone, sniper zone and exit in a row along +X
+            TarkovExtracts.Create(TarkovExtracts.Kind.Flare, exfils.transform).transform.position = new Vector3(10f, 0f, 85f);
             Undo.RegisterCreatedObjectUndo(exfils, "Tarkov map skeleton");
+
+            // a minefield in the north-west corner, with a claymore's tripwires along its open side
+            var hazards = new GameObject("Hazards");
+            TarkovHazards.CreateMinefield(hazards.transform).transform.position = new Vector3(-78f, 4f, 78f);
+            TarkovHazards.CreateClaymore(hazards.transform).transform.position = new Vector3(-55f, 0f, 55f);
+            Undo.RegisterCreatedObjectUndo(hazards, "Tarkov map skeleton");
 
             EditorSceneManager.MarkSceneDirty(scene);
             Debug.Log("[Tarkov SDK] Map skeleton created. Next: bake the navmesh (Humanoid agent), then build the map from a Map Definition.");
+        }
+
+        private static void ExampleBox(Transform parent, Material surface, string name, Vector3 center, Vector3 size)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.name = name;
+            box.transform.SetParent(parent, false);
+            box.transform.localPosition = center;
+            box.transform.localScale = size;
+            MakeStaticGeometry(box, MaterialType.Concrete);
+            if (surface != null)
+                box.GetComponent<Renderer>().sharedMaterial = surface;
         }
 
         // A one-room shed showing the interactive and indoor features: a door with a switch beside it,
@@ -137,17 +166,7 @@ namespace TarkovSDK.Editor
             building.SetParent(parent, false);
             building.localPosition = position;
 
-            void Box(string name, Vector3 center, Vector3 size)
-            {
-                var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                box.name = name;
-                box.transform.SetParent(building, false);
-                box.transform.localPosition = center;
-                box.transform.localScale = size;
-                MakeStaticGeometry(box, MaterialType.Concrete);
-                if (surface != null)
-                    box.GetComponent<Renderer>().sharedMaterial = surface;
-            }
+            void Box(string name, Vector3 center, Vector3 size) => ExampleBox(building, surface, name, center, size);
 
             float front = -depth * 0.5f, side = (width - doorWidth) * 0.5f;
             Box("Wall_Back", new Vector3(0f, height * 0.5f, depth * 0.5f), new Vector3(width, height, wall));
@@ -179,33 +198,60 @@ namespace TarkovSDK.Editor
             spawn.Items.Add(new TarkovLootSpawn.Item { Template = "544fb45d4bdc2dee738b4568", Name = "Salewa first aid kit", Weight = 1 });
         }
 
+        // A thick concrete room with an open doorway: its indoor trigger has Is Bunker on, so the spatial
+        // audio room over it becomes a bunker (bunker room tone, sound from outside cut off).
+        private static void CreateExampleBunker(Transform parent, Vector3 position, Material surface)
+        {
+            const float width = 10f, depth = 8f, height = 3f, wall = 0.5f, doorWidth = 1.6f, doorHeight = 2.2f;
+            var bunker = new GameObject("ExampleBunker").transform;
+            bunker.SetParent(parent, false);
+            bunker.localPosition = position;
+
+            void Box(string name, Vector3 center, Vector3 size) => ExampleBox(bunker, surface, name, center, size);
+
+            float east = width * 0.5f, side = (depth - doorWidth) * 0.5f;
+            Box("Wall_West", new Vector3(-east, height * 0.5f, 0f), new Vector3(wall, height, depth + wall));
+            Box("Wall_North", new Vector3(0f, height * 0.5f, depth * 0.5f), new Vector3(width + wall, height, wall));
+            Box("Wall_South", new Vector3(0f, height * 0.5f, -depth * 0.5f), new Vector3(width + wall, height, wall));
+            Box("Wall_East_N", new Vector3(east, height * 0.5f, (doorWidth + side) * 0.5f), new Vector3(wall, height, side));
+            Box("Wall_East_S", new Vector3(east, height * 0.5f, -(doorWidth + side) * 0.5f), new Vector3(wall, height, side));
+            Box("Wall_East_Top", new Vector3(east, (height + doorHeight) * 0.5f, 0f), new Vector3(wall, height - doorHeight, doorWidth));
+            Box("Roof", new Vector3(0f, height + wall * 0.5f, 0f), new Vector3(width + wall, wall, depth + wall));
+
+            var trigger = CreateIndoorTrigger(IndoorTriggerGroup().transform, Vector3.zero);
+            trigger.name = "IndoorTrigger_ExampleBunker";
+            trigger.IsBunker = true;
+            trigger.transform.position = bunker.TransformPoint(new Vector3(0f, height * 0.5f, 0f));
+            trigger.transform.localScale = new Vector3(width - wall, height, depth - wall);
+        }
+
         [MenuItem(Menu + "Spawns/Spawn Point (PMC)", priority = 10)]
         private static void MenuSpawnPmc(MenuCommand cmd) => Place(cmd, p => CreateSpawnPoint(p, "Spawn_PMC", Vector3.zero, pmc: true).gameObject);
 
         [MenuItem(Menu + "Spawns/Spawn Point (Bot)", priority = 11)]
         private static void MenuSpawnBot(MenuCommand cmd) => Place(cmd, p => CreateSpawnPoint(p, "Spawn_Bot", Vector3.zero, pmc: false).gameObject);
 
-        [MenuItem(Menu + "AI/Bot Zone", priority = 18)]
+        [MenuItem(Menu + "AI/Bot Zone", priority = 22)]
         private static void MenuZone(MenuCommand cmd) => Place(cmd, p => CreateBotZone(p, "ZoneNew", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Patrol Way", priority = 19)]
+        [MenuItem(Menu + "AI/Patrol Way", priority = 23)]
         private static void MenuWay(MenuCommand cmd) => Place(cmd, p => CreatePatrolWay(p, "PatrolWay", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Patrol Point", priority = 20)]
+        [MenuItem(Menu + "AI/Patrol Point", priority = 24)]
         private static void MenuPoint(MenuCommand cmd) => Place(cmd, p => CreatePatrolPoint(p, Vector3.zero).gameObject);
 
         [MenuItem(Menu + "Exfils/Exfil", priority = 13)]
         private static void MenuExfil(MenuCommand cmd) => Place(cmd, p => CreateExfil(p, "SDK_Exit", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Nav Blocker", priority = 21)]
+        [MenuItem(Menu + "AI/Nav Blocker", priority = 25)]
         private static void MenuNavBlocker(MenuCommand cmd) => Place(cmd, p => CreateNavBlocker(p, Vector3.zero));
 
-        [MenuItem(Menu + "Exfils/Transit Point", priority = 14)]
+        [MenuItem(Menu + "Exfils/Transit Point", priority = 21)]
         private static void MenuTransit(MenuCommand cmd) => Place(cmd, p => CreateTransit(p, Vector3.zero).gameObject);
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 43)]
+        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 57)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -220,7 +266,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 42)]
+        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 56)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -230,7 +276,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 241)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 117)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -242,7 +288,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 243)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 119)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -257,7 +303,7 @@ namespace TarkovSDK.Editor
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 254)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 120)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()
@@ -438,7 +484,7 @@ namespace TarkovSDK.Editor
             return transit;
         }
 
-        private static string LocaleKeyPrefix() => EditorSceneManager.GetActiveScene().name.ToUpperInvariant();
+        internal static string LocaleKeyPrefix() => EditorSceneManager.GetActiveScene().name.ToUpperInvariant();
 
         public static EFT.EnvironmentEffect.IndoorTrigger CreateIndoorTrigger(Transform group, Vector3 position)
         {

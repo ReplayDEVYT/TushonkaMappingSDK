@@ -6,4 +6,14 @@
 
 public class InteractiveProxy : global::UnityEngine.MonoBehaviour
 {
+    public global::EFT.Interactive.WorldInteractiveObject Link;
+    public global::GripPose[] Grips;
+    public global::DoorHandle Handle;
+    public global::UnityEngine.Light StatusLight;
+    public global::UnityEngine.Light FlickerLight;
+    public global::UnityEngine.AnimationCurve FlickCurve;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.Vector3 _viewTarget;
+    [global::UnityEngine.SerializeField]
+    public global::UnityEngine.Vector3 _interactionPosition;
 }

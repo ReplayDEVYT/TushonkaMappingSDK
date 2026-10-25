@@ -52,6 +52,12 @@ namespace TarkovSDK.Editor
                 WriteContainer(w, container);
             w.EndArray();
 
+            if (report.Btr != null)
+            {
+                w.Name("Btr");
+                WriteBtr(w, report.Btr);
+            }
+
             w.EndObject();
             return w.ToString();
         }
@@ -88,27 +94,26 @@ namespace TarkovSDK.Editor
             w.EndObject();
         }
 
+        // the exit's requirement is the server's (ExfiltrationPoint.LoadSettings builds it from PassageRequirement,
+        // Id, Count, RequiredSlot and RequirementTip), so the scene's first one is written here
         private static void WriteExit(JsonWriter w, ExfiltrationPoint exfil)
         {
             var s = exfil.Settings;
-            string requirement = exfil.Requirements != null && exfil.Requirements.Length > 0
-                ? exfil.Requirements[0].Requirement.ToString()
-                : "None";
-            string tip = exfil.Requirements != null && exfil.Requirements.Length > 0
-                ? exfil.Requirements[0].RequirementTip ?? ""
-                : "";
+            var req = exfil.Requirements != null && exfil.Requirements.Length > 0 ? exfil.Requirements[0] : null;
+            string requirement = req != null ? req.Requirement.ToString() : "None";
+            string tip = req?.RequirementTip ?? "";
 
             w.BeginObject();
             w.Property("Chance", s.Chance);
             w.Property("ChancePVE", s.Chance);
-            w.Property("Count", 0);
-            w.Property("CountPVE", 0);
+            w.Property("Count", req?.Count ?? 0);
+            w.Property("CountPVE", req?.Count ?? 0);
             w.Property("EntryPoints", s.EntryPoints ?? "");
             w.Property("EventAvailable", s.EventAvailable);
             w.Property("ExfiltrationTime", s.ExfiltrationTime);
             w.Property("ExfiltrationTimePVE", s.ExfiltrationTime);
             w.Property("ExfiltrationType", s.ExfiltrationType.ToString());
-            w.Property("Id", s.Id ?? "");
+            w.Property("Id", !string.IsNullOrEmpty(req?.Id) ? req.Id : s.Id ?? "");
             w.Property("MaxTime", s.MaxTime);
             w.Property("MaxTimePVE", s.MaxTime);
             w.Property("MinTime", s.MinTime);
@@ -118,6 +123,8 @@ namespace TarkovSDK.Editor
             w.Property("PlayersCount", s.PlayersCount);
             w.Property("PlayersCountPVE", s.PlayersCount);
             w.Property("RequirementTip", tip);
+            if (req != null)
+                w.Property("RequiredSlot", req.RequiredSlot.ToString());
             w.EndObject();
         }
 
@@ -138,6 +145,54 @@ namespace TarkovSDK.Editor
             w.Property("name", p.name ?? "");
             w.Property("target", p.target ?? "");
             w.Property("time", (int)p.time);
+            w.EndObject();
+        }
+
+        // CustomMapLoader puts the routes in globals (BTRSettings.MapsConfigs), the timing in locationServices
+        // (ServerMapBTRSettings) and the stop names in the locales (Trading/Dialog/PlayerTaxi/<map>/<stop>/Name)
+        private static void WriteBtr(JsonWriter w, EFT.Vehicle.MapPathConfig config)
+        {
+            var settings = TarkovBtr.Settings(config, false);
+            w.BeginObject();
+            w.Property("ChanceSpawn", settings != null ? settings.ChanceSpawn : 100f);
+            w.Property("SpawnPeriodMin", settings != null ? settings.SpawnPeriod.x : 300f);
+            w.Property("SpawnPeriodMax", settings != null ? settings.SpawnPeriod.y : 600f);
+            w.Property("MoveSpeed", settings != null ? settings.MoveSpeed : 8f);
+            w.Property("PauseMin", settings != null ? settings.PauseDuration.x : 90f);
+            w.Property("PauseMax", settings != null ? settings.PauseDuration.y : 150f);
+            w.Property("Skin", settings != null && !string.IsNullOrEmpty(settings.Skin) ? settings.Skin : "Dirt");
+            w.Name("Routes");
+            w.BeginArray();
+            foreach (var route in config.PathsConfiguration.pathsConfigurations ?? new PathConfig[0])
+            {
+                w.BeginObject();
+                w.Property("id", route.id ?? "");
+                w.Property("active", route.active);
+                w.Property("enterPoint", route.enterPoint ?? "");
+                w.Property("exitPoint", route.exitPoint ?? "");
+                w.Property("once", route.once);
+                w.Property("circle", route.circle);
+                w.Property("circleCount", route.circleCount);
+                w.Name("pathPoints");
+                w.BeginArray();
+                foreach (var point in route.pathPoints ?? new List<string>())
+                    w.Value(point);
+                w.EndArray();
+                w.EndObject();
+            }
+            w.EndArray();
+            w.Name("Stops");
+            w.BeginArray();
+            foreach (var stop in TarkovBtr.Stops(config))
+            {
+                var entry = settings?.Stops.FirstOrDefault(s => s.Id == stop.id);
+                w.BeginObject();
+                w.Property("Id", stop.id);
+                w.Property("Name", string.IsNullOrEmpty(entry?.Name) ? stop.id : entry.Name);
+                w.Property("Description", entry?.Description ?? "");
+                w.EndObject();
+            }
+            w.EndArray();
             w.EndObject();
         }
 

@@ -109,6 +109,7 @@ namespace TarkovSDK.Editor
                 var exportPath = Path.Combine(outDir, "maps", def.MapId, "sdk_export.json");
                 Directory.CreateDirectory(Path.GetDirectoryName(exportPath));
                 File.WriteAllText(exportPath, exportJson);
+                WriteAudio(def.MapId, report.AudioFiles, outDir);
 
                 if (def.DeployToGame)
                 {
@@ -266,6 +267,11 @@ namespace TarkovSDK.Editor
                 File.Copy(src, dst, overwrite: true);
             }
 
+            var audioDir = Path.Combine(bundleDir, AudioFolderName(def.MapId));
+            if (Directory.Exists(audioDir))
+                Directory.Delete(audioDir, true);
+            CopyFolder(Path.Combine(outDir, AudioFolderKey(def.MapId)), audioDir);
+
             var serverMapDir = ServerMapDirectory(def);
             Directory.CreateDirectory(serverMapDir);
             File.Copy(Path.Combine(outDir, "maps", def.MapId, "sdk_export.json"), Path.Combine(serverMapDir, "sdk_export.json"), overwrite: true);
@@ -355,6 +361,7 @@ namespace TarkovSDK.Editor
 
             foreach (var key in new[] { PresetBundleKey(def.MapId), ScenesBundleKey(def.MapId) })
                 File.Copy(Path.Combine(outDir, key), Path.Combine(bundleDir, Path.GetFileName(key)), true);
+            CopyFolder(Path.Combine(outDir, AudioFolderKey(def.MapId)), Path.Combine(bundleDir, AudioFolderName(def.MapId)));
             File.Copy(Path.Combine(outDir, "maps", def.MapId, "sdk_export.json"), Path.Combine(mapDir, "sdk_export.json"), true);
             File.WriteAllText(Path.Combine(staging, def.MapId + "_README.txt"),
                 $"{def.MapId}: a custom map for SPT.\r\n\r\nRequires the CustomMapLoader mod. Install it first, then extract this archive " +
@@ -390,6 +397,30 @@ namespace TarkovSDK.Editor
                 Debug.LogWarning($"[Tarkov SDK] Package {zip} is incomplete, missing: {string.Join(", ", missing)}");
             else
                 Debug.Log($"[Tarkov SDK] Packaged '{def.MapId}' to {zip}. Extract it into an SPT install folder to play the map.");
+        }
+
+        // the map's baked audio (spatial audio routes, Meta acoustic map and geometry) in one folder next to its
+        // bundles, bundles/maps/<id>_audio/, where CustomMapLoader looks them up by file name
+        public static string AudioFolderName(string mapId) => mapId + "_audio";
+        private static string AudioFolderKey(string mapId) => Path.Combine("maps", AudioFolderName(mapId));
+
+        private static void WriteAudio(string mapId, List<string> files, string outDir)
+        {
+            var folder = Path.Combine(outDir, AudioFolderKey(mapId));
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+            if (files.Count == 0)
+                return;
+            Directory.CreateDirectory(folder);
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in files.Where(File.Exists))
+            {
+                var name = Path.GetFileName(file);
+                if (!names.Add(name))
+                    Debug.LogWarning($"[Tarkov SDK] Two audio files are named {name}; only the first ships. Rename one (its acoustic geometry's file path).");
+                else
+                    File.Copy(file, Path.Combine(folder, name), true);
+            }
         }
 
         private static void CopyFolder(string source, string destination)

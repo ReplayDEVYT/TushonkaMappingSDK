@@ -284,6 +284,8 @@ namespace TarkovSDK.Editor
 
         public override void OnInspectorGUI()
         {
+            if (GUILayout.Button(new GUIContent("Open Extracts Window", "Kind, entry points, requirement and transit conversion in one place.")))
+                EditorApplication.ExecuteMenuItem("Tarkov SDK/Tools/Extracts/Extracts...");
             DrawDefaultInspector();
             var exfil = (ExfiltrationPoint)target;
             bool doors = FindObjectsOfType<ExfiltrationDoor>().Any(d => d.Subscribee == exfil);

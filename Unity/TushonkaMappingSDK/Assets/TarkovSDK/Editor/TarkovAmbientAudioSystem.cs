@@ -19,6 +19,8 @@ namespace TarkovSDK.Editor
     //       DayTimeSoundBlender     crossfades the day and night loops at the game's hours (5:15, 21:15)
     //       WindAmbientBlender      wind loop, by wind speed and indoor/outdoor
     //       PrecipitationBlenders   rain loops outdoors and indoors, by rain intensity
+    //       EnvironmentSoundBlendSystem  the outdoor and indoor ambience mixers blended by the player's
+    //                               spatial audio room and its portals to the outside (Customs' values)
     //     AmbientPlayers            random sound event groups: Day, Night, Always, Indoor
     //     Beds                      plain looping sources (room tone), as in the simple setup
     //
@@ -94,6 +96,7 @@ namespace TarkovSDK.Editor
             var precipitation = Child(subsystems, "PrecipitationBlenders");
             Precipitation(precipitation, "OutdoorPrecipitationBlender" + MixerTag + "PrecipitationAmbientOut", EnvironmentType.Outdoor);
             Precipitation(precipitation, "IndoorPrecipitationBlender" + MixerTag + "PrecipitationAmbientIn", EnvironmentType.Indoor);
+            AddEnvironmentBlend(root);
 
             var players = Child(root.transform, "AmbientPlayers");
             var controller = players.gameObject.AddComponent<AmbientSoundPlayerGroupController>();
@@ -110,6 +113,81 @@ namespace TarkovSDK.Editor
             Undo.RegisterCreatedObjectUndo(root, "Add ambient audio system");
             EditorSceneManager.MarkSceneDirty(scene);
             return root;
+        }
+
+        // ------------------------------------------------------------ indoor / outdoor blend
+
+        private const string MixerParamsFolder = "Assets/TarkovSDK/Audio/MixerParameters";
+        public const float SmoothFadeOut = 1f;
+
+        // Customs' EnvironmentSoundBlendSystem with its ambience blender: as the player goes in and out of
+        // spatial audio rooms it fades the outdoor ambience mixer down to the room's Outdoor Ambient Volume,
+        // filtered and sent to reverb by how far in through the portals the player is, and the indoor one
+        // up. Without spatial audio rooms it leaves the mixers as they are.
+        public static Audio.AmbientSubsystem.EnvironmentSoundBlendSystem AddEnvironmentBlend(GameObject root)
+        {
+            var subsystems = root.transform.Find("Subsystems") ?? Child(root.transform, "Subsystems");
+            var existing = subsystems.GetComponentInChildren<Audio.AmbientSubsystem.EnvironmentSoundBlendSystem>(true);
+            if (existing != null)
+                return existing;
+            var blend = Child(subsystems, "EnvironmentSoundBlendSystem").gameObject.AddComponent<Audio.AmbientSubsystem.EnvironmentSoundBlendSystem>();
+            blend._listenerHeightWeight = 1f;
+            var ambient = Child(blend.transform, "AmbientSoundBlender").gameObject.AddComponent<Audio.AmbientSubsystem.AmbientSoundBlender>();
+            ambient._fadeInDuration = 3f;
+            // Customs' 0.3 s: the blender sets a fade shorter than _blendDurationMult (0.5) at once, so the
+            // outdoor ambience jumps to full on leaving a room
+            ambient._fadeOutDuration = SmoothFadeOut;
+            ambient._fromOutToInTransitionTime = 0.1f;
+            ambient._fromInToOutTransitionTime = 0.5f;
+            ambient._blendSpeed = 2f;
+            ambient._blendDurationMult = 0.5f;
+            ambient._depthCalculationMult = 1f;
+            ambient._maxHighPassFreq = 10f;
+            ambient._minHighPassFreq = 1000f;
+            ambient._minLowpassFreq = 500f;
+            ambient._maxLowpassFreq = 22000f;
+            ambient._maxOutdoorReverbSendDb = -2f;
+            ambient._maxOutdoorDelaySendDb = -5.4f;
+            var curve = new AnimationCurve(new Keyframe(0f, 0f, 0f, 0f), new Keyframe(0.2173f, 0.4245f, 1.0618f, 1.0618f),
+                                           new Keyframe(0.5778f, 0.6003f, 1.5921f, 1.5921f), new Keyframe(1f, 0.9f, 0f, 0f));
+            ambient._volumeCurve = curve;
+            ambient._occlusionCurve = new AnimationCurve(curve.keys);
+            ambient._outdoorMixerParams = MixerParameters("AmbientOutMixerBlendParameters",
+                ("Volume", new[] { "AmbientOutVolume" }), ("LowPassFreq", new[] { "AmbientOutLowpass", "AmbientEffectsLowpass" }),
+                ("HighPassFreq", new[] { "AmbientOutHighpass" }), ("ReverbSend", new[] { "AmbientOutReverbSend" }), ("DelaySend", new[] { "AmbientOutDelaySend" }));
+            ambient._indoorMixerParams = MixerParameters("AmbientInMixerBlendParameters", ("Volume", new[] { "AmbientInVolume" }));
+            blend._ambientSoundBlenders = new[] { ambient };
+            Undo.RegisterCreatedObjectUndo(blend.gameObject, "Add indoor/outdoor ambience blend");
+            return blend;
+        }
+
+        // the game's mixer parameter names a blender drives, by EMixerParameterType (kept by name)
+        private static Audio.Data.AudioMixerParametersData MixerParameters(string name, params (string Type, string[] Parameters)[] entries)
+        {
+            var path = $"{MixerParamsFolder}/{name}.asset";
+            var data = AssetDatabase.LoadAssetAtPath<Audio.Data.AudioMixerParametersData>(path);
+            if (data != null)
+                return data;
+            Directory.CreateDirectory(MixerParamsFolder);
+            data = ScriptableObject.CreateInstance<Audio.Data.AudioMixerParametersData>();
+            data.MixerParametersByType = new Audio.Data.AudioMixerParametersByType();
+            AssetDatabase.CreateAsset(data, path);
+            var so = new SerializedObject(data);
+            var keys = so.FindProperty("MixerParametersByType._keys");
+            var values = so.FindProperty("MixerParametersByType._values");
+            keys.arraySize = entries.Length;
+            values.arraySize = entries.Length;
+            for (int i = 0; i < entries.Length; i++)
+            {
+                keys.GetArrayElementAtIndex(i).stringValue = entries[i].Type;
+                var parameters = values.GetArrayElementAtIndex(i).FindPropertyRelative("_mixerParams");
+                parameters.arraySize = entries[i].Parameters.Length;
+                for (int j = 0; j < entries[i].Parameters.Length; j++)
+                    parameters.GetArrayElementAtIndex(j).stringValue = entries[i].Parameters[j];
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            return data;
         }
 
         private static Transform Child(Transform parent, string name)

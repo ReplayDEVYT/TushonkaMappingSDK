@@ -36,9 +36,9 @@ namespace TarkovSDK.Editor
             return BitConverter.ToUInt32(bytes, 0) | 1u;
         }
 
-        private static string ShortId() => Guid.NewGuid().ToString("N").Substring(0, 8);
+        internal static string ShortId() => Guid.NewGuid().ToString("N").Substring(0, 8);
 
-        private static GameObject Child(Transform parent, string name, Vector3 localPosition, string layer = null)
+        internal static GameObject Child(Transform parent, string name, Vector3 localPosition, string layer = null)
         {
             var go = new GameObject(name);
             if (layer != null)
@@ -50,7 +50,7 @@ namespace TarkovSDK.Editor
         }
 
         // a box panel: placeholder visual, movement collider and bullet collider
-        private static GameObject Panel(Transform parent, string name, Vector3 localPosition, Vector3 size, MaterialType material)
+        internal static GameObject Panel(Transform parent, string name, Vector3 localPosition, Vector3 size, MaterialType material)
         {
             var panel = Child(parent, name, localPosition);
             var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -77,7 +77,7 @@ namespace TarkovSDK.Editor
             return panel;
         }
 
-        private static GameObject Zone(Transform parent, string name, Vector3 center, Vector3 size)
+        internal static GameObject Zone(Transform parent, string name, Vector3 center, Vector3 size)
         {
             var go = Child(parent, name, Vector3.zero, "Triggers");
             var box = go.AddComponent<BoxCollider>();
@@ -87,7 +87,7 @@ namespace TarkovSDK.Editor
             return go;
         }
 
-        private static TriggerZone AddZone(GameObject go, TriggerZone.ETriggerZoneMode mode, string id)
+        internal static TriggerZone AddZone(GameObject go, TriggerZone.ETriggerZoneMode mode, string id)
         {
             var zone = go.AddComponent<TriggerZone>();
             zone._mode = mode;
@@ -97,7 +97,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ automatic sliding door
 
-        [MenuItem(Menu + "Interactables/Automatic Sliding Door", priority = 25)]
+        [MenuItem(Menu + "Interactables/Automatic Sliding Door", priority = 30)]
         private static void MenuSlidingDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateSlidingDoor(p, 2f, 2.2f, true));
 
         public static GameObject CreateSlidingDoor(Transform parent, float width, float height, bool twoPanels)
@@ -201,13 +201,13 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ elevator exfil
 
-        [MenuItem(Menu + "Exfils/Elevator Exfil", priority = 15)]
+        [MenuItem(Menu + "Exfils/Elevator Exfil", priority = 18)]
         private static void MenuElevator(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateElevator(p, withPower: false));
 
-        [MenuItem(Menu + "Exfils/Elevator Exfil (Needs Power)", priority = 16)]
+        [MenuItem(Menu + "Exfils/Elevator Exfil (Needs Power)", priority = 19)]
         private static void MenuElevatorPower(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateElevator(p, withPower: true));
 
-        [MenuItem(Menu + "Exfils/Elevator Exfil (Opens On Approach)", priority = 17)]
+        [MenuItem(Menu + "Exfils/Elevator Exfil (Opens On Approach)", priority = 20)]
         private static void MenuElevatorApproach(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateElevator(p, withPower: false, onApproach: true));
 
         // the car's floor is at the root, its doors face -Z, the call button is outside them.
@@ -303,10 +303,10 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ PA system
 
-        [MenuItem(Menu + "Sound/PA/PA System", priority = 38)]
+        [MenuItem(Menu + "Sound/PA/PA System", priority = 52)]
         private static void MenuPa(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreatePa(p).gameObject);
 
-        [MenuItem(Menu + "Sound/PA/Speaker", priority = 39)]
+        [MenuItem(Menu + "Sound/PA/Speaker", priority = 53)]
         private static void MenuSpeaker(MenuCommand cmd)
         {
             var pa = (cmd.context as GameObject)?.GetComponentInParent<QueuePlayer>() ?? Object.FindObjectOfType<QueuePlayer>();
@@ -322,7 +322,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = speaker;
         }
 
-        [MenuItem(Menu + "Sound/PA/Announcement On Interaction", priority = 40)]
+        [MenuItem(Menu + "Sound/PA/Announcement On Interaction", priority = 54)]
         private static void MenuAnnounceInteraction(MenuCommand cmd)
         {
             var wio = (cmd.context as GameObject)?.GetComponent<WorldInteractiveObject>() ?? Selection.activeGameObject?.GetComponent<WorldInteractiveObject>();
@@ -337,7 +337,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = announcement.gameObject;
         }
 
-        [MenuItem(Menu + "Sound/PA/Announcement Zone", priority = 41)]
+        [MenuItem(Menu + "Sound/PA/Announcement Zone", priority = 55)]
         private static void MenuAnnounceZone(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAnnouncementZone(p, PaFor(p)));
 
         // the scene's PA, or a new one
@@ -388,6 +388,7 @@ namespace TarkovSDK.Editor
             source.rolloffMode = AudioRolloffMode.Logarithmic;
             source.minDistance = 6f;
             source.maxDistance = 70f;
+            TarkovAudioSources.SetUp(source, undo: false);
             return go;
         }
 
@@ -443,7 +444,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ sound zone
 
-        [MenuItem(Menu + "Sound/Sound Zone", priority = 37)]
+        [MenuItem(Menu + "Sound/Sound Zone", priority = 51)]
         private static void MenuSoundZone(MenuCommand cmd) => TarkovSceneTools.Place(cmd, CreateSoundZone);
 
         // plays a random clip from its pool when a player enters; a looping one stops when the last leaves

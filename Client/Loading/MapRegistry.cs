@@ -92,5 +92,23 @@ namespace mizmii.CustomMapLoader.Loading
                 return false;
             }
         }
+
+        // a map's baked audio (spatial audio routes, Meta acoustics) sits in bundles/maps/<id>_audio/; its
+        // files are named after the map's scenes, so a name is enough to find one
+        public static string FindAudioFile(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(BundleRoot))
+                return null;
+            var maps = Path.Combine(BundleRoot, "maps");
+            if (!Directory.Exists(maps))
+                return null;
+            foreach (var folder in Directory.GetDirectories(maps, "*_audio"))
+            {
+                var file = Path.Combine(folder, fileName);
+                if (File.Exists(file))
+                    return file;
+            }
+            return null;
+        }
     }
 }

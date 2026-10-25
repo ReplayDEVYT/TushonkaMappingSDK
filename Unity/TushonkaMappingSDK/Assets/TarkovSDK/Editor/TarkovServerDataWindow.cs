@@ -30,10 +30,10 @@ namespace TarkovSDK.Editor
         private string _loadedFrom;
         private Vector2 _scroll;
         private int _tab;
-        private static readonly string[] Tabs = { "General", "Map Select", "Access", "Bots", "Spawns", "Loot", "JSON" };
-        private const int JsonTab = 6;
+        private static readonly string[] Tabs = { "General", "Map Select", "Raid", "Access", "Bots", "Spawns", "Loot", "Airdrops", "JSON" };
+        private const int JsonTab = 8;
 
-        [MenuItem("Tarkov SDK/Map/Server Data Editor", priority = 112)]
+        [MenuItem("Tarkov SDK/Map Settings/Data/Server Data Editor", priority = 123)]
         public static void Open() => Open(Selection.activeObject as TarkovMapDefinition);
 
         public static void Open(TarkovMapDefinition definition)
@@ -92,10 +92,12 @@ namespace TarkovSDK.Editor
             switch (_tab)
             {
                 case 1: DrawMapSelect(); break;
-                case 2: DrawAccess(); break;
-                case 3: DrawBots(); break;
-                case 4: DrawSpawns(); break;
-                case 5: DrawLoot(); break;
+                case 2: DrawRaid(); break;
+                case 3: DrawAccess(); break;
+                case 4: DrawBots(); break;
+                case 5: DrawSpawns(); break;
+                case 6: DrawLoot(); break;
+                case 7: DrawAirdropsTab(); break;
                 case JsonTab: DrawJson(); break;
                 default: DrawGeneral(); break;
             }

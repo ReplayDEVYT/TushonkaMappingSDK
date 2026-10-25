@@ -45,6 +45,7 @@ namespace mizmii.CustomMapLoader.Diagnostics
             if (Time.time < _next)
                 return;
             _next = Time.time + 1f;
+            LogAmbience();
 
             var listener = FindObjectOfType<AudioListener>();
             if (listener == null)
@@ -77,6 +78,29 @@ namespace mizmii.CustomMapLoader.Diagnostics
             var cp = camera != null ? camera.transform.position : Vector3.zero;
             Plugin.LogSource.LogInfo($"[Audio probe] listener {Path(listener.transform)} at {lp} ({Vector3.Distance(lp, cp):0.00} m from the camera), " +
                                      $"AudioListener.volume={AudioListener.volume:0.00}\n" + sb.ToString().TrimEnd());
+        }
+
+        // the player's spatial audio room and the ambience mixers, when they change: what the indoor/outdoor
+        // blend and the room tones are doing
+        private string _lastAmbience;
+
+        private void LogAmbience()
+        {
+            if (!MonoBehaviourSingleton<BetterAudio>.Instantiated || MonoBehaviourSingleton<BetterAudio>.Instance.Master == null)
+                return;
+            var mixer = MonoBehaviourSingleton<BetterAudio>.Instance.Master;
+            string Db(string parameter) => mixer.GetFloat(parameter, out var value) ? value.ToString("0") : "?";
+            var room = Audio.SpatialSystem.SpatialAudioSystem.Initialized && MonoBehaviourSingleton<Audio.SpatialSystem.SpatialAudioSystem>.Instantiated
+                ? MonoBehaviourSingleton<Audio.SpatialSystem.SpatialAudioSystem>.Instance.ListenerCurrentRoom : null;
+            var line = room != null && room.IsValid
+                ? $"room '{room.Name}' ({room.Type}, outdoor ambience {room.RoomAmbientData?.OutdoorAmbientVolume:0.##}, room tone {(room.RoomAmbientData?.RoomTone != null ? room.RoomAmbientData.RoomTone.name : "none")})"
+                : "no spatial audio room";
+            line += $", AmbientVolume {Db("AmbientVolume")} dB, AmbientInVolume {Db("AmbientInVolume")} dB, AmbientOutVolume {Db("AmbientOutVolume")} dB, " +
+                    $"AmbientOutLowpass {Db("AmbientOutLowpass")} Hz";
+            if (line == _lastAmbience)
+                return;
+            _lastAmbience = line;
+            Plugin.LogSource.LogInfo("[Audio probe] ambience: " + line);
         }
 
         private static string Path(Transform t)

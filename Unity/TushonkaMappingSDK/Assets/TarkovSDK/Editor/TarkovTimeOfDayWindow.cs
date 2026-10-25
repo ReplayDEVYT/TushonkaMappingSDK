@@ -21,7 +21,7 @@ namespace TarkovSDK.Editor
         private string _gameData = "C:/spt41/EscapeFromTarkov_Data";
         private string _python = "python";
 
-        [MenuItem("Tarkov SDK/Map/Time of Day \u2215 Weather...", priority = 113)]
+        [MenuItem("Tarkov SDK/Generation/Time/Time of Day \u2215 Weather...", priority = 109)]
         private static void Open()
         {
             var window = GetWindow<TarkovTimeOfDayWindow>(true, "Time of Day / Weather");
@@ -216,7 +216,7 @@ namespace TarkovSDK.Editor
             catch (System.Exception e)
             {
                 Debug.LogError($"[Tarkov SDK] Could not run '{python}': {e.Message}. Install Python 3 and run: pip install UnityPy TypeTreeGeneratorAPI " +
-                               "(set the game folder and Python in Tarkov SDK > Map > Time of Day / Weather...)");
+                               "(set the game folder and Python in Tarkov SDK > Generation > Time > Time of Day / Weather...)");
                 return false;
             }
             finally

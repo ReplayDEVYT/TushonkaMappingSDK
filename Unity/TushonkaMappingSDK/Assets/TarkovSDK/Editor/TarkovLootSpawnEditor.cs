@@ -103,7 +103,7 @@ namespace TarkovSDK.Editor
                 }
             }
 
-            private static string SptRoot()
+            internal static string SptRoot()
             {
                 foreach (var guid in AssetDatabase.FindAssets("t:TarkovMapDefinition"))
                 {

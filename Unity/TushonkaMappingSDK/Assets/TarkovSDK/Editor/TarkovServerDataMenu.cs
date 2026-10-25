@@ -167,7 +167,7 @@ namespace TarkovSDK.Editor
             if (!string.IsNullOrEmpty(_pack) && TarkovMapPack.Find(_pack) == null && !Directory.Exists(TarkovMapPack.PackDirectory(_definition.SptRoot, _pack)))
                 EditorGUILayout.HelpBox($"Map pack '{_pack}' is not in this project or the SPT install; the map shows on Tarkov's page until it is.", MessageType.Warning);
             if (_packs.Count == 0)
-                EditorGUILayout.HelpBox("Make a map pack with Tarkov SDK > Map > New Map Pack to give this map a page with its own background.", MessageType.None);
+                EditorGUILayout.HelpBox("Make a map pack with Tarkov SDK > Map Settings > New Map Pack... to give this map a page with its own background.", MessageType.None);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Button position (base.json)", EditorStyles.boldLabel);

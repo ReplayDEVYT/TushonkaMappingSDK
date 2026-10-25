@@ -25,7 +25,7 @@ namespace TarkovSDK.Editor
     // the sun intensity for brighter maps.
     public static class TarkovLightingRig
     {
-        // added from Tarkov SDK > Map > Time of Day / Weather... (simple mode)
+        // added from Tarkov SDK > Generation > Time > Time of Day / Weather... (simple mode)
         public static TODSkySimple Find(Scene scene)
         {
             foreach (var root in scene.GetRootGameObjects())

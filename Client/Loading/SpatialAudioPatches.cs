@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Audio.SpatialSystem;
@@ -6,13 +7,15 @@ using SPT.Reflection.Patching;
 
 namespace mizmii.CustomMapLoader.Loading
 {
-    // Retail maps ship a configured SpatialAudioSystem plus a baked .audiobakedata file. SDK maps
-    // have neither, so the game creates a blank system whose OcclusionSettings/poolsConfig are null
-    // and Initialize throws, aborting the raid load. On custom maps, skip Initialize: the system
-    // stays uninitialised and sounds play without room/portal occlusion.
+    // Retail maps ship a configured SpatialAudioSystem (in their sound scene) plus a baked .audiobakedata
+    // file. A map built with the SDK's spatial audio has both: its system and rooms in its scenes, its bake
+    // in bundles/maps/<id>_audio/ (SpatialAudioDataPathPatch finds it), and the game initialises it as on
+    // any map. A map without one gets the blank system the game creates, whose OcclusionSettings and
+    // poolsConfig are null and whose Initialize throws, aborting the raid load: Initialize is skipped then,
+    // the system stays uninitialised and sounds play without room/portal occlusion.
     //
-    // Approach from ManimalIcebreaker's RaidFixPatches (Patch_SpatialAudioInit and
-    // Patch_OcclusionWhenUninitialized), used with the author's permission.
+    // Approach for maps without spatial audio from ManimalIcebreaker's RaidFixPatches
+    // (Patch_SpatialAudioInit and Patch_OcclusionWhenUninitialized), used with the author's permission.
     internal class SpatialAudioInitPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
@@ -21,16 +24,91 @@ namespace mizmii.CustomMapLoader.Loading
         }
 
         [PatchPrefix]
-        private static bool Prefix(ref Task __result)
+        private static bool Prefix(SpatialAudioSystem __instance, ref Task __result)
         {
             if (!MapRegistry.IsCustomMapActive())
             {
                 Plugin.Verbose("SpatialAudioSystem.Initialize: not a custom map, running the original");
                 return true;
             }
-            Plugin.LogSource.LogInfo("Custom map: spatial audio (occlusion) is not initialised; sounds play unoccluded.");
+            var info = __instance._locationInfo;
+            var bake = info != null && !string.IsNullOrEmpty(info.relativeBakeDataPath)
+                ? MapRegistry.FindAudioFile(Path.GetFileName(info.relativeBakeDataPath)) : null;
+            if (bake != null && __instance.OcclusionSettings != null && __instance.poolsConfig != null)
+            {
+                Plugin.LogSource.LogInfo($"Custom map: spatial audio from {Path.GetFileName(bake)} ({info.roomsCount} rooms, {info.portalsCount} portals)");
+                return true;
+            }
+            Plugin.LogSource.LogInfo("Custom map: no baked spatial audio; spatial audio (occlusion) is not initialised and sounds play unoccluded.");
             __result = Task.CompletedTask;
             return false;
+        }
+    }
+
+    // The game reads the bake from StreamingAssets/<relativeBakeDataPath>; an SDK map's is in its audio folder
+    internal class SpatialAudioDataPathPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod() =>
+            AccessTools.Constructor(typeof(SpatialAudioDataLoader), new[] { typeof(string), typeof(UnityEngine.MonoBehaviour) });
+
+        [PatchPostfix]
+        private static void Postfix(SpatialAudioDataLoader __instance, string dataPath)
+        {
+            if (File.Exists(__instance._fullPath) || !MapRegistry.IsCustomMapActive())
+                return;
+            var file = MapRegistry.FindAudioFile(Path.GetFileName(dataPath));
+            if (file != null)
+                __instance._fullPath = file;
+        }
+    }
+
+    // Meta XR acoustics load their files through StreamingAssets (MetaXRAcousticMap.LoadMapAsync and
+    // MetaXRAcousticGeometry.LoadGeometryAsync take the path below it); an SDK map's are in its audio
+    // folder, reached from StreamingAssets with a relative path
+    internal class MetaAcousticPathPatch : ModulePatch
+    {
+        private readonly MethodBase _target;
+
+        private MetaAcousticPathPatch(MethodBase target)
+        {
+            _target = target;
+        }
+
+        protected override MethodBase GetTargetMethod() => _target;
+
+        public static MetaAcousticPathPatch[] All()
+        {
+            var patches = new System.Collections.Generic.List<MetaAcousticPathPatch>();
+            foreach (var (type, method) in new[] { ("MetaXRAcousticMap", "LoadMapAsync"), ("MetaXRAcousticGeometry", "LoadGeometryAsync") })
+            {
+                var target = AccessTools.Method(AccessTools.TypeByName(type), method, new[] { typeof(string) });
+                if (target != null)
+                    patches.Add(new MetaAcousticPathPatch(target));
+            }
+            return patches.ToArray();
+        }
+
+        [PatchPrefix]
+        private static void Prefix(ref string __0)
+        {
+            if (string.IsNullOrEmpty(__0) || !MapRegistry.IsCustomMapActive())
+                return;
+            var streaming = UnityEngine.Application.streamingAssetsPath;
+            if (File.Exists(Path.Combine(streaming, __0)))
+                return;
+            var file = MapRegistry.FindAudioFile(Path.GetFileName(__0));
+            if (file == null)
+                return;
+            __0 = MakeRelative(streaming, file).Replace(Path.DirectorySeparatorChar, '/');
+            Plugin.Verbose($"Meta acoustics: {Path.GetFileName(file)} from the map's audio folder");
+        }
+
+        // Path.GetRelativePath, which netstandard2.1's Unity runtime may lack
+        private static string MakeRelative(string from, string to)
+        {
+            var fromUri = new System.Uri(Path.GetFullPath(from).TrimEnd(Path.DirectorySeparatorChar, '/') + "/");
+            var toUri = new System.Uri(Path.GetFullPath(to));
+            return System.Uri.UnescapeDataString(fromUri.MakeRelativeUri(toUri).ToString());
         }
     }
 

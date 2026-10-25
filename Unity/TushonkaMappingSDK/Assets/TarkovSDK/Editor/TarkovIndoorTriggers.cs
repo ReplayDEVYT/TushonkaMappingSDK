@@ -30,10 +30,10 @@ namespace TarkovSDK.Editor
     public static class TarkovIndoorTriggers
     {
         public const string RootName = "GeneratedIndoorTriggers";
-        private const float CellSize = 1f;
+        internal const float CellSize = 1f;
         private const float HeadRoom = 1.8f;
         private const float MaxCeiling = 30f;
-        private const float MaxRoomSize = 40f;
+        internal const float MaxRoomSize = 40f;
         private const int WallsNeeded = 6;
         private const int MaxSurfaces = 24;
         private const float MinRoomArea = 4f;
@@ -43,19 +43,22 @@ namespace TarkovSDK.Editor
         private static readonly RaycastHit[] Hits = new RaycastHit[64];
         private static readonly Dictionary<Collider, bool> Counted = new Dictionary<Collider, bool>();
 
-        private class Cell
+        // other scanners (the audio room generator) share the geometry tests and their cache
+        internal static void ResetCache() => Counted.Clear();
+
+        internal class Cell
         {
             public float Floor, Ceiling;
             public int Room = -1;
         }
 
-        private class Room
+        internal class Room
         {
             public readonly List<Vector2Int> Cells = new List<Vector2Int>();
             public float Floor = float.MaxValue, Ceiling = float.MinValue;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Generate/Indoor Triggers", priority = 222)]
+        [MenuItem("Tarkov SDK/Generation/Essential/Indoor Triggers", priority = 102)]
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();
@@ -163,7 +166,7 @@ namespace TarkovSDK.Editor
         // ------------------------------------------------------------ scan
 
         // the room cells of one column, one per storey
-        private static List<Cell> Scan(Vector3 from, int mask, int wallMask, List<Bounds> manual)
+        internal static List<Cell> Scan(Vector3 from, int mask, int wallMask, List<Bounds> manual)
         {
             List<Cell> rooms = null;
             for (int i = 0; i < MaxSurfaces && Cast(from, Vector3.down, 2000f, mask, out var floor); i++)
@@ -196,7 +199,7 @@ namespace TarkovSDK.Editor
         }
 
         // the nearest hit on a collider that counts
-        private static bool Cast(Vector3 from, Vector3 direction, float distance, int mask, out RaycastHit hit)
+        internal static bool Cast(Vector3 from, Vector3 direction, float distance, int mask, out RaycastHit hit)
         {
             int count = Physics.RaycastNonAlloc(from, direction, Hits, distance, mask, QueryTriggerInteraction.Ignore);
             hit = default;
@@ -211,7 +214,7 @@ namespace TarkovSDK.Editor
         }
 
         // real geometry only: not editor-only, and a mesh (a mesh collider, terrain, or a rendered mesh)
-        private static bool Counts(Collider collider)
+        internal static bool Counts(Collider collider)
         {
             if (Counted.TryGetValue(collider, out var counts))
                 return counts;
@@ -269,7 +272,7 @@ namespace TarkovSDK.Editor
         }
 
         // as few boxes as cover the room's floor plan, from its lowest floor to its highest ceiling
-        private static List<Bounds> CoverRoom(Room room, Vector3 origin, int mask)
+        internal static List<Bounds> CoverRoom(Room room, Vector3 origin, int mask)
         {
             int x0 = room.Cells.Min(c => c.x), z0 = room.Cells.Min(c => c.y);
             int w = room.Cells.Max(c => c.x) - x0 + 1, h = room.Cells.Max(c => c.y) - z0 + 1;

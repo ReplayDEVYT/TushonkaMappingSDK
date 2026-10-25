@@ -25,6 +25,10 @@ namespace TarkovSDK.Editor
             public readonly List<TransitPoint> Transits = new List<TransitPoint>();
             public readonly List<TarkovSDK.TarkovLootSpawn> LootSpawns = new List<TarkovSDK.TarkovLootSpawn>();
             public readonly List<LootableContainer> Containers = new List<LootableContainer>();
+            // the baked audio files the raid loads (spatial audio routes, Meta acoustics), shipped next to the bundles
+            public readonly List<string> AudioFiles = new List<string>();
+            // the map's BTR route, if it has one
+            public EFT.Vehicle.MapPathConfig Btr;
             public long UnixDateTime;
         }
 
@@ -70,6 +74,7 @@ namespace TarkovSDK.Editor
 
                 if (All<LevelSettings>(roots).Count == 0)
                     report.Warnings.Add($"{scene.name}: no LevelSettings in the active scene; ambient light and airdrops will not initialise");
+                TarkovAirdrops.EnsurePhysicsSetup(scene, report);
 
                 // the camera's GlobalFog applies LevelSettings' fog whether or not fog is on, and an
                 // unset mode (0) fogs every opaque pixel in fogColor
@@ -139,12 +144,12 @@ namespace TarkovSDK.Editor
                 bool simple = TarkovLightingRig.Find(scene) != null, full = TarkovWeatherBuilder.Find(scene) != null;
                 if (simple && full)
                     report.Warnings.Add($"{scene.name}: has both the simple time of day rig and the full weather system; remove one " +
-                                        "(Tarkov SDK > Map > Time of Day / Weather...)");
+                                        "(Tarkov SDK > Generation > Time > Time of Day / Weather...)");
                 if (!simple && !full)
                 {
                     TarkovLightingRig.Create(scene);
                     report.Warnings.Add($"{scene.name}: had no time of day system, the simple one was added under 'Weather' " +
-                                        "(Tarkov SDK > Map > Time of Day / Weather... for the full weather system)");
+                                        "(Tarkov SDK > Generation > Time > Time of Day / Weather... for the full weather system)");
                     roots = scene.GetRootGameObjects();
                 }
                 if (full)
@@ -162,15 +167,15 @@ namespace TarkovSDK.Editor
                 {
                     var soundData = TarkovAmbientAudioSystem.SoundData(ambientSystem);
                     if (soundData == null || TarkovAmbientAudioSystem.MixerEffects(ambientSystem) == null)
-                        report.Warnings.Add($"{scene.name}: the ambient audio system is missing its data assets; remove it and add it again (Tarkov SDK > Map > Ambient Sounds...)");
+                        report.Warnings.Add($"{scene.name}: the ambient audio system is missing its data assets; remove it and add it again (Tarkov SDK > Generation > Ambience > Ambient Sounds...)");
                     else if (TarkovAmbientAudioSystem.GetClip(soundData, TarkovAmbientAudioSystem.Slot.Day) == null)
-                        report.Warnings.Add($"{scene.name}: the ambient audio system has no Outdoor Day clip (Tarkov SDK > Map > Ambient Sounds...)");
+                        report.Warnings.Add($"{scene.name}: the ambient audio system has no Outdoor Day clip (Tarkov SDK > Generation > Ambience > Ambient Sounds...)");
                     if (scene.GetRootGameObjects().Any(g => g.name == TarkovAmbienceWindow.RootName))
                         report.Warnings.Add($"{scene.name}: has both {TarkovAmbienceWindow.RootName} beds and the ambient audio system; the beds play on top of it");
                 }
                 if (full && TarkovRainCover.Find(scene) == null)
                     report.Warnings.Add($"{scene.name}: no rain cover, so rain falls on the screen indoors too " +
-                                        "(Tarkov SDK > Tools > Generate > Rain Cover)");
+                                        "(Tarkov SDK > Generation > Geometry > Rain Cover)");
                 if (full && TarkovWeatherBuilder.Find(scene).activeSelf)
                 {
                     // the client activates it after swapping its shaders; active, it would wake on stand-ins
@@ -189,6 +194,24 @@ namespace TarkovSDK.Editor
             SyncIndoorTriggers(scene, roots, report);
             FillLocationScene(locationScene, roots);
             Validate(scene, roots, report);
+            TarkovHazards.Prepare(roots, scene.name, report);
+            TarkovExtracts.Prepare(roots, scene.name, report);
+            TarkovBtr.Prepare(roots, scene.name, report);
+            // after the ids: the audio portals take their doors' and windows' Ids
+            var bake = TarkovSpatialAudio.Prepare(scene, report);
+            if (bake != null)
+                report.AudioFiles.Add(bake);
+            report.AudioFiles.AddRange(TarkovAcoustics.Files(scene));
+            if (TarkovAcoustics.FindMap(scene) != null && TarkovAcoustics.Files(scene).Count == 0)
+                report.Warnings.Add($"{scene.name}: room acoustics are set up but not baked (Tarkov SDK > Generation > Audio > Spatial Audio..., Bake Acoustics); the raid has no Meta reverb");
+            var unspatialized = TarkovAudioSources.Broken(scene);
+            if (unspatialized.Count > 0)
+                report.Warnings.Add($"{scene.name}: {unspatialized.Count} audio source(s) not set up for Meta XR Audio (e.g. '{TarkovAudioSources.Path(unspatialized[0].transform)}': " +
+                                    $"{TarkovAudioSources.Problem(unspatialized[0])}); Tarkov SDK > Generation > Audio > Spatial Audio..., Fix Audio Sources");
+            var blendSystem = TarkovAmbientAudioSystem.Find(scene);
+            if (blendSystem != null && blendSystem.GetComponentsInChildren<Audio.AmbientSubsystem.AmbientSoundBlender>(true).Any(b => b._fadeOutDuration < b._blendDurationMult))
+                report.Warnings.Add($"{scene.name}: the indoor/outdoor blend's Fade Up Outdoors is too short for the game to fade, so the outdoor ambience jumps to full " +
+                                    "volume on leaving a room (Tarkov SDK > Generation > Audio > Spatial Audio..., Fade Smoothly)");
 
             EditorSceneManager.MarkSceneDirty(scene);
         }
@@ -292,6 +315,40 @@ namespace TarkovSDK.Editor
                     report.Warnings.Add($"{scene.name}/{group.name}: nothing switches this lamp group, so it stays {(group._initialLightState ? "on" : "off")} " +
                                         "(Add Light Switch in its inspector, or Tools > Interactables > Triggers & Sounds)");
             }
+            // keycard doors: the game reads Proxies[0] unchecked when unlocking, and a proxy's Start needs its lights
+            foreach (var door in All<KeycardDoor>(roots))
+            {
+                if (door.Proxies == null || door.Proxies.Length == 0 || door.Proxies.Any(p => p == null))
+                    report.Errors.Add($"{scene.name}/{door.name}: keycard door without a card reader in Proxies; unlocking it throws");
+                if (string.IsNullOrEmpty(door.KeyId))
+                    report.Warnings.Add($"{scene.name}/{door.name}: keycard door has no KeyId (the keycard's item id), so no card opens it");
+            }
+            int interactive = LayerMask.NameToLayer("Interactive");
+            foreach (var proxy in All<InteractiveProxy>(roots))
+            {
+                if (TarkovKeycardDoors.RefreshProxy(proxy))
+                    EditorUtility.SetDirty(proxy);
+                if (proxy.Link == null)
+                    report.Errors.Add($"{scene.name}/{proxy.name}: card reader has no Link (its door); the game throws on it at raid start");
+                if (proxy.StatusLight == null || proxy.FlickerLight == null)
+                    report.Errors.Add($"{scene.name}/{proxy.name}: card reader needs both its Status Light and Flicker Light; the game throws on it at raid start");
+                if (proxy.gameObject.layer != interactive || proxy.GetComponent<Collider>() == null)
+                    report.Warnings.Add($"{scene.name}/{proxy.name}: card reader needs a collider on the Interactive layer on its own object, or players can't use it");
+            }
+            // quest zones are found by id
+            var questIds = new HashSet<string>();
+            foreach (var zone in All<TriggerWithId>(roots))
+            {
+                if (string.IsNullOrWhiteSpace(zone._id))
+                    report.Warnings.Add($"{scene.name}/{zone.name}: quest zone has no Id, so no quest can use it");
+                else if (!questIds.Add(zone.GetType().Name + "/" + zone._id))
+                    report.Warnings.Add($"{scene.name}/{zone.name}: another {zone.GetType().Name} has the Id '{zone._id}'");
+                if (!(zone.GetComponent<Collider>()?.isTrigger ?? false))
+                    report.Warnings.Add($"{scene.name}/{zone.name}: quest zone has no trigger collider, so players are never in it");
+            }
+            foreach (var wire in All<BarbedWire>(roots))
+                if (!(wire.GetComponent<Collider>()?.isTrigger ?? false))
+                    report.Warnings.Add($"{scene.name}/{wire.name}: barbed wire has no trigger collider, so it never catches anyone");
             foreach (var subscriber in All<InteractiveSubscriber>(roots))
                 if (subscriber.Subscribee == null)
                     report.Errors.Add($"{scene.name}/{subscriber.name}: InteractiveSubscriber has no Subscribee; the game throws on it at raid start");
@@ -316,7 +373,7 @@ namespace TarkovSDK.Editor
 
             // lens flares draw only through a FlareSceneSettings, in any scene of the map
             if (All<MultiFlare.FlareLight>(roots).Count > 0 && UnityEngine.Object.FindObjectsOfType<MultiFlare.FlareSceneSettings>(true).Length == 0)
-                report.Warnings.Add($"{scene.name}: has lens flares but no flare settings, so they don't show (Tarkov SDK > Map > Lens Flare Settings)");
+                report.Warnings.Add($"{scene.name}: has lens flares but no flare settings, so they don't show (Tarkov SDK > Generation > Misc > Lens Flare Settings)");
         }
 
         private static void SyncPatrolWays(GameObject[] roots)
@@ -580,6 +637,9 @@ namespace TarkovSDK.Editor
                         EFT.GameTriggers.HandlerAnimator a => a._animatorActions != null && a._animatorActions.Length > 0,
                         EFT.GameTriggers.HandlerPlaySoundAdvanced p => !string.IsNullOrEmpty(p._playTriggerId) || !string.IsNullOrEmpty(p._stopTriggerId),
                         EFT.GameTriggers.HandlerFilterOnce f => f._inputTriggerIds != null && f._inputTriggerIds.Length > 0,
+                        EFT.GameTriggers.HandlerDamage d => !string.IsNullOrEmpty(d._triggerIdStartDamage) || !string.IsNullOrEmpty(d._triggerIdFinishDamage),
+                        EFT.GameTriggers.HandlerEffect e => !string.IsNullOrEmpty(e._triggerId),
+                        EFT.GameTriggers.HandlerTriggerState s => !string.IsNullOrEmpty(s._triggerId) || s._controlledTriggerId != null && s._controlledTriggerId.Length > 0,
                         WorldInteractiveObject w => w.TriggersMap != null && w.TriggersMap.Length > 0,
                         _ => false,
                     };

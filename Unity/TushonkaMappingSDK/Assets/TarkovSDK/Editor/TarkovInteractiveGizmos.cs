@@ -30,7 +30,10 @@ namespace TarkovSDK.Editor
             _handlers ??= Object.FindObjectsOfType<HandlerAnimator>(true).Cast<Component>()
                 .Concat(Object.FindObjectsOfType<HandlerPlaySoundAdvanced>(true))
                 .Concat(Object.FindObjectsOfType<BaseTriggerHandler>(true))
-                .Concat(Object.FindObjectsOfType<HandlerFilterOnce>(true)).ToList();
+                .Concat(Object.FindObjectsOfType<HandlerFilterOnce>(true))
+                .Concat(Object.FindObjectsOfType<HandlerDamage>(true))
+                .Concat(Object.FindObjectsOfType<HandlerEffect>(true))
+                .Concat(Object.FindObjectsOfType<HandlerTriggerState>(true)).ToList();
 
         public static IEnumerable<Component> Listeners(string triggerId)
         {
@@ -46,6 +49,9 @@ namespace TarkovSDK.Editor
                     HandlerPlaySoundAdvanced s => s._playTriggerId == triggerId || s._stopTriggerId == triggerId,
                     BaseTriggerHandler b => b._triggerId == triggerId,
                     HandlerFilterOnce f => f._inputTriggerIds != null && f._inputTriggerIds.Contains(triggerId) || f._resetTriggerId == triggerId,
+                    HandlerDamage d => d._triggerIdStartDamage == triggerId || d._triggerIdFinishDamage == triggerId,
+                    HandlerEffect e => e._triggerId == triggerId,
+                    HandlerTriggerState s => s._triggerId == triggerId,
                     _ => false,
                 };
                 if (listens)
@@ -392,6 +398,76 @@ namespace TarkovSDK.Editor
             Gizmos.color = new Color(SoundColor.r, SoundColor.g, SoundColor.b, 0.5f);
             Gizmos.DrawWireSphere(position, Mathf.Max(0.5f, first.RollOff));
             Handles.Label(position, $"sound: play '{handler._playTriggerId}'" + (first.IsForceStereo ? " (2D)" : "") + $"\nheard to {first.RollOff} m", EditorStyles.miniBoldLabel);
+        }
+
+        // ------------------------------------------------------------ traps, keycard readers, quest zones
+
+        private static readonly Color TrapColor = new Color(1f, 0.3f, 0.15f);
+        private static readonly Color QuestColor = new Color(0.3f, 0.8f, 1f);
+
+        [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected | GizmoType.Pickable)]
+        private static void DrawBarbedWire(BarbedWire wire, GizmoType type)
+        {
+            var box = wire.GetComponent<BoxCollider>();
+            if (box == null)
+                return;
+            bool selected = (type & GizmoType.Selected) != 0;
+            Gizmos.matrix = wire.transform.localToWorldMatrix;
+            Gizmos.color = new Color(TrapColor.r, TrapColor.g, TrapColor.b, selected ? 0.9f : 0.35f);
+            Gizmos.DrawWireCube(box.center, box.size);
+            Gizmos.matrix = Matrix4x4.identity;
+            if (selected)
+                Handles.Label(wire.transform.TransformPoint(box.center) + Vector3.up * 0.4f,
+                              "barbed wire" + (wire.GetComponent<CommonAssets.Scripts.Game.LabyrinthEvent.TrapSyncable>() != null ? " (random per raid)" : ""), EditorStyles.miniBoldLabel);
+        }
+
+        [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
+        private static void DrawTrapSyncable(CommonAssets.Scripts.Game.LabyrinthEvent.TrapSyncable trap, GizmoType type)
+        {
+            Handles.Label(trap.transform.position + Vector3.up * 0.6f,
+                          trap.TrapType == CommonAssets.Scripts.Game.LabyrinthEvent.ETrapType.TrapDoor ? "trap door (cover removed in some raids)" : "random per raid",
+                          EditorStyles.miniBoldLabel);
+        }
+
+        // a trap switch's handlers: the zones whose triggers it turns off or on
+        [DrawGizmo(GizmoType.Selected | GizmoType.Active | GizmoType.InSelectionHierarchy)]
+        private static void DrawTriggerState(HandlerTriggerState handler, GizmoType type)
+        {
+            var senders = TarkovTriggerLinks.Senders();
+            foreach (var id in handler._controlledTriggerId ?? new string[0])
+                if (!string.IsNullOrEmpty(id) && senders.TryGetValue(id, out var from))
+                    foreach (var zone in from.Where(z => z != null))
+                        Link(handler.transform.position, zone.transform.position, TrapColor, handler._targetState ? "turns on" : "turns off", dotted: true);
+        }
+
+        [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected | GizmoType.Active)]
+        private static void DrawCardReader(InteractiveProxy proxy, GizmoType type)
+        {
+            bool selected = (type & GizmoType.Selected) != 0;
+            Gizmos.color = new Color(DoorLink.r, DoorLink.g, DoorLink.b, selected ? 0.9f : 0.4f);
+            Gizmos.DrawWireSphere(proxy.transform.TransformPoint(proxy._interactionPosition), 0.08f);
+            if (!selected || proxy.Link == null)
+                return;
+            Link(proxy.transform.position, proxy.Link.transform.position, DoorLink, "card reader for");
+            Handles.Label(proxy.transform.TransformPoint(proxy._interactionPosition), "player stands here", EditorStyles.miniLabel);
+        }
+
+        [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected | GizmoType.Pickable)]
+        private static void DrawQuestZone(TriggerWithId zone, GizmoType type)
+        {
+            var box = zone.GetComponent<BoxCollider>();
+            if (box == null)
+                return;
+            bool selected = (type & GizmoType.Selected) != 0;
+            Gizmos.matrix = zone.transform.localToWorldMatrix;
+            Gizmos.color = new Color(QuestColor.r, QuestColor.g, QuestColor.b, selected ? 0.15f : 0.05f);
+            Gizmos.DrawCube(box.center, box.size);
+            Gizmos.color = new Color(QuestColor.r, QuestColor.g, QuestColor.b, selected ? 0.9f : 0.4f);
+            Gizmos.DrawWireCube(box.center, box.size);
+            Gizmos.matrix = Matrix4x4.identity;
+            if (selected)
+                Handles.Label(zone.transform.TransformPoint(box.center) + Vector3.up * 0.5f,
+                              $"{(zone is PlaceItemTrigger ? "place item" : "visit")}: {zone._id}", EditorStyles.miniBoldLabel);
         }
 
         // ------------------------------------------------------------ elevator doors

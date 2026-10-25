@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43633d50330e438d979cd0a1bcb2bd78, type: 3}
+  m_Name: sp_construct_AudioOcclusion
+  m_EditorClassIdentifier: 
+  commonSettings:
+    occlusionLayerMask:
+      serializedVersion: 2
+      m_Bits: 0
+    positionChangeThreshold: []
+    smoothingFactor: 20
+    effectChangeThreshold: 0.05
+    maxDistance: 250
+    floorHeight: 2.7
+    playerObstructionYOffset: 0.5
+    transmissionThreshold: 0.55
+    diffractionThreshold: 0.5
+  propagationSettings:
+    routesCompressionFactorByQuality: []
+    distanceWeight: 0.7
+    diffractionExponent: 0.5
+    heightExponent: 1
+    segmentHeightWeightUp: 0
+    segmentHeightWeightDown: 0
+    minPortalCostPercent: 0.1
+    relaxationIterations: 3
+    absoluteHeightWeight: 0
+    typicalRoomHeight: 2.7
+    maxSegmentLength: 10
+  reflectionSettings:
+    initialRaysCount: []
+    maxReflections: 3
+    energyLossFactorPerReflection: 0.7
+    minEnergyAtMaxDistance: 0.1
+  diffractionSettings:
+    edgeSearchRayCount: []
+    maxEdgeDist: 0.15
+    maxPathFactor: 3
+    edgeSearchRayLength: 0.5
+    edgeValidationRayOffset: 0.01
+  transmissionSettings:
+    initialRaysCount: []
+    absorptionPerUnit: 1.5
+    raysWideningRadius: 0.15
+    listenerHeightSamplingOffset: 0.2
+    sourceHeightSamplingOffset: 0.4
+    obstacleMinThickness: 0.02
+    obstacleMaxThickness: 5
+    minEnergyThreshold: 0.1
+    useRaycast: 0
+    minClearPathScore: 0.5

@@ -30,13 +30,13 @@ namespace TarkovSDK.Editor
         private static readonly float[] RingRadii = { 8f, 16f, 26f, 36f };
         private const int RingSamples = 12;
 
-        [MenuItem("Tarkov SDK/Tools/Generate/Patrol Routes", priority = 221)]
+        [MenuItem("Tarkov SDK/Generation/Essential/Patrol Routes", priority = 103)]
         public static void GenerateMenu()
         {
             var triangulation = NavMesh.CalculateTriangulation();
             if (triangulation.indices.Length == 0)
             {
-                EditorUtility.DisplayDialog("Patrol Routes", "No navmesh found. Bake one first (Tarkov SDK > Tools > Generate > Bake NavMesh For Active Scene).", "OK");
+                EditorUtility.DisplayDialog("Patrol Routes", "No navmesh found. Bake one first (Tarkov SDK > Generation > Essential > Bake NavMesh).", "OK");
                 return;
             }
             // navmesh triangle centres: places bots can stand, spread over the walkable area

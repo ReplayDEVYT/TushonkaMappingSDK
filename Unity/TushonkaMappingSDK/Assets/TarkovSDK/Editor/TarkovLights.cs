@@ -36,16 +36,16 @@ namespace TarkovSDK.Editor
         private const string AreaSourceMaterialPath = "Assets/TarkovSDK/Materials/AreaLightSource.mat";
         private static readonly Color Warm = new Color(1f, 0.86f, 0.68f);
 
-        [MenuItem(Menu + "Lamp", priority = 28)]
+        [MenuItem(Menu + "Lamp", priority = 42)]
         private static void MenuLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Point).gameObject);
 
-        [MenuItem(Menu + "Spot Lamp", priority = 29)]
+        [MenuItem(Menu + "Spot Lamp", priority = 43)]
         private static void MenuSpotLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Spot).gameObject);
 
-        [MenuItem(Menu + "Area Light", priority = 30)]
+        [MenuItem(Menu + "Area Light", priority = 44)]
         private static void MenuAreaLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAreaLight(p, LampOf(cmd)).gameObject);
 
-        [MenuItem(Menu + "Lens Flare", priority = 32)]
+        [MenuItem(Menu + "Lens Flare", priority = 46)]
         private static void MenuFlare(MenuCommand cmd)
         {
             TarkovSceneTools.Place(cmd, p => CreateFlare(p, LampOf(cmd)).gameObject);
@@ -54,11 +54,11 @@ namespace TarkovSDK.Editor
                 EditorApplication.delayCall += AddFlareSettingsMenu;
         }
 
-        [MenuItem(Menu + "Advanced Light", priority = 31)]
+        [MenuItem(Menu + "Advanced Light", priority = 45)]
         private static void MenuAdvancedLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAdvancedLight(p, LampOf(cmd)).gameObject);
 
         // right-clicking an object that holds lights makes it the group, as retail's INTERACTIVE_Light
-        [MenuItem(Menu + "Controlled Lamp Group", priority = 33)]
+        [MenuItem(Menu + "Controlled Lamp Group", priority = 47)]
         private static void MenuLampGroup(MenuCommand cmd)
         {
             var target = cmd.context as GameObject;
@@ -74,7 +74,7 @@ namespace TarkovSDK.Editor
             TarkovSceneTools.Place(cmd, p => CreateLampGroup(p).gameObject);
         }
 
-        [MenuItem("Tarkov SDK/Map/Lens Flare Settings", priority = 115)]
+        [MenuItem("Tarkov SDK/Generation/Misc/Lens Flare Settings", priority = 113)]
         public static void AddFlareSettingsMenu()
         {
             var scene = SceneManager.GetActiveScene();

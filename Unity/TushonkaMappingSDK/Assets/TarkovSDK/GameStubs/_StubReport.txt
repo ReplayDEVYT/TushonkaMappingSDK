@@ -34,6 +34,7 @@ Types:
   full    AreaLight
   full    AreaLight/TextureSize
   full    Audio.AmbientSubsystem.AmbientAudioSystem
+  full    Audio.AmbientSubsystem.AmbientSoundBlender
   full    Audio.AmbientSubsystem.AmbientSoundPlayerGroup
   full    Audio.AmbientSubsystem.AmbientSoundPlayerGroupController
   full    Audio.AmbientSubsystem.BaseAmbientSoundPlayer
@@ -49,6 +50,7 @@ Types:
   full    Audio.AmbientSubsystem.Data.PrecipitationsByIntensity
   full    Audio.AmbientSubsystem.Data.ReverbMixerDataSO
   full    Audio.AmbientSubsystem.Data.SeasonAmbientSoundDataSO
+  shallow Audio.AmbientSubsystem.Data.SeasonClipsContentPreset
   full    Audio.AmbientSubsystem.Data.SeasonPrecipitations
   full    Audio.AmbientSubsystem.Data.SeasonWind
   full    Audio.AmbientSubsystem.Data.WindBySpeed
@@ -56,24 +58,56 @@ Types:
   full    Audio.AmbientSubsystem.DayTimeAmbientBlender
   full    Audio.AmbientSubsystem.DayTimeAmbientSeasonClips
   full    Audio.AmbientSubsystem.DayTimeAmbientSoundContainer
+  full    Audio.AmbientSubsystem.EnvironmentSoundBlendSystem
   full    Audio.AmbientSubsystem.PrecipitationAmbientBlender
+  full    Audio.AmbientSubsystem.RoomAmbientData
   full    Audio.AmbientSubsystem.SeasonAmbientSoundPlayer
   full    Audio.AmbientSubsystem.SeasonAmbientSoundPlayer/SeasonRandomTimeRange
   full    Audio.AmbientSubsystem.SeasonAmbientSoundPlayer/SeasonSoundBanks
   full    Audio.AmbientSubsystem.WindAmbientBlender
+  full    Audio.Data.AudioMixerParametersByType
+  full    Audio.Data.AudioMixerParametersData
+  full    Audio.Data.AudioMixerParamsContainer
+  full    Audio.Data.EAudioQuality
   shallow Audio.RadioSystem.ClientBroadcastPlayer
+  full    Audio.SpatialSystem.AudioTriggerArea
+  full    Audio.SpatialSystem.BaseSpatialAudioPortal
+  full    Audio.SpatialSystem.BaseSpatialAudioPortal/PortalState
+  full    Audio.SpatialSystem.BaseSpatialAudioPortal/PortalType
+  full    Audio.SpatialSystem.Data.AudioOcclusionSettings
+  full    Audio.SpatialSystem.Data.CommonOcclusionSettings
+  full    Audio.SpatialSystem.Data.DiffractionSettings
+  full    Audio.SpatialSystem.Data.LocationBakeSettings
+  full    Audio.SpatialSystem.Data.PropagationSettings
+  full    Audio.SpatialSystem.Data.QualityFloatValue
+  full    Audio.SpatialSystem.Data.QualityIntValue
+  full    Audio.SpatialSystem.Data.ReflectionSettings
+  full    Audio.SpatialSystem.Data.SpatialAudioLocationInfo
+  full    Audio.SpatialSystem.Data.TransmissionSettings
+  full    Audio.SpatialSystem.EAudioRoomTypeMask
+  full    Audio.SpatialSystem.SpatialAudioCrossSceneGroup
+  full    Audio.SpatialSystem.SpatialAudioPortal
+  full    Audio.SpatialSystem.SpatialAudioSystem
+  full    Audio.SpatialSystem.UniversalTriggerSpatialAudioPortal
+  full    Audio.SpatialSystem.Utils.SpatialAudioPoolsConfig
   full    AutoDoorSound
   full    BaseBallistic
   full    BaseBallistic/ESurfaceSound
   full    BaseLight
   shallow BetterAudio
   full    BetterAudio/AudioSourceGroupType
+  full    BezierSplineTools.BezierControlPointMode
+  full    BezierSplineTools.BezierSpline
   full    BotLocationModifier
   full    BotTiltType
   full    BotZone
   full    BotZoneEntrance
   full    BotZoneEntranceInfo
   full    BotZoneNavMeshCutter
+  full    CommonAssets.Scripts.Audio.EAudioFadeType
+  full    CommonAssets.Scripts.Game.GameTriggers.Handlers.HandlerGameObjectState
+  full    CommonAssets.Scripts.Game.LabyrinthEvent.ETrapType
+  full    CommonAssets.Scripts.Game.LabyrinthEvent.TrapSyncable
   full    ControlledLampGroup
   full    CoverLevel
   full    CoverPointDefenceInfo
@@ -87,6 +121,7 @@ Types:
   shallow DisablerCullingObjectBase
   full    DoorHandle
   full    EBodyPart
+  full    EBodyPartColliderType
   full    ECoverPointSpecial
   full    EFT.Airdrop.AirdropPoint
   full    EFT.AssetsManager.PoolSafeMonoBehaviour
@@ -110,26 +145,53 @@ Types:
   full    EFT.Game.Spawning.SpawnPoint
   full    EFT.Game.Spawning.SpawnPointMarker
   full    EFT.GameTriggers.BaseTriggerHandler
+  full    EFT.GameTriggers.DamageData
   full    EFT.GameTriggers.HandlerAnimator
   full    EFT.GameTriggers.HandlerAnimator/AnimatorAction
   full    EFT.GameTriggers.HandlerAnimator/AnimatorActionBool
   full    EFT.GameTriggers.HandlerAnimator/AnimatorActionFloat
   full    EFT.GameTriggers.HandlerAnimator/AnimatorActionInt
   full    EFT.GameTriggers.HandlerAnimator/AnimatorActionTrigger
+  full    EFT.GameTriggers.HandlerDamage
+  full    EFT.GameTriggers.HandlerEffect
+  full    EFT.GameTriggers.HandlerEffect/AddStaminaZeroEffectApplier
+  full    EFT.GameTriggers.HandlerEffect/ChronicStaminaFatigueApplier
+  full    EFT.GameTriggers.HandlerEffect/ContusionApplier
+  full    EFT.GameTriggers.HandlerEffect/DisorientationApplier
+  full    EFT.GameTriggers.HandlerEffect/DoWoundApplier
+  full    EFT.GameTriggers.HandlerEffect/EffectsSet
+  full    EFT.GameTriggers.HandlerEffect/EnduranceApplier
+  full    EFT.GameTriggers.HandlerEffect/FractureApplier
+  full    EFT.GameTriggers.HandlerEffect/HealthBoostApplier
+  full    EFT.GameTriggers.HandlerEffect/HeavyBleedingApplier
+  full    EFT.GameTriggers.HandlerEffect/ImmunityPreventedNegativeEffectApplier
+  full    EFT.GameTriggers.HandlerEffect/IntoxicationApplier
+  full    EFT.GameTriggers.HandlerEffect/LightBleedingApplier
+  full    EFT.GameTriggers.HandlerEffect/MisfireEffectHealth
+  full    EFT.GameTriggers.HandlerEffect/OverEncumberedApplier
+  full    EFT.GameTriggers.HandlerEffect/PainKillerApplier
+  full    EFT.GameTriggers.HandlerEffect/PanicMassFireApplier
+  full    EFT.GameTriggers.HandlerEffect/RadExposureApplier
+  full    EFT.GameTriggers.HandlerEffect/RemoveAllEffects
+  full    EFT.GameTriggers.HandlerEffect/RestoreFullHealthsApplier
+  full    EFT.GameTriggers.HandlerEffect/SandingScreenApplier
   full    EFT.GameTriggers.HandlerFilterOnce
   full    EFT.GameTriggers.HandlerInteractable
   full    EFT.GameTriggers.HandlerLamp
   full    EFT.GameTriggers.HandlerPlaySoundAdvanced
   full    EFT.GameTriggers.HandlerPlaySoundAdvanced/PlaySoundConfig
+  full    EFT.GameTriggers.HandlerTriggerState
   full    EFT.GameTriggers.TriggerZone
   full    EFT.GameTriggers.TriggerZone/EBotPolitic
   full    EFT.GameTriggers.TriggerZone/ETriggerTag
   full    EFT.GameTriggers.TriggerZone/ETriggerZoneMode
   full    EFT.GameTriggers.TriggersPrefab
   shallow EFT.Hideout.HideoutController
+  full    EFT.Interactive.BarbedWire
   shallow EFT.Interactive.BaseRestrictableZone
   full    EFT.Interactive.BorderZone
-  shallow EFT.Interactive.DamageTrigger
+  full    EFT.Interactive.CarExtraction
+  full    EFT.Interactive.DamageTrigger
   full    EFT.Interactive.Door
   full    EFT.Interactive.DoorSwitch
   full    EFT.Interactive.EDoorState
@@ -144,7 +206,9 @@ Types:
   full    EFT.Interactive.ExfiltrationRequirement
   full    EFT.Interactive.ExfiltrationSubscriber
   full    EFT.Interactive.ExitTriggerSettings
+  full    EFT.Interactive.ExperienceTrigger
   shallow EFT.Interactive.FlameDamageTrigger
+  full    EFT.Interactive.FlareShootDetectorZone
   full    EFT.Interactive.InteractableObject
   full    EFT.Interactive.KeycardDoor
   full    EFT.Interactive.LampController
@@ -156,15 +220,21 @@ Types:
   full    EFT.Interactive.MaterialData
   full    EFT.Interactive.MaterialEmission
   full    EFT.Interactive.Minefield
-  shallow EFT.Interactive.PlayersWithImmuneToSniperFireCollector
+  full    EFT.Interactive.MinefieldView
+  full    EFT.Interactive.ObstacleCollider
+  full    EFT.Interactive.ObstacleCollider/EBotPolitic
+  full    EFT.Interactive.PlaceItemTrigger
+  full    EFT.Interactive.PlayersWithImmuneToSniperFireCollector
   full    EFT.Interactive.ScavExfiltrationPoint
   full    EFT.Interactive.SecretExfiltrations.SecretExfiltrationPoint
   full    EFT.Interactive.SharedExfiltrationPoint
   full    EFT.Interactive.SniperFiringZone
+  full    EFT.Interactive.SniperImitator
   shallow EFT.Interactive.StationaryWeapon
   full    EFT.Interactive.Switch
   full    EFT.Interactive.Switch/SwitchAndOperation
   full    EFT.Interactive.TransitPoint
+  full    EFT.Interactive.TriggerWithId
   full    EFT.Interactive.Trunk
   full    EFT.Interactive.Turnable
   full    EFT.Interactive.Turnable/EState
@@ -178,6 +248,7 @@ Types:
   full    EFT.Interactive.WorldInteractiveObject/MBOITRenderer
   full    EFT.Interactive.WorldInteractiveObject/TriggerOnStatePair
   full    EFT.InventoryLogic.EquipmentSlot
+  full    EFT.InventoryLogic.FlareEventType
   full    EFT.LocationExportInfo
   shallow EFT.MovingPlatforms.MovingPlatform
   full    EFT.NetworkPackets.EHitType
@@ -197,6 +268,14 @@ Types:
   full    EFT.SpeedTree.TreeWind/FactorTreeData
   full    EFT.SpeedTree.TreeWind/Settings
   shallow EFT.SynchronizableObjects.SynchronizableObject
+  full    EFT.Vehicle.BTRMapPath
+  full    EFT.Vehicle.MapPathConfig
+  full    EFT.Vehicle.PathDestination
+  full    EFT.Vehicle.PathPartBase
+  full    EFT.Vehicle.PathReverseData
+  full    EFT.Vehicle.PathReversePart
+  full    EFT.Vehicle.PathSpline
+  full    EFT.Vehicle.ReverseMoveType
   full    EFT.Weather.FogRemapData
   full    EFT.Weather.FogRemapDataV2
   full    EFT.Weather.FogRemapRecord
@@ -213,22 +292,34 @@ Types:
   full    EInteraction
   full    EOcclusionTest
   full    EWarnBehaviour
+  full    EasySuspension
   full    EnvironmentManagerBase
   full    EnvironmentType
+  shallow FirearmsEffects
+  full    GameObjectStateSync
+  full    GripPose
+  full    GripPose/EGripType
+  full    GripPose/EHand
   full    GroupPoint
   full    GroupPointPath
   full    GroupPointWay
+  full    GuidComponent
+  full    GuidReference
   full    ISyncAble
   full    InitialPosition
-  shallow InteractiveProxy
+  full    InteractiveProxy
   full    InteractiveSubscriber
   full    InteractiveSubscriber/PlaySettings
   full    InteractiveSubscriber/ViewPerState
   shallow JsonType.LocationSettings
   shallow JsonType.LocationSettings/Location
   full    JsonType.LocationSettings/Location/TransitParameters
+  full    LevelPhysicsSettings
   full    LevelSettings
   full    LocationScene
+  full    MineDirectional
+  full    MineDirectional/MineSettings
+  full    MineDirectionalColliders
   full    MultiFlare.BatchSettings
   full    MultiFlare.Flare
   full    MultiFlare.FlareLight
@@ -245,10 +336,12 @@ Types:
   full    NavMeshDoorLink
   full    OnRenderObjectConnector
   full    OnRenderObjectManager
+  full    PathConfig
   full    PatrolPoint
   full    PatrolPointType
   full    PatrolType
   full    PatrolWay
+  full    PhysicsTriggerHandler
   shallow PointWithLookSides
   full    PointWithNeighborType
   full    PowOfTwoDimensions
@@ -268,16 +361,20 @@ Types:
   full    RainSplashController
   full    RenderQueue
   full    RenderQueue/Queues
+  full    RigidbodySpawner
   full    RippleController
   full    RippleController/Cycle
   full    SceneLights
   full    ScreenWater
+  full    ServerRoomColliderArea
   full    ShadowMaskExtractor
   full    SmallPhysicsObject
   full    SmallPhysicsObject/EPhysicsObjectType
   full    SnowFlakes
   full    SnowRippleController
   full    SnowWetRenderer
+  full    SpatialAudioRoom
+  full    SpatialAudioRoom/RoomConnection
   shallow StaticLoot
   shallow StationaryWeaponLink
   full    TOD_AmbientParameters
@@ -314,9 +411,12 @@ Types:
   shallow VolumetricLight
   full    WeatherObstacle
   full    WetRenderer
+  full    WheelDrive
+  full    WheelDrive/EGear
   full    WinterEventVisual
 
 Warnings:
+  Audio.AmbientSubsystem.Data.EnumSoundContentPreset`2._content: skipped (generic type Audio.AmbientSubsystem.Data.EnumSoundContentPreset`2/Content<TEnum,TObj>)
   EFT.Interactive.LootableContainer.ItemOwner: skipped (not [Serializable])
   QueuePlayer.Queue: skipped (generic type Diz.Binding.BindableList`1<UnityEngine.AudioClip>)
   Sirenix.OdinInspector.SerializedMonoBehaviour.serializationData: skipped (type from Sirenix.Serialization (Sirenix.Serialization.SerializationData))

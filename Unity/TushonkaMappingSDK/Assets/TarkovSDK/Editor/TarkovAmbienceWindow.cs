@@ -60,6 +60,7 @@ namespace TarkovSDK.Editor
             ("Rain (outdoors)", new[] { "rain_outdoor_medium", "rain_outdoor" }, 0.7f),
             ("Heavy Rain (outdoors)", new[] { "rain_outdoor_strong", "rain_outdoor_heavy" }, 0.8f),
             ("Indoor", new[] { "residential", "room", "indoor_tone" }, 0.4f),
+            ("Bunker", new[] { "bunker", "underground" }, 0.4f), // a room tone, with spatial audio only
             ("Light Rain (indoors)", new[] { "rain_indoor_weak", "rain_indoor_light" }, 0.5f),
             ("Rain (indoors)", new[] { "rain_indoor_medium", "rain_indoor" }, 0.6f),
             ("Heavy Rain (indoors)", new[] { "rain_indoor_strong", "rain_indoor_heavy" }, 0.7f),
@@ -67,7 +68,7 @@ namespace TarkovSDK.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Map/Ambient Sounds...", priority = 114)]
+        [MenuItem("Tarkov SDK/Generation/Ambience/Ambient Sounds...", priority = 108)]
         private static void Open()
         {
             var window = GetWindow<TarkovAmbienceWindow>(true, "Ambient Sounds");
@@ -83,7 +84,7 @@ namespace TarkovSDK.Editor
 
             var folder = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(scene.path) ?? "Assets", "Sounds").Replace('\\', '/');
             using (new EditorGUI.DisabledScope(!AssetDatabase.IsValidFolder(folder)))
-                if (GUILayout.Button(new GUIContent($"Auto-Fill From {folder}", "Picks clips by name: openspace_day, openspace_night, wind, rain_outdoor_weak/medium/strong, residential, rain_indoor_weak/medium/strong.")))
+                if (GUILayout.Button(new GUIContent($"Auto-Fill From {folder}", "Picks clips by name: openspace_day, openspace_night, wind, rain_outdoor_weak/medium/strong, residential, rain_indoor_weak/medium/strong, bunker.")))
                     EditorApplication.delayCall += () => AutoFillFrom(scene, folder);
             EditorGUILayout.Space();
 
@@ -165,8 +166,13 @@ namespace TarkovSDK.Editor
             }
 
             EditorGUILayout.Space();
-            var (bedLabel, bedTags, bedHelp) = Beds.First(b => b.Label == "Indoor");
-            DrawBed(scene, bedLabel, bedTags, bedHelp);
+            if (TarkovSpatialAudio.Find(scene) != null)
+                EditorGUILayout.HelpBox("With spatial audio, the indoor ambience is the rooms' room tones: Tarkov SDK > Generation > Audio > Spatial Audio..., Indoor ambience.", MessageType.None);
+            else
+            {
+                var (bedLabel, bedTags, bedHelp) = Beds.First(b => b.Label == "Indoor");
+                DrawBed(scene, bedLabel, bedTags, bedHelp);
+            }
 
             // reverb
             EditorGUILayout.Space();
@@ -294,6 +300,19 @@ namespace TarkovSDK.Editor
                     continue;
                 ConfigureImport(path);
                 var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                // with spatial audio, the indoor ambience is the rooms' tones
+                var spatial = TarkovSpatialAudio.Find(scene);
+                if (label == "Indoor" || label == "Bunker")
+                {
+                    if (spatial != null)
+                    {
+                        TarkovRoomTones.SetTone(spatial, label == "Bunker", clip, volume);
+                        filled++;
+                        continue;
+                    }
+                    if (label == "Bunker")
+                        continue;
+                }
                 var mapped = BedSlots.Where(b => b.Bed == label).Select(b => (Slot?)b.Slot).FirstOrDefault();
                 if (data != null && mapped.HasValue)
                     TarkovAmbientAudioSystem.SetClip(data, mapped.Value, clip);
@@ -379,7 +398,7 @@ namespace TarkovSDK.Editor
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        [MenuItem("GameObject/Tarkov SDK/Sound/Ambient Sound Point", priority = 34)]
+        [MenuItem("GameObject/Tarkov SDK/Sound/Ambient Sound Point", priority = 48)]
         private static void MenuSoundPoint(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("[Nature] Ambient Sound Point");
@@ -394,6 +413,7 @@ namespace TarkovSDK.Editor
             source.maxDistance = 50f;
             source.dopplerLevel = 0f;
             source.volume = 0.6f;
+            TarkovAudioSources.SetUp(source, undo: false);
             return go;
         });
     }

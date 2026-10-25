@@ -40,6 +40,8 @@ namespace TarkovSDK.Editor
             LampsOn,
             LampsOff,
             LampsToggle,
+            TrapsOff,
+            TrapsOn,
             OpenObject,
             CloseObject,
         }
@@ -51,7 +53,8 @@ namespace TarkovSDK.Editor
 
         private static readonly string[] ActionNames =
         {
-            "Play a sound", "Stop a sound", "Announce on the PA", "Turn lamps on", "Turn lamps off", "Toggle lamp groups", "Open a door or switch", "Close a door or switch",
+            "Play a sound", "Stop a sound", "Announce on the PA", "Turn lamps on", "Turn lamps off", "Toggle lamp groups", "Turn traps off", "Turn traps on",
+            "Open a door or switch", "Close a door or switch",
         };
 
         private When _when;
@@ -67,8 +70,9 @@ namespace TarkovSDK.Editor
         private List<ControlledLampGroup> _groups = new List<ControlledLampGroup> { null };
         private WorldInteractiveObject _objectTarget;
         private Vector2 _scroll;
+        private List<GameObject> _traps = new List<GameObject> { null };
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Triggers & Sounds...", priority = 201)]
+        [MenuItem("Tarkov SDK/Tools/Interactables/Triggers & Sounds...", priority = 115)]
         public static void Open()
         {
             var window = GetWindow<TarkovTriggerWiringWindow>("Triggers & Sounds");
@@ -164,6 +168,26 @@ namespace TarkovSDK.Editor
                     // HandlerLamp's toggle mode on a single lamp toggles it and then sets it off anyway
                     EditorGUILayout.LabelField("Only lamp groups toggle; for single lamps use on and off.", EditorStyles.miniLabel);
                     break;
+                case Action.TrapsOff:
+                case Action.TrapsOn:
+                    for (int i = 0; i < _traps.Count; i++)
+                    {
+                        _traps[i] = (GameObject)EditorGUILayout.ObjectField($"Trap {i + 1}", _traps[i], typeof(GameObject), true);
+                        if (_traps[i] != null && !TarkovTraps.IsSwitchable(_traps[i]))
+                            EditorGUILayout.HelpBox("Not a spike or flame trap (no HandlerDamage or HandlerEffect under it). Barbed wire can't be switched off.", MessageType.Warning);
+                    }
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Space(EditorGUI.indentLevel * 15f);
+                        if (GUILayout.Button("Add Trap"))
+                            _traps.Add(null);
+                        if (_traps.Count > 1 && GUILayout.Button("Remove"))
+                            _traps.RemoveAt(_traps.Count - 1);
+                    }
+                    EditorGUILayout.LabelField(_action == Action.TrapsOff
+                        ? "Their triggers are ignored and their Effects hidden; from a switch, damage already running stops too."
+                        : "Undoes Turn traps off.", EditorStyles.wordWrappedMiniLabel);
+                    break;
                 case Action.OpenObject:
                 case Action.CloseObject:
                     _objectTarget = (WorldInteractiveObject)EditorGUILayout.ObjectField("Door Or Switch", _objectTarget, typeof(WorldInteractiveObject), true);
@@ -220,6 +244,9 @@ namespace TarkovSDK.Editor
                     return _lamps.Any(l => l != null) || _groups.Any(g => g != null) ? null : "Pick a lamp or lamp group.";
                 case Action.LampsToggle:
                     return _groups.Any(g => g != null) ? null : "Pick a lamp group.";
+                case Action.TrapsOff:
+                case Action.TrapsOn:
+                    return _traps.Any(t => t != null && TarkovTraps.IsSwitchable(t)) ? null : "Pick a spike or flame trap.";
                 default:
                     return _objectTarget == null ? "Pick the door or switch." : null;
             }
@@ -367,6 +394,16 @@ namespace TarkovSDK.Editor
                     lamps._lampControllerIDs = new string[0];
                     lamps._controlledLampGroupIDs = new ulong[0];
                     return go;
+                }
+                case Action.TrapsOff:
+                case Action.TrapsOn:
+                {
+                    var traps = _traps.Where(t => t != null && TarkovTraps.IsSwitchable(t)).ToList();
+                    bool on = _action == Action.TrapsOn;
+                    // a switch also sends the traps' stop ids, so a flame already burning someone goes out
+                    if (!on && !ZoneSource)
+                        TarkovTraps.SendStops(_source.GetComponent<WorldInteractiveObject>(), _when == When.ObjectOpens ? EDoorState.Open : EDoorState.Shut, traps);
+                    return TarkovTraps.AddToggle(_source.transform, id, traps, on);
                 }
                 default:
                 {

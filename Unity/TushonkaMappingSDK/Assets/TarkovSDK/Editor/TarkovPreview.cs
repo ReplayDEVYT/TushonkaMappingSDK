@@ -120,6 +120,7 @@ namespace TarkovSDK.Editor
             Sims.Clear();
             Scheduled.Clear();
             ExfilStatus.Clear();
+            IgnoredTriggers.Clear();
             foreach (var source in Sounds)
                 if (source != null)
                     Object.DestroyImmediate(source.gameObject);
@@ -348,11 +349,35 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ game triggers
 
-        // TriggersEmitter.Emit: every handler in the open scenes that listens to the id reacts
+        // TriggersEmitter.SetTriggerState(id, false), from HandlerTriggerState: Emit drops these
+        private static readonly HashSet<string> IgnoredTriggers = new HashSet<string>();
+
+        // LocalTriggersEmitter.Emit: unless the id is switched off, every handler in the open scenes that
+        // listens to it reacts
         public static void Emit(string triggerId)
         {
-            if (string.IsNullOrEmpty(triggerId))
+            if (string.IsNullOrEmpty(triggerId) || IgnoredTriggers.Contains(triggerId))
                 return;
+            foreach (var handler in Object.FindObjectsOfType<HandlerTriggerState>())
+                if (handler._triggerId == triggerId)
+                    foreach (var id in handler._controlledTriggerId ?? new string[0])
+                        if (handler._targetState)
+                            IgnoredTriggers.Remove(id);
+                        else
+                            IgnoredTriggers.Add(id);
+            foreach (var handler in Object.FindObjectsOfType<CommonAssets.Scripts.Game.GameTriggers.Handlers.HandlerGameObjectState>(true))
+                if (handler._triggerId == triggerId)
+                    foreach (var go in handler._controlledGameObjects ?? new GameObject[0])
+                        if (go != null)
+                        {
+                            RecordActive(go);
+                            go.SetActive(handler._targetState);
+                        }
+            // damage and effects only happen to players; say what the raid would do
+            foreach (var handler in Object.FindObjectsOfType<HandlerDamage>())
+                if (handler._triggerIdStartDamage == triggerId && handler._damage != null && handler._damage.Length > 0)
+                    Debug.Log($"[Tarkov SDK] Preview: {handler.name} would deal {string.Join(", ", handler._damage.Select(d => $"{d.Amount:0.#} to {d.BodyPartColliderType}"))}" +
+                              (handler._damageCount == 1 || handler._damageSecondsInterval < 0.1f ? "" : $", every {handler._damageSecondsInterval:0.##} s until '{handler._triggerIdFinishDamage}'"));
             foreach (var handler in Object.FindObjectsOfType<HandlerAnimator>())
                 if (handler._animatorActions != null && handler._animatorActions.Any(a => a.TriggerId == triggerId))
                     Get<AnimatorHandlerSim>(handler).OnTrigger(triggerId);

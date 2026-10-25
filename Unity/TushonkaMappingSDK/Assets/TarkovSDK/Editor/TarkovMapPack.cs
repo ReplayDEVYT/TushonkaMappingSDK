@@ -19,7 +19,7 @@ namespace TarkovSDK.Editor
     // pictures). Build Map deploys the pack of the map it builds and puts it in the map's package.
     public class TarkovMapPack : ScriptableObject
     {
-        [MenuItem("Tarkov SDK/Map/New Map Pack...", priority = 126)]
+        [MenuItem("Tarkov SDK/Map Settings/New Map Pack...", priority = 122)]
         private static void Create()
         {
             var path = EditorUtility.SaveFilePanelInProject("New Map Pack", "NewMapPack", "asset", "Where to save the map pack.");
@@ -178,7 +178,7 @@ namespace TarkovSDK.Editor
                 }
             }
 
-            EditorGUILayout.HelpBox("Maps join this pack in Tarkov SDK > Map > Server Data Editor, Map Select tab, where you also place " +
+            EditorGUILayout.HelpBox("Maps join this pack in Tarkov SDK > Map Settings > Data > Server Data Editor, Map Select tab, where you also place " +
                                     "their buttons on this background. Build Map deploys and packages the pack with the map.", MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {

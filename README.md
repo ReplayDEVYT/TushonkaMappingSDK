@@ -3,12 +3,12 @@
 A mod that loads custom Escape from Tarkov maps in SPT 4.1.6, and the Unity SDK for building them. Documentation is written by AI, but still matches what you should be doing. I've tested all of this, no worries.
 
 ```
-BepInEx/plugins/CustomMapLoader/bundles/maps/<id>.bundle, <id>_scenes.bundle
+BepInEx/plugins/CustomMapLoader/bundles/maps/<id>.bundle, <id>_scenes.bundle, <id>_audio/ (baked spatial audio, Meta acoustics)
 SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_export.json
 ```
 
 **Author:** mizmii
-**Version:** 1.5.0
+**Version:** 1.6.0
 **SPT Version:** 4.1.6 (client Unity 2022.3.43f1)
 **License:** Unlicense
 
@@ -36,7 +36,19 @@ The map loading and AI generation approach comes from [ManimalIcebreaker](https:
 
 2. Open `Unity/TushonkaMappingSDK` in Unity 2022.3.43f1. On load, the SDK applies Tarkov's layers, tags, collision matrix and navmesh agent types.
 
-3. Choose **Tarkov SDK > Map > New Map...** and enter `sdk_example`. This creates `Assets/Maps/sdk_example/` with a scene, a starter layout, a baked navmesh, and a Map Definition asset. The layout has ground, cover blocks (one with separate low and high poly colliders), a shed with a door, a switch that opens it, an indoor trigger and a loot spawn, a bot zone, two spawn points, a patrol route, an exfil, the simple time of day, and the game's ambient audio system (add your clips in **Ambient Sounds**).
+3. Choose **Tarkov SDK > Map Settings > New Map...** and enter `sdk_example`. This creates `Assets/Maps/sdk_example/` with a scene, an example layout and a Map Definition asset. The layout is 200 x 200 m of ground with:
+   - cover blocks (one with separate low and high poly colliders)
+   - a shed with a door, a switch that opens it, an indoor trigger and a loot spawn
+   - a concrete bunker whose indoor trigger has **Is Bunker** on
+   - a bot zone, two spawn points and a patrol route
+   - one extract of each kind: regular, scav, co-op, car (a stand-in box car) and flare (with its sniper zone)
+   - a minefield and a claymore in the north-west corner
+   - airdrop points and the physics setup the plane needs
+   - a BTR route with three stops, its roads and turns
+   - spatial audio rooms for the shed, the bunker and the outdoors
+   - the simple time of day, the game's ambient audio system and a baked navmesh
+
+   Add your ambience clips in **Ambient Sounds**, and pick the indoor and bunker room tones in **Spatial Audio**.
 
 4. Select the Map Definition, tick **Deploy To Game**, check **Spt Root**, and press **Build Map**.
 
@@ -44,7 +56,29 @@ The map loading and AI generation approach comes from [ManimalIcebreaker](https:
 
 `Server/maps/sdk_example/base.json` already matches this map id. For a new map, open **Edit Server Data** and press **Create From sdk_example Template**: it copies that `base.json` with the new `Id` and a new unique `_Id`. To do it by hand, copy the folder, rename it to the new id, and set `Id` and a new unique 24-character hex `_Id` (the **Generate** button next to `_Id` on the General tab makes one).
 
-Keep at least one entry in `AirdropParameters`, even with airdrops off: the client reads entry 0 at raid start and fails to load the raid on an empty list. The example's entry has `PlaneAirdropChance` and `PlaneAirdropMax` at 0. If the list is empty, the server mod adds that entry itself.
+Keep at least one entry in `AirdropParameters`, even with airdrops off: the client reads entry 0 at raid start and fails to load the raid on an empty list. The example's entry drops at most one crate a raid (`PlaneAirdropChance` 0.5 per try, `PlaneAirdropMax` 1) and works solo (`MinPlayersCountToSpawnAirdrop` 1; retail's 6 means no plane drops with fewer than 6 players). Set `PlaneAirdropMax` to 0 for no plane drops. If the list is empty, the server mod adds that entry itself.
+
+## Menus
+
+**Tarkov SDK** in the menu bar:
+
+| Menu | What's in it |
+| --- | --- |
+| **Build Selected Map** | Builds the selected Map Definition. |
+| **Generation > Essential** | Map Skeleton In Active Scene, Bake NavMesh, Indoor Triggers, Patrol Routes. |
+| **Generation > Interactables** | Interactive Object Builder (doors, lamps, containers, switches, physics props from a model). |
+| **Generation > Audio** | Spatial Audio (the window), Generate Rooms And Portals, Bake Sound Routes. |
+| **Generation > Ambience** | Ambient Sounds. |
+| **Generation > Time** | Time of Day / Weather. |
+| **Generation > Geometry** | Rain Cover. |
+| **Generation > Misc** | Airdrop Points, BTR Roads And Turns, Lens Flare Settings. |
+| **Tools > Extracts** | Extracts (every extract and transit of the scene). |
+| **Tools > Interactables** | Triggers & Sounds. |
+| **Tools > Geometry** | Convert Selected Model For Tarkov, Make Selected Static Geometry, Add Low + High Poly Colliders, Add BallisticCollider, Refresh Default Surface Material. |
+| **Map Settings** | New Map, New Map Pack; **Data > Server Data Editor**. |
+| **Quick Fixes** | Fix Broken Interactables, Fix Audio Sources (Meta XR), Apply Tarkov Tags, Layers and Physics. |
+
+**GameObject > Tarkov SDK** (also the Hierarchy's right-click menu) places objects: Spawns, Exfils, AI, Interactables, Hazards, Lights, Sound, Environment, Quests, Events.
 
 ## How a map loads
 
@@ -83,15 +117,15 @@ All game components are under `Assets/TarkovSDK/GameStubs`. They contain only th
 
 - **LocationScene**: one per scene. The builder fills its arrays; the game reads them instead of searching the scene.
 - **LevelSettings**: one in the first scene. It sets Unity's fog, skybox and ambient settings and initialises airdrops.
-- **Time of day**: BSG's shaders take ambient light only from a time-of-day system, so without one the map renders black. Pick one in **Tarkov SDK > Map > Time of Day / Weather...**; **Build Map** adds the simple one if the scene has neither.
+- **Time of day**: BSG's shaders take ambient light only from a time-of-day system, so without one the map renders black. Pick one in **Tarkov SDK > Generation > Time > Time of Day / Weather...**; **Build Map** adds the simple one if the scene has neither.
   - **Simple** (`Weather`): Factory's static rig of `TODSkySimple`, `TOD_Time`, `TodLightSetter`, a directional `Sun` and an `AmbientLight`. In the raid the sun follows the raid's clock: the client places it for the hour at the rig's `Latitude`, facing the LevelSettings north direction, and fades light and fog for night. The `TODSkySimple` inspector has a **Preview Hour** slider. Factory's values are dim, so raise `AmbientBrightness` or the sun intensity for a brighter map.
   - **Full weather system** (`SDK_Weather`): Customs' `TOD_Sky` sky dome, `WeatherController`, clouds, wind, rain and snow, driven by the server's weather and season. Its values come from your own game: the window's **Extract From Game** runs `Tools/WeatherExtract/extract_weather.py` (Python with `pip install UnityPy TypeTreeGeneratorAPI`), which writes `Assets/TarkovSDK/Weather/Extracted/`. That folder and the generated materials are gitignored and never shipped with the SDK. The root is saved inactive; the client swaps its stand-in shaders for the game's and then activates it. It also sets LevelSettings like Customs: no skybox, the TOD sky supplies the ambient light.
   - **Freeze Time** (both modes) keeps the time at the raid's start time for the whole raid.
   - **Fog** (full mode): the world fog follows the raid's weather, from the map's own density up to thick fog. The game's volumetric (MBOIT) weather fog only exists on Shoreline and Labyrinth: it needs a renderer whose shaders ship only in Shoreline's scene files, so SDK maps, like Customs or Woods, don't have it. For local volumetric-looking fog, place **Fog Volumes**.
-  - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Tools > Generate > Rain Cover**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
+  - **Rain cover** (full mode): the game shows rain on the screen and puddle ripples only where the camera is under open sky, which it reads from a `WeatherObstacle` of dry planes. **Generate Rain Cover** (in the window, or **Tarkov SDK > Generation > Geometry > Rain Cover**) scans the map from above and places dry planes under every roof. Without one, the whole map counts as outdoors.
 - **SpawnPointMarker**: set `Sides`, `Categories` and, for PMC player spawns, `Infiltration` (the entry point name). Place it under a BotZone to assign it to that zone.
 - **BotZone**: its GameObject name is the zone name used by `waves` and `OpenZones` in `base.json`.
-- **PatrolWay** with child **PatrolPoint**s: an authored bot route. Zones without one get a generated route in the raid; **Tarkov SDK > Tools > Generate > Patrol Routes** makes those routes in the editor instead, so you can see and adjust them: for every zone without a hand-made route, a `GeneratedPatrol` of 2-6 points 7-45 m apart around its spawn points, each reachable on the navmesh from the last. Running it again replaces the generated routes and leaves hand-made ones alone.
+- **PatrolWay** with child **PatrolPoint**s: an authored bot route. Zones without one get a generated route in the raid; **Tarkov SDK > Generation > Essential > Patrol Routes** makes those routes in the editor instead, so you can see and adjust them: for every zone without a hand-made route, a `GeneratedPatrol` of 2-6 points 7-45 m apart around its spawn points, each reachable on the navmesh from the last. Running it again replaces the generated routes and leaves hand-made ones alone.
 - **ExfiltrationPoint**: needs a trigger collider. `Settings.Name` becomes the exit name; `Settings.EntryPoints` lists which infiltrations may use it.
 - **Door**, **LootableContainer**, **Switch**, etc. are available. The builder assigns missing ids.
 
@@ -102,32 +136,89 @@ Tick **Entirely Indoors** on the Map Definition for a map with no outside, like 
 ### Indoor areas and transits
 
 - **GameObject > Tarkov SDK > Environment > Indoor Trigger Group** adds a group (for example one per building) under the map's root trigger group, or inside the group you right-click. The game tests a group's bounds before its triggers.
-- **Tarkov SDK > Tools > Generate > Indoor Triggers** (also in the **Ambient Sounds** window) places indoor triggers for the whole map. It scans from above like the rain cover, on every storey, and treats a space as a room when it has a ceiling (seen from inside, so the ground over a basement never counts) with head room and walls on most sides; carports, overhangs and bridges stay outdoors. Each room is covered with one trigger box, or a few for an L-shaped room, with one trigger group per building, under `GeneratedIndoorTriggers`. Only real geometry counts: objects tagged **EditorOnly** (or under one) and colliders without a mesh, like invisible blockers, are ignored. Regenerating replaces only that group; hand-placed triggers are kept, and areas they cover are skipped. Check the result in the Scene view and fix odd boxes by hand.
+- **Tarkov SDK > Generation > Essential > Indoor Triggers** (also in the **Ambient Sounds** window) places indoor triggers for the whole map. It scans from above like the rain cover, on every storey, and treats a space as a room when it has a ceiling (seen from inside, so the ground over a basement never counts) with head room and walls on most sides; carports, overhangs and bridges stay outdoors. Each room is covered with one trigger box, or a few for an L-shaped room, with one trigger group per building, under `GeneratedIndoorTriggers`. Only real geometry counts: objects tagged **EditorOnly** (or under one) and colliders without a mesh, like invisible blockers, are ignored. Regenerating replaces only that group; hand-placed triggers are kept, and areas they cover are skipped. Check the result in the Scene view and fix odd boxes by hand.
 - **GameObject > Tarkov SDK > Environment > Indoor Trigger** marks an interior (indoor audio, exposure, rain volume). The trigger is its own box: scale the object to cover the room. The SDK creates it under an `IndoorTriggers` TriggerGroup inside the EnvironmentManager, where the game looks for it, and computes its bounds at build. Keep triggers in that group.
-- **GameObject > Tarkov SDK > Exfils > Transit Point** adds a transit to another map: a trigger box with a unique `id`. Set `parameters.location` to the destination's map id (`bigmap`, `Woods`, or a custom map's id); the server mod fills in its `_Id` (`target`). Use **Edit Server Data > Add Missing Locale Keys** to give the transit its displayed name.
+- **GameObject > Tarkov SDK > Exfils > Transit Point** adds a transit to another map: a trigger box with a unique `id`. Set `parameters.location` to the destination's map id (`bigmap`, `Woods`, or a custom map's id); the server mod fills in its `_Id` (`target`). Use **Edit Server Data > Add Missing Locale Keys** to give the transit its displayed name. The **Extracts** window (below) picks the destination from a list.
+
+### Extracts
+
+**Tarkov SDK > Tools > Extracts > Extracts...** lists the scene's extracts and transits, makes new ones and edits the selected one. Pick a **Kind** and **Create At Scene View Centre**:
+
+- **Regular**: walk in and wait the exfil time.
+- **Scav**: for scav raids only.
+- **Co-op (PMC + Scav)**: a PMC and a scav extract together, on an 8 s shared timer.
+- **Car (V-Ex)**: pay 5000 roubles; up to 4 players leave together after 60 s, and the car drives off. It's there on half the raids, and gone on the others. Give it your car model: its four wheels must be objects with "wheel" in their name. Without a model you get a stand-in box. The idle and drive-off sounds are optional. The car is a physics vehicle (the game's `WheelDrive`), so it settles on the ground at raid start; place it on a flat spot. Move the points under its **Drive Path** to set where it drives when it leaves.
+- **Flare**: an extract behind a sniper zone, with a flare zone (green) in front. Firing a green flare (the green 26x75mm cartridge or signal flare) in the flare zone makes the sniper hold fire for that player and their group.
+- **Elevator**: the Labs elevators (see Facility systems).
+
+Tick **As Transit** to make it a transit instead. The selected extract's **Make It A Transit** button converts it later, and a transit's **Make It An Extract** converts it back. A car extract made a transit keeps its car parked; a flare extract keeps its sniper and flare zones.
+
+For the selected extract the window edits:
+- name (also the locale key of its in-raid name), chance, exfil time, timer type and max players
+- its **entry points**: ticks for every PMC spawn's entry point
+- its **requirement**: pay an item, carry an item, an empty slot, a world event (switch or power), scav cooperation, or climbing gear
+
+These are the server's exit rules: Build Map writes them to `sdk_export.json`, and the game reads them by the extract's name. For a transit, the window edits its destination map (retail maps and the custom maps installed in SPT are listed), when it opens and how long it takes.
+
+The car, flare, scav and co-op kinds are also under **GameObject > Tarkov SDK > Exfils**.
 
 ### Ambient sounds
 
-**Tarkov SDK > Map > Ambient Sounds...** takes looping clips for outdoor day, outdoor night, wind, rain and indoor room tone, and creates 2D sources under `SDK_Ambience`. In the raid the client routes them into the game's ambience mixers, so they follow its volume and the game crossfades outdoor and indoor sound at indoor triggers. Day and night beds fade with daylight, and the rain bed with the rain. **GameObject > Tarkov SDK > Sound > Ambient Sound Point** places a 3D sound (birds, machinery). Name tags on any AudioSource (`[Outdoor]`, `[Indoor]`, `[Nature]`, `[Technical]`, `[Day]`, `[Night]`, `[Rain]`, `[Clear]`) do the same for your own sources.
+**Tarkov SDK > Generation > Ambience > Ambient Sounds...** takes looping clips for outdoor day, outdoor night, wind, rain and indoor room tone, and creates 2D sources under `SDK_Ambience`. In the raid the client routes them into the game's ambience mixers, so they follow its volume and the game crossfades outdoor and indoor sound at indoor triggers. Day and night beds fade with daylight, and the rain bed with the rain. **GameObject > Tarkov SDK > Sound > Ambient Sound Point** places a 3D sound (birds, machinery). Name tags on any AudioSource (`[Outdoor]`, `[Indoor]`, `[Nature]`, `[Technical]`, `[Day]`, `[Night]`, `[Rain]`, `[Clear]`) do the same for your own sources.
 
 **GameObject > Tarkov SDK > Sound > Random Sound Events (3D / 2D)** uses the game's own ambient player (`SeasonAmbientSoundPlayer`): after a random delay it plays a random clip from a SoundBank (a crow, distant gunfire, a dog), and repeats. Add clips, set the delay range, volume and 3D range in its inspector; the SDK creates the SoundBank under the scene's `SoundBanks` folder and uses it for every season. On retail maps the game's AmbientAudioSystem starts these players; on SDK maps the client routes them into a game mixer and gives them the raid's season.
 
 **Use The Game's Ambient Audio System** (in the same window) replaces the simple beds with the game's own `AmbientAudioSystem`, laid out as on Customs: day and night loops crossfaded at the game's hours (5:15 and 21:15), wind and rain loops chosen by the weather and the player being indoors or outdoors, and random sound event groups (Day, Night, Always, Indoor) that the system starts and stops. Its clips go into a generated `SeasonAmbientSoundData` asset under the scene's `AmbientAudio` folder, used for every season. **Extract Reverb Data From Game** reads Customs' per-room ambient reverb and delay from your own game (`extract_weather.py --mixer-only`, gitignored like the weather data). The SDK can't reference the game's audio mixer, so objects name their mixer group at the end of their name (`DaySource @AmbientOutDayBypass`) and the client assigns it.
 
-SDK maps have no spatial audio (the game's hand-placed audio rooms and portals, plus a baked routes file), so the client stands in for it with the indoor triggers: it crossfades the indoor and outdoor ambience mixers and tells the ambient system whether the player is in an indoor or an outdoor room.
+A map with **spatial audio** (below) and the game's ambient audio system sounds like a retail map: the game itself fades the outdoor ambience down inside rooms, lets it in through open doors and windows, and plays the rain and wind for indoors or outdoors. A map without spatial audio gets a stand-in from the client: it crossfades the indoor and outdoor ambience mixers at the indoor triggers and tells the ambient system whether the player is indoors or outdoors.
+
+### Spatial audio
+
+The game's own audio system: the map is divided into **rooms** joined by **portals** (doors, windows, doorways). A sound in another room is heard the way it travels, room to room through the portals, quieter and duller through closed doors and walls; the outdoor ambience comes in through the openings to the outside; and each room has the reverb and echo of its **type**. It is what retail maps ship in their sound scenes, and it works the same on SDK maps.
+
+**Tarkov SDK > Generation > Audio > Spatial Audio...** does it all for the active scene:
+
+- **Create And Generate Rooms** / **Generate Rooms And Portals** scans the map like the indoor triggers. Spaces with a ceiling and walls become rooms; walls and doors split them, so each door ends up between two rooms. Stair steps join into a stairwell. One outdoor room covers the map around them (where rooms overlap, the smallest one counts). Portals are made for every door (opened and closed with the door), every breakable window (open once it breaks) and every opening without either, between rooms and to the outside, sized by rays across them. Generated rooms and portals live under `SpatialAudioSystem/Rooms/Generated` and `Portals/Generated` and are replaced when generating again; rooms you make by hand elsewhere under `Rooms` are kept, and their floor isn't scanned. Select the system to see every room (blue boxes) and portal (orange doors, blue windows, green openings) in the Scene view.
+- A room's **Type** picks its reverb and echo: Indoor, concrete, brick, plasterboard, thin or thick wood or metal, fabric, glass, stairs, basement, isolated, vehicle, or the outdoor types. The room's inspector shows and edits that type's reverb (decay time, room size, reflections...) and echo (delay) from the map's ambient system; every room of the type shares them, so give a room you want to sound different its own type. The inspector also sets the room's **Wall Occlusion** (how much its walls muffle sound through them), how loud the outdoor ambience and the rain are inside it, and a **Room Tone** loop.
+- **Bake Sound Routes** (Build Map does it too) writes the routes sound takes between rooms, `<scene>.audiobakedata` in the scene's `Audio` folder, in the game's own format. The settings limit how many portals and how far a sound travels. **Rebake On Build** is **Auto** by default: Build Map only bakes the routes again when rooms, portals or these settings changed; **Always** bakes every build, **Never** keeps the file (bake it by hand after changing rooms; Build Map warns). Build Map also gives rooms and portals their ids, links each door and window portal to the door or window at it (within 2 m), and reports portals that don't join two rooms (the raid would fail to load).
+- **Add Indoor/Outdoor Blend** adds the game's `EnvironmentSoundBlendSystem` (Customs' values) to an ambient audio system made before 1.6.0; new ones have it. Once it's there, the window shows its **Fade Up Outdoors** (how long the outdoor ambience takes to come back to full when you leave a room) and **Fade Down Indoors**. The game doesn't fade at all under 0.5 s, so with Customs' 0.3 s the outdoor ambience jumps to full the moment you step out. New blends use 1 s. For an older one, **Fade Smoothly** fixes it, and Build Map warns until you do. In the raid, the switch to outdoors also waits a third of a second and is dropped if you're back in a room by then, so a small gap between generated rooms doesn't make the ambience jump up and fade back.
+- **Room acoustics (Meta XR Audio)**: the reverb and early reflections the game computes from the real geometry, with Meta's acoustics, as on retail maps. They need the **Meta XR Audio SDK 71.0.0**, the version the game ships: the SDK project lists it in `Packages/manifest.json` (from Meta's package registry), so Unity installs it when the project opens. Only **static, visible meshes that never move** are baked. Mark your map's geometry **Static** in Unity. Left out are:
+  - physics props, doors, containers and switches, and anything under a Rigidbody or an Animator (breakable windows stay in, Static or not, so the glass keeps blocking sound)
+  - disabled or shadow-only renderers, such as invisible borders
+  - meshes under 1 m
+  - the finer levels of a LOD group (only the coarsest is baked, which makes the bake faster)
+
+  **Set Up Acoustics** copies the meshes that count into editor-only proxies under `SpatialAudioSystem/AcousticGeometry`, one geometry file per scene root. Each proxy gets an acoustic material from its bullet material (concrete, brick, wood, metal, glass, soil...), or keeps one you put on the original. The proxies never ship; the geometry objects do and load their files in the raid. Terrains carry their own geometry. Set Up also adds the acoustic map. The window shows what gets baked and how much was left out for each reason. A scene set up by an older SDK has the geometry on its scene roots; Set Up or the next bake replaces it. Retail maps ship the same kinds of files: `StreamingAssets/Acoustics` holds 565 `.xrageo` and 11 `.xramap` files next to the `.audiobakedata` routes.
+
+  **Map Quality** sets the spacing of the map's points and the reflections per point. Bake time is mostly points times reflections:
+  - **Balanced** (1-10 m, 6 reflections) is Meta's default and is used for new maps.
+  - **Retail** (0.5-8 m, 8) is Tarkov's own setting and can take several times longer.
+  - **Fast** is 2-12 m with 4 reflections. Computing the map is Meta's bake and can take a long time on a big map, so there are three buttons, and the window says what changed since the last bake:
+  - **Bake Changes** rewrites only the geometry whose meshes, models, positions or acoustic materials changed, and computes the map only when anything did.
+  - **Quick Bake** does the same with a coarse map (points every 2-16 m, 4 reflections instead of 0.5-8 m and 8) that computes much faster, for listening tests. The next **Bake Changes** replaces it with the full one.
+  - **Full Rebake** redoes everything.
+
+  Build Map never runs this bake; it ships the files from the last one. The files go under `Assets/StreamingAssets/Acoustics`, and what each bake was made from in the scene's `Audio/<scene>_AudioBake.json`.
+
+- **Indoor ambience (room tones)**: as on retail maps, each room has a **room tone**, a loop the game plays while you're in that room. Customs uses a quiet residential hum at 0.4 in nearly every room, and its own sound in bunkers. Rooms with the same tone carry it on as you walk between them; a different tone crossfades. The window sets the **Indoor Tone** (most rooms) and the **Bunker Tone**, each with a volume. Changing one changes every room that has it or no tone at all, so rooms you gave their own tone in the inspector keep it. **Outdoor Ambience Indoors** is how loud the outdoor ambience is inside rooms away from their doors and windows; near them it comes in by distance. Retail and new rooms use 0. Rooms generated before 1.6.0 had 0.1, so drag it to 0. With spatial audio, the Ambient Sounds window's **Indoor** bed would play in every room on top of the tones. **Use Indoor Bed As Room Tone** moves its sound and volume onto the rooms and removes it. Ambient Sounds' **Auto-Fill From** button puts a `*residential*` clip in the indoor tone and a `*bunker*` clip in the bunker tone. Generating rooms again keeps the tones.
+- **Bunkers** come from the indoor triggers. Tick **Is Bunker** on the IndoorTriggers over a bunker; that is also what gives the game's own bunker muffling. Every audio room with most of its area inside them becomes a bunker room, as on Customs and Reserve. A bunker room is isolated, so sound from rooms it doesn't connect to is cut by the distance it travels. It also gets thick walls (wall occlusion 0.8), no outdoor ambience and the **Bunker Tone**. Unticking Is Bunker turns the room back into a plain room with the indoor tone. The rooms follow the triggers while the Spatial Audio window is open, when rooms are generated and on Build Map. Bunker can't be picked as a room type by hand. The Bunker Tone can be picked before any bunker exists; it's kept in the scene's `Audio/<scene>_AudioBake.json`.
+- **Audio sources**: the map's own sounds (ambient sound points, random sound events, lamp sounds, PA speakers, any AudioSource) go through the game's spatializer, Meta's, only when set up for it. A 3D source needs **Spatialize** on and a **Meta XR Audio Source**, which gives it Meta's placement and the room acoustics. Without them Unity plays it with plain panning and no room sound, so it stands out next to the game's own sounds. A 2D source (an ambience bed) needs Spatialize off; with it on, Meta plays it as a point at the object. The window counts the sources that aren't set up. **Fix Audio Sources** sets them all up, and **Select Them** selects them. Build Map warns while any are left. The SDK's own sound objects are set up when they're made. A source's **Reverb Send Db** on its Meta XR Audio Source sets how much room sound it gets.
+
+The baked files ship next to the map's bundles, in `BepInEx/plugins/CustomMapLoader/bundles/maps/<id>_audio/`; Build Map deploys and packages them, and the client points the game at them. Without spatial audio a map still loads: sounds play unoccluded, as before.
 
 ### Doors, switches and collision
 
 - **GameObject > Tarkov SDK > Interactables > Door** adds a working door laid out like retail ones: the leaf pivots at its hinge on the Interactive layer, with an interaction trigger, a high poly collider (bullets, wood) and a door low poly collider (movement). Replace the placeholder panel with your model and resize the colliders to match.
 - **GameObject > Tarkov SDK > Interactables > Lootable Container** adds a searchable wooden crate on the Interactive layer, with high and low poly colliders and a placeholder model to replace. `Template` sets the container type (an item template id; it starts as the Wooden crate). **Build Map** exports every container and the server fills them each raid with the loot retail maps put in that container type (types no retail map uses open empty). **Spawn Type** `Can Be Empty` or `Always Has Loot` always spawns it; `May Not Spawn` spawns it at **Spawn Chance** percent, and a container that didn't spawn can only be opened and closed that raid (list objects in **Game Objects To Destroy** to hide them then).
-- **Tarkov SDK > Tools > Interactables > Interactive Object Builder...** makes a working **Door**, **Lamp**, **Lootable Container** or **Switch** from your own model: pick the model (a model or prefab asset, or a scene object), an optional material override, the bullet material and impact sound, and the sounds. The object is fitted to the model's bounds (door width and thickness, collider sizes, light position) and can also be saved as a prefab. Doors take a hinge side, swing direction and an optional key (the door then starts locked); containers a container type; switches a door and a lamp to operate. Lamps take the light's type, colour, intensity and range, night-only, a lens flare, turn on/off/hum/flicker sounds, and an **On / Off Look**:
+- **Tarkov SDK > Generation > Interactables > Interactive Object Builder...** makes a working **Door**, **Lamp**, **Lootable Container** or **Switch** from your own model: pick the model (a model or prefab asset, or a scene object), an optional material override, the bullet material and impact sound, and the sounds. The object is fitted to the model's bounds (door width and thickness, collider sizes, light position) and can also be saved as a prefab. Doors take a hinge side, swing direction and an optional key (the door then starts locked); containers a container type; switches a door and a lamp to operate. Lamps take the light's type, colour, intensity and range, night-only, a lens flare, turn on/off/hum/flicker sounds, and an **On / Off Look**:
   - **Swap Materials**: two copies of the model with an On and an Off material; the lamp shows one or the other. Works with any shader.
   - **Fade Emission**: the lamp fades `_EmissionVisibility`, with flicker. Needs the game's emissive shader, `Tarkov/p0/Reflective/Bumped Emissive Specular SMap`.
   - **Emission Color**: the lamp sets a colour property (e.g. `_EmissionColor`) to an On or Off colour.
-- **Tarkov SDK > Tools > Interactables > Fix Broken Interactables** checks every door, switch, lootable container and lamp in the open scenes and repairs what would break in the raid: empty animation curves (a switch without one does nothing when used), objects off the Interactive layer, empty or duplicate ids, deleted entries in lamp and switch lists, light culling that lost its light, trigger zones off the Triggers layer, sounds with pitch 0 (silent in the game), lootable containers whose closed/open positions are unset (opening one moved it to the origin) and container interaction boxes flush with their HighPoly colliders (the interact prompt flickered). Build Map fixes the last two by itself. What it can't decide, like a container without a type or an object without a collider, is listed in the Console.
+- **Tarkov SDK > Quick Fixes > Fix Broken Interactables** checks every door, switch, lootable container and lamp in the open scenes and repairs what would break in the raid: empty animation curves (a switch without one does nothing when used), objects off the Interactive layer, empty or duplicate ids, deleted entries in lamp and switch lists, light culling that lost its light, trigger zones off the Triggers layer, sounds with pitch 0 (silent in the game), lootable containers whose closed/open positions are unset (opening one moved it to the origin) and container interaction boxes flush with their HighPoly colliders (the interact prompt flickered). Build Map fixes the last two by itself. What it can't decide, like a container without a type or an object without a collider, is listed in the Console.
 - **GameObject > Tarkov SDK > Interactables > Breakable Window** adds a 1.2 x 1 m glass pane that shatters when shot, set up like retail windows: mesh collider on the TransparentCollider layer, glass ballistics, and the game's own crack patterns (shipped in `Assets/TarkovSDK/Windows`). To use your own glass, add a `WindowBreaker` to a glass mesh with a `MeshCollider` and a `BallisticCollider` (Glass) on the TransparentCollider layer: **Build Map** computes the geometry the game needs from the mesh, fills its references and gives it an id. The glass must be thin along one axis and have UVs.
 - **GameObject > Tarkov SDK > Interactables > Physics Prop** adds a small object that players push by walking into it, bullets knock over and grenades throw, with the game's impact sounds (Arena's `SmallPhysicsObject`; no Tarkov map uses them). Its **Sound Type** picks the sounds: medium generic, small box, small paper, small plastic, hard plastic, cup, cooler bottle, glass bottle, empty tin can, metal candlestick or monitor. It lands on Terrain, HighPolyCollider and Default geometry, like dropped loot, and settles where placed at raid start. Its push strengths are set from its mass so every prop reacts alike (3 m/s when shot, 1.5 m/s when walked into, 12 m/s at 1 m from a grenade); the Object Builder takes them as speeds. Build one from your own model, with an optional broken version shown once it's disturbed, in the **Interactive Object Builder**.
 - **GameObject > Tarkov SDK > Interactables > Switch** adds a switch. Right-click a door to make a switch that opens it; otherwise set its `Door` or `Lamps`.
+- **GameObject > Tarkov SDK > Interactables > Keycard Door** adds a Labs-style keycard door: a `KeycardDoor` that starts locked, and a **card reader** beside it on the wall. Players look at the reader and use their keycard on it (the card-swipe animation); a wrong card makes the reader flash red. **Key Id** is the keycard's item id (it starts as the yellow Labs keycard); **Additional Keys** lists other cards that open it, **Open On Unlock** opens it straight away, **Lock On Shut** locks it again whenever it closes. **Denied Beep**, **Granted Beep** and **Unlock Sound** are the reader's sounds, and the reader's `Lock` handle takes the swipe sound (**Down Sound**). Replace the reader's placeholder with your model; its `proxy` box is what players look at, and the sphere in front of it is where they stand. A keycard door must keep at least one reader in **Proxies**: the game throws without one, and **Build Map** reports it.
 - **Tarkov SDK > Tools > Geometry > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
 
 ### Previewing interactive objects
@@ -151,11 +242,54 @@ These work like Labs', from the game's own components, so they behave (and stay 
 
 The game connects these systems by **trigger ids**: names a sender sends and listeners react to. A trigger zone sends its id when a player enters or leaves; a switch or door sends the ids in its **Triggers Map** when it reaches a state (Open, Shut...). A sound, a lamp handler or an open/close handler reacts to the ids it lists. An object's **Id** is not a trigger id: a sound set to play on a switch's Id never plays.
 
-**Tarkov SDK > Tools > Interactables > Triggers & Sounds** does the wiring: pick **When** (a player enters / leaves a zone, the last player leaves, a switch or door opens / closes) and its zone or object, then **Do** (play a sound, stop a sound, announce on the PA, turn lamps on or off, open or close a door or switch) and its sounds or targets, and press **Connect**. It adds the trigger zone or Triggers Map entry and the listener with matching ids. A looping sound started by a zone plays once for the first player in and can stop when the last one leaves. Below, it lists every trigger id in the open scenes with what sends and what hears it; red ones never fire. **Build Map** and **Fix Broken Interactables** warn about them too.
+**Tarkov SDK > Tools > Interactables > Triggers & Sounds** does the wiring: pick **When** (a player enters / leaves a zone, the last player leaves, a switch or door opens / closes) and its zone or object, then **Do** (play a sound, stop a sound, announce on the PA, turn lamps on or off, toggle lamp groups, turn traps off or on, open or close a door or switch) and its sounds or targets, and press **Connect**. It adds the trigger zone or Triggers Map entry and the listener with matching ids. A looping sound started by a zone plays once for the first player in and can stop when the last one leaves. Below, it lists every trigger id in the open scenes with what sends and what hears it; red ones never fire. **Build Map** and **Fix Broken Interactables** warn about them too.
 
 For example, a switch that starts a looping alarm and another that stops it: When "a switch or door opens" (the first switch), Do "play a sound" (the alarm, Loop), Connect; then When "a switch or door opens" (the second switch), Do "stop a sound" (the alarm sound just made), Connect.
 
 Preview a zone with **Player Enters** / **Player Leaves** in its inspector, and a switch with **Press**: the connected sounds, lamps and doors react.
+
+### Hazards
+
+Traps from Labyrinth's, with its values. Replace the placeholders with your models.
+
+- **GameObject > Tarkov SDK > Hazards > Barbed Wire**: a trigger box with the game's `BarbedWire`. A player in it moves at 15 % speed, can't sprint, and the body parts inside get cut. Size the box to your wire model. Its sound is a sound bank shared by the scene's wires (`SoundBanks/BarbedWire`); add clips in any wire's inspector (the game's own barbed wire sounds aren't loaded on custom maps).
+- **Hazards > Spike Trap**: a zone that hurts for every metre walked in it (5 to each calf, 2 to each thigh) with a 25 % chance of intoxication, and stops players going prone, jumping and sprinting, as Labyrinth's spike pits. The damage and effects are on its `TriggerZone` child (`HandlerDamage`, `HandlerEffect`); its spikes are under `Effects`.
+- **Hazards > Flame Trap**: a zone that burns every half second while a player is in it (10 to the calves, pelvis, chest and upper arms; Labyrinth's outer flame zone, the inner one does 50). Bots walk through. Put your fire effect under `Effects`.
+- **Hazards > Trap Door**: a hole cover. Build the hole under it; with **Random Traps** on, some covers are gone each raid.
+- **Hazards > Trap Switch (For Selected Traps)**: select spike or flame traps, then add it: pressing the switch turns them off (their triggers are ignored, their `Effects` hidden and any damage already running stops), pressing it again turns them back on. Any zone or switch can do the same through **Triggers & Sounds** (**Turn traps off** / **Turn traps on**). Barbed wire can't be switched off.
+- **Random Per Raid** (in a barbed wire's inspector, or a spike trap's `HandlerDamage`) adds a `TrapSyncable`: with **Random Traps** on, each raid keeps only some of these.
+- **Random Traps** is in the **Server Data Editor**'s Access tab (base.json `EventTrapsData`): how many trap doors open and how many wires and spike traps marked Random Per Raid stay, each a range from Min up to one below Max. Off, every trap stays as placed. Labyrinth uses 5-9 trap doors and 10-20 wires.
+
+The map-border hazards come from Customs' and Lighthouse's, with their values:
+
+- **Hazards > Sniper Zone**: a box where a player is shot every 3 s. The first shot hits half the time. In the buffer strip along the zone's +X side (yellow in the Scene view; **Buffer Zone** in the inspector), hits land on the limbs two times in three. Deeper in, every shot hits the chest, and after 3 shots in a row the head. Move the **Sniper Position** children to where the shots should seem to come from; that's where the distant shot is heard. The game's SVD sound and muzzle flash aren't loaded on custom maps, so CustomMapLoader plays a loaded sniper-rifle sound and skips the flash. Bots set to ignore snipers and BTR passengers aren't shot.
+  - **Flare Zone** in the inspector (or **Add Flare Zone**) links a flare zone: firing a green flare there spares that player and their group.
+  - **Immune Items**: players carrying any of these aren't shot. Tarkov has no such option; CustomMapLoader's client adds it from the zone's `SDK_ImmuneItem <template>` children, which the inspector manages.
+- **Hazards > Flare Zone (Sniper Immunity)**: the flare zone on its own, for a sniper zone's **Flare Zone** field.
+- **Hazards > Minefield**: a box where stepping deep in sets off a mine: 60 damage to the legs and stomach, then 250 on the next blast 4-7 m further on, with contusion and damage to anyone near. Its edges wobble, so the border isn't a straight line. The +X strip (yellow) is safe.
+- **Hazards > Claymore**: a MON-50 with three 12 m tripwires fanned out in front (+Z). It goes off once, firing fragments in a 60 degree cone (orange in the Scene view). Replace the placeholder box with your model.
+
+### Airdrops and the BTR
+
+- **GameObject > Tarkov SDK > Events > Airdrop Point**: a spot where a supply crate can land. **Tarkov SDK > Generation > Misc > Airdrop Points** scatters them every 20 m on open, flat ground: no roof, not indoors, not water, with room for the crate. Retail maps have hundreds. A red flare calls a crate to the nearest point. Plane drops are set in the **Server Data Editor**'s **Airdrops** tab: chance per try, max crates, and when the tries happen. **Min Players** counts living human players only; retail's 6 means no plane drops in a solo SPT raid, so keep it at 1. The plane flies within the map's physics bounds (`LevelPhysicsSettings`); Build Map adds `SDK_PhysicsSetup` around the map's geometry for that. A `LevelPhysicsSettings` you place yourself is kept as it is.
+- **GameObject > Tarkov SDK > Events > BTR Route**: the BTR, as on Woods and Streets. Bake the navmesh first. The route's inspector edits:
+  - **Stops** (blue BTR outlines): where it pauses, and where the taxi can take a player. Name them for the taxi menu. A stop's forward is the way the BTR faces when it appears there.
+  - **Routes**: the stops in order, where it comes from and leaves to (any stop, usually an off-road one), and laps or once through. One active route is picked each raid. The taxi offers only the stops in **Stops In Order**, so keep **Comes From** and **Leaves To** out of that list to make them unselectable; list each stop once.
+  - **Roads**: the BTR drives a road between any two stops of its route, because the taxi can send it anywhere on it. **Generate Missing Roads** makes them along the navmesh; **Regenerate All Roads** remakes them after moving stops. The navmesh follows paths a person can walk, so check that every road stays on drivable ground. They also make each stop's **three-point turn** (as on Woods): when its next road starts behind it, the BTR drives forward and to one side, backs up, and drives back to the stop facing the other way. It needs open ground: the BTR's outline, with half a metre to spare, is swept along the turn and tested against the map's geometry, trying either side and a few sizes (Woods' turn, about 22 m ahead and 11 m to one side, and smaller and larger ones). The first that stays clear is used; when none does, the one that hits least is used and the log names the stop, so give it more space. The turn is only driven when the next road starts behind the BTR, as when a route doubles back; going on ahead it drives straight through. Turns are drawn (orange) only with their stop selected. The BTR leaves its starting stop (**Comes From**) without a turn, so road generation turns that stop to face its road; rotating a stop afterwards needs **Regenerate All Roads**, since its turns are built around its facing.
+  - **Chance**, when it arrives, speed, how long it waits at stops, and its paint.
+
+  In the raid, the driver offers a ride to the route's other stops once the BTR has reached its first stop; **cover fire** is offered after paying for a ride, as on Woods and Streets. Tarkov itself breaks the taxi on **Once through** routes (no retail map uses them); CustomMapLoader's client fixes that.
+
+  Build Map reports missing roads. CustomMapLoader registers the BTR with SPT from the route, copying Woods' wheel and suspension values, and names the stops in the taxi menu.
+
+### Quest zones
+
+Quests find zones by their **Id**. These do nothing on their own; a quest (from a quest mod or your own) names the Id.
+
+- **GameObject > Tarkov SDK > Quests > Visit Zone**: an `ExperienceTrigger`, for "visit" and "be in zone" conditions. **Experience** above 0 gives that much exploration XP on the first visit.
+- **Quests > Place Item Zone**: a `PlaceItemTrigger`, for "leave an item" and "place a marker" conditions. **Beacon Dummy** is the object shown where the item goes (optional).
+
+Size the box to the area. **Copy Id** in the inspector copies the Id for your quest; **Build Map** warns about zones without an Id or with the same Id as another.
 
 ### Bots, spawns and loot
 
@@ -163,7 +297,14 @@ The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 
 - **General**: the location `Id` and `_Id` (**Generate** makes a new MongoID and warns if another map already uses it), the raid time in minutes (`EscapeTimeLimit`, optionally separate PvE and co-op times), the map name and description, and locale keys.
 - **Map Select**: how the map shows on the map select and loading screens; see [Map select and loading screens](#map-select-and-loading-screens).
-- **Access**: whether the map is enabled, locked or insured, the PMC level range, scav raids on or off, group sizes, and **required items** (`AccessKeys`, like the Labs keycard), searched by name from the SPT item database or added by template id. The list is written to `AccessKeysPvE` too unless **Same In PvE** is off.
+- **Raid**: the rest of the raid's settings, each with retail's values in its tooltip:
+  - **Location panel**: what the map select panel shows: area, average raid time, player count, average player level (for the difficulty hint) and the warning (normal, no own-side PMCs like Factory, no PMCs at all like Customs).
+  - **Groups**: co-op on or off, and the max group count.
+  - **Spawning**: how far from other players a player spawn is picked, the minimum distance to an exit, and scav extracts that are off.
+  - **Loot amount**: SPT's loose loot multipliers (normal and PvE) and the container multiplier.
+  - **Occlusion Culling**.
+- **Access**: whether the map is enabled, locked or insured, the PMC level range, scav raids on or off, group sizes, and **required items** (`AccessKeys`, like the Labs keycard), searched by name from the SPT item database or added by template id. The list is written to `AccessKeysPvE` too unless **Same In PvE** is off. Also **Random Traps**.
+- **Airdrops**: the scene's airdrop points (generate or select them) and plane drops (`AirdropParameters`): on or off, chance per try, max crates, when the tries happen, the minimum number of human players, and how far apart drops land.
 - **Bots**: bot limits and the scav mix, open zones, **waves** (bot type, difficulty, count, time and zones picked from the scene's bot zones) and **boss spawns** (boss, chance, escorts, zones). These are `base.json` values; restart the SPT server after saving.
 - **Spawns**: every spawn point in the open scenes, with buttons to add player and bot spawns.
 - **Loot**: every loot spawn, with the expected loose loot per raid.
@@ -187,7 +328,7 @@ The Server Data Editor's **Map Select** tab sets everything about the map's plac
 
 A map pack is an extra page of the map select screen with its own background, for maps that aren't in Tarkov or that belong together. Players turn the pages with the **PREVIOUS** and **NEXT** buttons at the far left and right of the bottom button row, which show once at least one pack is installed. Tarkov's own page is always first, and a map without a pack stays on it.
 
-1. **Tarkov SDK > Map > New Map Pack...** asks where to save a pack and selects it. Set its **Pack Id** (lowercase, used as its folder name), the **Display Name** shown under SELECT LOCATION while its page is open, an **Order** among the other packs, and a **Background** picture to replace the Tarkov map. Tarkov's is 800x800, but any shape works: the game fits it into the map area. An optional **Location Icon** replaces the dot on all the pack's maps that have none of their own.
+1. **Tarkov SDK > Map Settings > New Map Pack...** asks where to save a pack and selects it. Set its **Pack Id** (lowercase, used as its folder name), the **Display Name** shown under SELECT LOCATION while its page is open, an **Order** among the other packs, and a **Background** picture to replace the Tarkov map. Tarkov's is 800x800, but any shape works: the game fits it into the map area. An optional **Location Icon** replaces the dot on all the pack's maps that have none of their own.
 2. On each of its maps, pick the pack in the Server Data Editor's **Map Select** tab and place the map's button on the background.
 3. **Build Map** deploys the pack along with the map and puts it in the map's package. **Deploy To SPT** in the pack's inspector deploys it alone, to `SPT_Runtime/user/mods/CustomMapLoader/packs/<Pack Id>/`.
 
@@ -195,7 +336,7 @@ A map whose pack isn't installed shows on Tarkov's page.
 
 ### Keeping bots out of an area
 
-Bots path only on the navmesh, and the client generates their cover points and patrols from it. To block an area, use **GameObject > Tarkov SDK > AI > Nav Blocker**: a translucent red box set to the **Not Walkable** navigation area, with no collider and the **EditorOnly** tag, so it cuts the navmesh but never ships with the map. Scale it over the area, then rebake with **Tarkov SDK > Tools > Generate > Bake NavMesh For Active Scene**. To block a whole object instead, set its **Navigation Area** to **Not Walkable** in the Navigation window; to make bots avoid an area without forbidding it, use **Danger**.
+Bots path only on the navmesh, and the client generates their cover points and patrols from it. To block an area, use **GameObject > Tarkov SDK > AI > Nav Blocker**: a translucent red box set to the **Not Walkable** navigation area, with no collider and the **EditorOnly** tag, so it cuts the navmesh but never ships with the map. Scale it over the area, then rebake with **Tarkov SDK > Generation > Essential > Bake NavMesh**. To block a whole object instead, set its **Navigation Area** to **Not Walkable** in the Navigation window; to make bots avoid an area without forbidding it, use **Danger**.
 
 ### Lights
 
@@ -203,7 +344,7 @@ Tarkov lights its maps with its own light components on top of Unity's. **GameOb
 
 - **Lamp** / **Spot Lamp**: a Unity point or spot light with a `CullingLightObject` (fades the light out from 40 to 50 m and drops its shadows beyond 16 m, as retail lamps do) under a `LampController`, which switches, flickers and breaks it. Its glass **Bulb** is what gets shot out; replace it with your model. A Switch's **Lamps** list and the lamp's time-of-day settings turn it on and off. The build assigns lamp ids.
 - **Area Light**: the game's `AreaLight`, soft light from a rectangle (`length` x `size`) shining along its +Z up to `depth`, for strip lights, light panels and windows; it starts pointing down. It has no preview in the editor (the gizmo shows its shape), and the client fills in its shader in the raid.
-- **Lens Flare**: a `FlareLight`, the glow sprite around a bulb, picked by `_texId` from the game's flare atlas. Flares only draw through the map's flare settings: **Tarkov SDK > Map > Lens Flare Settings** adds them as `SDK_Flares`, built from the game's flare atlas and materials that ship in `Assets/TarkovSDK/Lights/Flares` (taken from Factory; every retail map shares them).
+- **Lens Flare**: a `FlareLight`, the glow sprite around a bulb, picked by `_texId` from the game's flare atlas. Flares only draw through the map's flare settings: **Tarkov SDK > Generation > Misc > Lens Flare Settings** adds them as `SDK_Flares`, built from the game's flare atlas and materials that ship in `Assets/TarkovSDK/Lights/Flares` (taken from Factory; every retail map shares them).
 - **Advanced Light**: the game's `AdvancedLight`, a shadowless point light. Only one retail map uses it; prefer a Lamp.
 - **Controlled Lamp Group**: the game's `ControlledLampGroup`, which switches many lights at once (a hall's ceiling lights, a room's strip lights), with one on and one off sound, and keeps every player's lights in step. It adds two plain lights to replace or add to; right-click an object that already holds lights to make it the group instead. **Fill From Children** in its inspector lists every light, area light, glowing renderer (materials with emission), lamp and flare under it; **Fill Light From** picks another object to fill from. **Initial Light State** is whether it starts on. Only triggers switch a group: **Add Light Switch** makes a switch that turns it on when pressed and off when pressed again, and **Tarkov SDK > Tools > Interactables > Triggers & Sounds** connects zones and other switches to it (**Turn lamps on / off** and **Toggle lamp groups**). Its preview turns it on and off with its sounds.
 

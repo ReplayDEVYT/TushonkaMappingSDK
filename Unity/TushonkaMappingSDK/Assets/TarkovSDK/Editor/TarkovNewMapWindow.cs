@@ -13,16 +13,18 @@ namespace TarkovSDK.Editor
     {
         private string _mapId = "sdk_example";
 
-        [MenuItem("Tarkov SDK/Map/New Map...", priority = 100)]
+        [MenuItem("Tarkov SDK/Map Settings/New Map...", priority = 121)]
         private static void Open()
         {
             var window = GetWindow<TarkovNewMapWindow>(true, "New Tarkov Map");
-            window.minSize = window.maxSize = new Vector2(380f, 140f);
+            window.minSize = window.maxSize = new Vector2(400f, 160f);
         }
 
         private void OnGUI()
         {
-            EditorGUILayout.HelpBox("Creates Assets/Maps/<id>/ with a scene, an example map (cover, a shed with a door, switch, indoor trigger and loot, bot zone, spawns, exfil, ambient audio system), a baked navmesh and a Map Definition.", MessageType.None);
+            EditorGUILayout.HelpBox("Creates Assets/Maps/<id>/ with a scene, an example map and a Map Definition. The example has cover, a shed " +
+                                    "with a door, switch and loot, a bunker, spawns, a bot zone, every kind of extract, a minefield and a " +
+                                    "claymore, airdrop points, a BTR route, spatial audio rooms, the ambient audio system and a baked navmesh.", MessageType.None);
             _mapId = EditorGUILayout.TextField("Map Id", _mapId).Trim().ToLowerInvariant();
             bool valid = Regex.IsMatch(_mapId, "^[a-z0-9_]+$");
             if (!valid)
@@ -57,6 +59,20 @@ namespace TarkovSDK.Editor
             TarkovAmbientAudioSystem.Create(scene);
             TarkovLightingPreview.ApplyRetailReflection();
             TarkovSceneTools.BakeNavMesh();
+            Physics.SyncTransforms();
+            TarkovRainCover.Generate(scene);
+            TarkovAirdrops.Generate(scene, 20f);
+            TarkovAirdrops.EnsurePhysicsSetup(scene, new TarkovScenePreparer.Report());
+            // the roads follow the navmesh, so they come after the bake
+            var btr = TarkovBtr.Create(null, new Vector3(45f, 0f, -40f));
+            Undo.RegisterCreatedObjectUndo(btr.gameObject, "BTR route");
+            var failed = TarkovBtr.GenerateRoads(btr, replace: true);
+            if (failed.Count > 0)
+                Debug.LogWarning("[Tarkov SDK] Example BTR roads not made: " + string.Join("; ", failed));
+            // rooms for the shed and the bunker (its trigger has Is Bunker) and the outdoor room; the
+            // shed's door and the bunker's doorway become portals
+            TarkovAudioWindow.Generate(scene);
+            TarkovAudioSources.Fix(scene);
             EditorSceneManager.SaveScene(scene);
 
             var definition = CreateInstance<TarkovMapDefinition>();
@@ -68,7 +84,8 @@ namespace TarkovSDK.Editor
             Selection.activeObject = definition;
             EditorGUIUtility.PingObject(definition);
             Debug.Log($"[Tarkov SDK] Created map '{mapId}' in {folder}. Select {definitionPath} and press Build Map. " +
-                      "Add ambience clips in Tarkov SDK > Map > Ambient Sounds..., and pick simple or full weather in Time of Day / Weather....");
+                      "Add ambience clips in Tarkov SDK > Generation > Ambience > Ambient Sounds..., pick the indoor and bunker room tones in " +
+                      "Generation > Audio > Spatial Audio..., and simple or full weather in Generation > Time > Time of Day / Weather....");
         }
     }
 }
