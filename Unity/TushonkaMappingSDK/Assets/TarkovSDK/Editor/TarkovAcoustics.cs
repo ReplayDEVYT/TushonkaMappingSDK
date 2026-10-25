@@ -39,7 +39,7 @@ namespace TarkovSDK.Editor
         public static bool Available => GeometryType != null && MapType != null && AcousticMaterialType != null && PropertiesType != null;
 
         public const string InstallNote = "Room acoustics need the Meta XR Audio SDK 71.0.0 (com.meta.xr.sdk.audio, from Meta's npm registry). " +
-                                          "The SDK project lists it in Packages/manifest.json; let Unity's Package Manager install it.";
+                                          "Tarkov SDK > Quick Fixes > Install Meta XR Audio SDK (71.0.0) adds it.";
 
         // bullet material -> Meta's built-in acoustic material
         private static string Preset(EFT.Ballistics.MaterialType type)

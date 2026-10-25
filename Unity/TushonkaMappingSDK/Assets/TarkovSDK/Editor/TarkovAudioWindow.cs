@@ -120,7 +120,11 @@ namespace TarkovSDK.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Room acoustics (Meta XR Audio)", EditorStyles.boldLabel);
             if (!TarkovAcoustics.Available)
+            {
                 EditorGUILayout.HelpBox(TarkovAcoustics.InstallNote, MessageType.Info);
+                if (GUILayout.Button($"Install Meta XR Audio SDK {TarkovMetaXrPackage.Version}"))
+                    EditorApplication.delayCall += TarkovMetaXrPackage.Install;
+            }
             else
             {
                 var map = TarkovAcoustics.FindMap(scene);
