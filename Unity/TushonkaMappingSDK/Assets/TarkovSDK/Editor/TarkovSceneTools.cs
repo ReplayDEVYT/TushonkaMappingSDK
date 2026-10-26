@@ -231,19 +231,19 @@ namespace TarkovSDK.Editor
         [MenuItem(Menu + "Spawns/Spawn Point (Bot)", priority = 11)]
         private static void MenuSpawnBot(MenuCommand cmd) => Place(cmd, p => CreateSpawnPoint(p, "Spawn_Bot", Vector3.zero, pmc: false).gameObject);
 
-        [MenuItem(Menu + "AI/Bot Zone", priority = 22)]
+        [MenuItem(Menu + "AI/Bot Zone", priority = 23)]
         private static void MenuZone(MenuCommand cmd) => Place(cmd, p => CreateBotZone(p, "ZoneNew", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Patrol Way", priority = 23)]
+        [MenuItem(Menu + "AI/Patrol Way", priority = 24)]
         private static void MenuWay(MenuCommand cmd) => Place(cmd, p => CreatePatrolWay(p, "PatrolWay", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Patrol Point", priority = 24)]
+        [MenuItem(Menu + "AI/Patrol Point", priority = 25)]
         private static void MenuPoint(MenuCommand cmd) => Place(cmd, p => CreatePatrolPoint(p, Vector3.zero).gameObject);
 
         [MenuItem(Menu + "Exfils/Exfil", priority = 13)]
         private static void MenuExfil(MenuCommand cmd) => Place(cmd, p => CreateExfil(p, "SDK_Exit", Vector3.zero).gameObject);
 
-        [MenuItem(Menu + "AI/Nav Blocker", priority = 25)]
+        [MenuItem(Menu + "AI/Nav Blocker", priority = 26)]
         private static void MenuNavBlocker(MenuCommand cmd) => Place(cmd, p => CreateNavBlocker(p, Vector3.zero));
 
         [MenuItem(Menu + "Exfils/Transit Point", priority = 21)]
@@ -251,7 +251,7 @@ namespace TarkovSDK.Editor
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 57)]
+        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 59)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -266,7 +266,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 56)]
+        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 58)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -276,7 +276,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 117)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 119)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -288,7 +288,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 119)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 121)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -299,11 +299,22 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ factories
 
+        // creates an asset folder and its parents through the AssetDatabase (CreateAsset needs it to know the folder)
+        public static void EnsureFolder(string folder)
+        {
+            folder = folder.Replace('\\', '/').TrimEnd('/');
+            if (AssetDatabase.IsValidFolder(folder))
+                return;
+            var parent = System.IO.Path.GetDirectoryName(folder).Replace('\\', '/');
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
+        }
+
         // a concrete-grey material on the stand-in for the game's most used prop/building shader; the
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 120)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 122)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()
@@ -330,6 +341,11 @@ namespace TarkovSDK.Editor
                 material.SetTexture("_SpecMap", SolidTexture(folder + "/SDK_Default_Gloss.png", new Color(0.2f, 0.2f, 0.2f, 1f), 0f));
                 material.SetColor("_Color", Color.white);
                 EditorUtility.SetDirty(material);
+                AssetDatabase.SaveAssets();
+            }
+            if (TarkovReflectionCube.IsMissing(material))
+            {
+                TarkovReflectionCube.Assign(material);
                 AssetDatabase.SaveAssets();
             }
             return material;

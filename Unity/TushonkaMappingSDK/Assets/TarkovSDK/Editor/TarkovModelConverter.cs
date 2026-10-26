@@ -34,7 +34,7 @@ namespace TarkovSDK.Editor
         private static readonly string[] ToolCollisionNames = { "toolsskybox", "toolsclip", "toolsplayerclip", "toolsinvisible", "toolsblack", "toolsblock" };
         private static readonly string[] ToolHiddenNames = { "toolsnodraw", "toolstrigger", "toolshint", "toolsskip", "toolsareaportal", "toolsoccluder", "toolsfog", "toolsnpcclip" };
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Convert Selected Model For Tarkov", priority = 116)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Convert Selected Model For Tarkov", priority = 118)]
         private static void ConvertSelectedMenu()
         {
             var roots = new List<GameObject>();
@@ -249,7 +249,9 @@ namespace TarkovSDK.Editor
                     // textures leave at 1 (fully specular); damp it so walls and floors don't bloom
                     material.SetColor("_Color", albedo.Texture != null ? Color.white : color);
                     material.SetColor("_SpecColor", new Color(0.18f, 0.18f, 0.18f, 1f));
-                    material.SetColor("_ReflectColor", new Color(0.5f, 0.5f, 0.5f, 0.1f));
+                    // without a cubemap the game reflects a flat grey day and night (TarkovReflectionCube)
+                    material.SetTexture("_Cube", TarkovReflectionCube.Get());
+                    material.SetColor("_ReflectColor", TarkovReflectionCube.RetailReflectColor);
                     material.SetTexture("_SpecMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/TarkovSDK/Materials/SDK_Default_Gloss.png"));
                     break;
             }

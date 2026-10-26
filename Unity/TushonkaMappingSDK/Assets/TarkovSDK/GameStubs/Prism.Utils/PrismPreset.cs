@@ -8,5 +8,181 @@ namespace Prism.Utils
 {
     public class PrismPreset : global::UnityEngine.ScriptableObject
     {
+        public string PresetDescription = "Enter description for your preset.";
+        public global::Prism.Utils.PrismPresetType presetType;
+        [global::UnityEngine.SerializeField]
+        public bool useBloom;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.BloomType bloomType = global::Prism.Utils.BloomType.HDR;
+        [global::UnityEngine.SerializeField]
+        public bool bloomUseScreenBlend;
+        [global::UnityEngine.SerializeField]
+        public int bloomDownsample = 2;
+        [global::UnityEngine.SerializeField]
+        public int bloomBlurPasses = 4;
+        [global::UnityEngine.SerializeField]
+        public float bloomIntensity = 0.2f;
+        [global::UnityEngine.SerializeField]
+        public float bloomThreshold = 0.02f;
+        [global::UnityEngine.SerializeField]
+        public bool useBloomStability = true;
+        [global::UnityEngine.SerializeField]
+        public bool useBloomLensdirt;
+        [global::UnityEngine.SerializeField]
+        public float bloomLensdirtIntensity = 2f;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Texture2D bloomLensdirtTexture;
+        [global::UnityEngine.SerializeField]
+        public bool useFullScreenBlur;
+        [global::UnityEngine.SerializeField]
+        public bool useUIBlur;
+        [global::UnityEngine.SerializeField]
+        public int uiBlurGrabTextureFromPassNumber = 2;
+        [global::UnityEngine.SerializeField]
+        public bool useFog;
+        [global::UnityEngine.SerializeField]
+        public bool fogAffectSkybox;
+        [global::UnityEngine.SerializeField]
+        public float fogIntensity = 1f;
+        [global::UnityEngine.SerializeField]
+        public float fogHeight = 2f;
+        [global::UnityEngine.SerializeField]
+        public float fogStartPoint = 50f;
+        [global::UnityEngine.SerializeField]
+        public float fogDistance = 30f;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color fogColor;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color fogEndColor;
+        [global::UnityEngine.SerializeField]
+        public bool useDoF;
+        [global::UnityEngine.SerializeField]
+        public float dofRadius = 0.6f;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.DoFSamples dofSampleCount;
+        [global::UnityEngine.SerializeField]
+        public float dofBokehFactor = 60f;
+        [global::UnityEngine.SerializeField]
+        public float dofFocusPoint = 15f;
+        [global::UnityEngine.SerializeField]
+        public float dofFocusDistance = 20f;
+        [global::UnityEngine.SerializeField]
+        public bool useNearBlur;
+        [global::UnityEngine.SerializeField]
+        public bool dofBlurSkybox;
+        [global::UnityEngine.SerializeField]
+        public float dofNearFocusDistance = 20f;
+        [global::UnityEngine.SerializeField]
+        public bool dofForceEnableMedian;
+        [global::UnityEngine.SerializeField]
+        public bool useAmbientObscurance;
+        [global::UnityEngine.SerializeField]
+        public float aoIntensity = 0.7f;
+        [global::UnityEngine.SerializeField]
+        public float aoRadius = 1f;
+        [global::UnityEngine.SerializeField]
+        public float aoBias = 0.1f;
+        [global::UnityEngine.SerializeField]
+        public bool aoDownsample;
+        [global::UnityEngine.SerializeField]
+        public int aoBlurIterations = 1;
+        [global::UnityEngine.SerializeField]
+        public float aoBlurFilterDistance = 1.25f;
+        [global::UnityEngine.SerializeField]
+        public bool useAODistanceCutoff;
+        [global::UnityEngine.SerializeField]
+        public float aoDistanceCutoffLength = 50f;
+        [global::UnityEngine.SerializeField]
+        public float aoDistanceCutoffStart = 500f;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.SampleCount aoSampleCount = global::Prism.Utils.SampleCount.Medium;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.AOBlurType aoBlurType = global::Prism.Utils.AOBlurType.Fast;
+        [global::UnityEngine.SerializeField]
+        public float aoLightingContribution = 1f;
+        [global::UnityEngine.SerializeField]
+        public bool useChromaticAb;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.AberrationType aberrationType;
+        [global::UnityEngine.SerializeField]
+        public float chromIntensity = 0.05f;
+        [global::UnityEngine.SerializeField]
+        public float chromStart = 0.9f;
+        [global::UnityEngine.SerializeField]
+        public float chromEnd = 0.4f;
+        [global::UnityEngine.SerializeField]
+        public bool useChromaticBlur;
+        [global::UnityEngine.SerializeField]
+        public float chromaticBlurWidth = 1f;
+        [global::UnityEngine.SerializeField]
+        public bool useVignette;
+        [global::UnityEngine.SerializeField]
+        public float vignetteStart = 0.9f;
+        [global::UnityEngine.SerializeField]
+        public float vignetteEnd = 0.4f;
+        [global::UnityEngine.SerializeField]
+        public float vignetteIntensity = 1f;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color vignetteColor;
+        [global::UnityEngine.SerializeField]
+        public bool useNoise;
+        [global::UnityEngine.SerializeField]
+        public float noiseIntensity = 0.2f;
+        [global::UnityEngine.SerializeField]
+        public bool useTonemap;
+        [global::UnityEngine.SerializeField]
+        public global::Prism.Utils.TonemapType toneType = global::Prism.Utils.TonemapType.RomB;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Vector3 toneValues = new global::UnityEngine.Vector3(-1f, 2.72f, 0.15f);
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Vector3 secondaryToneValues = new global::UnityEngine.Vector3(0.59f, 0.14f, 0.14f);
+        [global::UnityEngine.SerializeField]
+        public bool useGammaCorrection;
+        [global::UnityEngine.SerializeField]
+        public float gammaValue = 1f;
+        [global::UnityEngine.SerializeField]
+        public bool useExposure;
+        [global::UnityEngine.SerializeField]
+        public float exposureSpeed = 0.18f;
+        [global::UnityEngine.SerializeField]
+        public float exposureMiddleGrey = 0.12f;
+        [global::UnityEngine.SerializeField]
+        public float exposureLowerLimit = -6f;
+        [global::UnityEngine.SerializeField]
+        public float exposureUpperLimit = 6f;
+        [global::UnityEngine.SerializeField]
+        public bool useLUT;
+        [global::UnityEngine.SerializeField]
+        public string lutPath;
+        [global::UnityEngine.SerializeField]
+        public float lutIntensity = 1f;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Texture2D twoDLookupTex;
+        [global::UnityEngine.SerializeField]
+        public bool useSecondLut;
+        [global::UnityEngine.SerializeField]
+        public string secondaryLutPath;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Texture2D secondaryTwoDLookupTex;
+        [global::UnityEngine.SerializeField]
+        public float secondaryLutLerpAmount;
+        [global::UnityEngine.SerializeField]
+        public bool useNV;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color nvColor;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color nvBleachColor;
+        [global::UnityEngine.SerializeField]
+        public float nvLightingContrib = 0.025f;
+        [global::UnityEngine.SerializeField]
+        public float nvLightSensitivity = 100f;
+        [global::UnityEngine.SerializeField]
+        public bool useRays;
+        [global::UnityEngine.SerializeField]
+        public float rayWeight = 0.58767f;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color rayColor;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Color rayThreshold = new global::UnityEngine.Color(0.87f, 0.74f, 0.65f);
     }
 }

@@ -393,6 +393,35 @@ namespace TarkovSDK.Editor
                     (For(handler._interactable) as InteractiveSim)?.TriggerInteract(handler._interactionType);
             foreach (var handler in Object.FindObjectsOfType<HandlerFilterOnce>())
                 Get<FilterOnceSim>(handler).OnTrigger(triggerId);
+            // CustomMapLoader's own listeners (the client plugin runs them in the raid)
+            foreach (var notification in Object.FindObjectsOfType<TarkovSDK.TarkovNotification>(true))
+                if (notification.TriggerId == triggerId)
+                    Notify(notification.Notification);
+            foreach (var caption in Object.FindObjectsOfType<TarkovSDK.TarkovCaption>(true))
+                if (caption.TriggerId == triggerId)
+                    CaptionPreview.Show(caption);
+            foreach (var health in Object.FindObjectsOfType<TarkovSDK.TarkovHealthChange>(true))
+            {
+                if (health.TriggerId == triggerId)
+                    Debug.Log($"[Tarkov SDK] Preview: {health.name} would {HealthText(health)}" + (health.Chance < 1f ? $" ({health.Chance:P0} chance)" : ""));
+                if (health.StopTriggerId == triggerId && health.Repeat != 1)
+                    Debug.Log($"[Tarkov SDK] Preview: {health.name} would stop repeating");
+            }
+            foreach (var effect in Object.FindObjectsOfType<TarkovSDK.TarkovEffect>(true))
+                if (effect.TriggerId == triggerId && effect.Effects != null)
+                    Debug.Log($"[Tarkov SDK] Preview: {effect.name} would give the player " +
+                              string.Join(", ", effect.Effects.Where(e => e != null).Select(e => e.Effect == TarkovSDK.TarkovEffect.EffectKind.Buff ? e.Buff.ToString() : e.Effect.ToString())) +
+                              (effect.Chance < 1f ? $" ({effect.Chance:P0} chance)" : ""));
+            foreach (var strip in Object.FindObjectsOfType<TarkovSDK.TarkovGearStrip>(true))
+                if (strip.TriggerId == triggerId)
+                {
+                    Debug.Log($"[Tarkov SDK] Preview: {strip.name} would take the player's gear" + (strip.Container != null ? $" into {strip.Container.name}" : ""));
+                    if (strip.Notify)
+                        Notify(strip.Notification);
+                }
+            foreach (var force in Object.FindObjectsOfType<TarkovSDK.TarkovForceTransit>(true))
+                if (force.TriggerId == triggerId)
+                    Debug.Log($"[Tarkov SDK] Preview: {force.name} would send the player on through {(force.Transit != null ? force.Transit.name : "its transit")}");
             foreach (var handler in Object.FindObjectsOfType<HandlerLamp>())
             {
                 if (handler._triggerId != triggerId)
@@ -469,6 +498,77 @@ namespace TarkovSDK.Editor
         }
 
         public static bool HasStatus(ExfiltrationPoint exfil) => exfil != null && ExfilStatus.ContainsKey(exfil);
+
+        // the game's notification, as the Scene view's notice
+        public static void Notify(TarkovSDK.TarkovNotification.Settings settings)
+        {
+            if (settings == null || string.IsNullOrEmpty(settings.Message))
+                return;
+            var view = SceneView.lastActiveSceneView;
+            if (view != null)
+                view.ShowNotification(new GUIContent($"[{settings.Icon}] {settings.Message}"), settings.Duration == TarkovSDK.TarkovNotification.Duration.Default ? 3f : 6f);
+            Debug.Log($"[Tarkov SDK] Preview: notification '{settings.Message}' ({settings.Icon}, {settings.Duration}, sound {settings.Sound})");
+        }
+
+        private static string HealthText(TarkovSDK.TarkovHealthChange h)
+        {
+            string parts = h.BodyParts == TarkovSDK.TarkovHealthChange.Parts.All ? "every body part" : h.BodyParts.ToString();
+            string what = h.Change switch
+            {
+                TarkovSDK.TarkovHealthChange.ChangeKind.Damage => $"deal {h.Amount:0.#} {h.DamageType} damage to {parts}",
+                TarkovSDK.TarkovHealthChange.ChangeKind.Heal => $"heal {h.Amount:0.#} HP on {parts}",
+                TarkovSDK.TarkovHealthChange.ChangeKind.Restore => $"fully restore {parts}",
+                TarkovSDK.TarkovHealthChange.ChangeKind.Kill => $"kill the player ({h.DamageType})",
+                TarkovSDK.TarkovHealthChange.ChangeKind.Energy => $"change energy by {h.Amount:0.#}",
+                _ => $"change hydration by {h.Amount:0.#}",
+            };
+            if (h.Change == TarkovSDK.TarkovHealthChange.ChangeKind.Kill || h.Repeat == 1)
+                return what;
+            return what + (h.Repeat == 0 ? $", every {h.Interval:0.##} s" : $", {h.Repeat} times {h.Interval:0.##} s apart") +
+                   (string.IsNullOrEmpty(h.StopTriggerId) ? "" : $" until '{h.StopTriggerId}'");
+        }
+    }
+
+    // A caption's lines at their times, as the Scene view's notice (the game shows them at the bottom of the screen)
+    public static class CaptionPreview
+    {
+        private static readonly List<(double Start, double End, string Text)> Lines = new List<(double, double, string)>();
+        private static string _shown;
+
+        public static void Show(TarkovSDK.TarkovCaption caption)
+        {
+            if (caption.Lines == null)
+                return;
+            // a new caption replaces the one showing, as SubtitlesView does
+            Lines.Clear();
+            double now = EditorApplication.timeSinceStartup;
+            foreach (var line in caption.Lines.Where(l => l != null && !string.IsNullOrWhiteSpace(l.Text)))
+                Lines.Add((now + line.StartSeconds, now + line.StartSeconds + line.Duration, line.Text));
+            Debug.Log($"[Tarkov SDK] Preview: caption '{caption.name}': " + string.Join(" | ", caption.Lines.Where(l => l != null).Select(l => $"{l.StartSeconds:0.#} s: {l.Text}")));
+            EditorApplication.update -= Update;
+            EditorApplication.update += Update;
+        }
+
+        private static void Update()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            Lines.RemoveAll(l => l.End <= now);
+            string text = string.Join("\n", Lines.Where(l => l.Start <= now).Select(l => l.Text));
+            var view = SceneView.lastActiveSceneView;
+            if (text != _shown && view != null)
+            {
+                if (string.IsNullOrEmpty(text))
+                    view.RemoveNotification();
+                else
+                    view.ShowNotification(new GUIContent(text), 3600);
+            }
+            _shown = text;
+            if (Lines.Count == 0)
+            {
+                EditorApplication.update -= Update;
+                _shown = null;
+            }
+        }
     }
 
     public abstract class PreviewSim

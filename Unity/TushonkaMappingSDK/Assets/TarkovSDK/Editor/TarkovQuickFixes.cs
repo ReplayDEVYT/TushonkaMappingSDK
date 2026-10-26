@@ -274,6 +274,222 @@ namespace TarkovSDK.Editor
                 (fixes.Count + problems.Count > 0 ? "\n\nDetails are in the Console." : ""), "OK");
         }
 
+        // Fix Night Lighting: Unity's own ambient (LevelSettings' Ambient, copied into RenderSettings at raid
+        // start) is added to every p0 surface in its GBuffer pass (albedo x ShadeSH9, converted to gamma, so
+        // 0.05 comes out near 0.25) and to the player's weapon, day and night, with no shadow. Retail full
+        // weather maps (Customs) keep it Flat, black, intensity 0 and get all ambient from AmbientLight's
+        // time-of-day harmonics; Skybox mode bakes a fixed sky into the scene at build. Anything else makes
+        // specular maps glow at night.
+        public const float SimpleRigAmbientLimit = 0.03f; // Factory: 0.03 at 0.6 = 0.018
+
+        [MenuItem(Menu + "Fix Night Lighting (Bright or Shiny at Night)", priority = 201)]
+        public static void FixNightLighting()
+        {
+            var fixes = new List<string>();
+            var problems = new List<string>();
+            var active = SceneManager.GetActiveScene();
+            LevelSettings activeLevel = null;
+            foreach (var level in All<LevelSettings>())
+            {
+                string where = Where(level);
+                bool fullWeather = TarkovWeatherBuilder.Find(level.gameObject.scene) != null;
+                if (level.gameObject.scene == active && activeLevel == null)
+                    activeLevel = level;
+                if (level.AmbientMode != UnityEngine.Rendering.AmbientMode.Flat)
+                {
+                    RecordLight(level);
+                    fixes.Add($"{where}: ambient mode {level.AmbientMode} set to Flat (Skybox bakes a fixed sky into the map; Trilight adds its colours day and night)");
+                    level.AmbientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                }
+                float ambient = level.SkyColor.maxColorComponent * level.AmbientIntensity;
+                if (fullWeather && (ambient > 0f || level.SkyColor.maxColorComponent > 0f))
+                {
+                    // Customs' values
+                    RecordLight(level);
+                    level.SkyColor = Color.black;
+                    level.EquatorColor = Color.black;
+                    level.GroundColor = Color.black;
+                    level.AmbientIntensity = 0f;
+                    fixes.Add($"{where}: ambient {ambient:0.###} set to black, as retail full weather maps (the weather's harmonics light the map)");
+                }
+                else if (!fullWeather && ambient > SimpleRigAmbientLimit)
+                {
+                    RecordLight(level);
+                    level.SkyColor = new Color(0.03f, 0.03f, 0.03f);
+                    level.AmbientIntensity = 0.6f;
+                    fixes.Add($"{where}: ambient {ambient:0.###} lowered to Factory's (Sky Color 0.03 at intensity 0.6)");
+                }
+                if (fullWeather && level.DirectionLightShadowForUnshadowedShaders > 0f)
+                {
+                    // Customs' value; Factory's 0.832 lights shadowed surfaces and looks bright at night
+                    RecordLight(level);
+                    level.DirectionLightShadowForUnshadowedShaders = 0f;
+                    fixes.Add($"{where}: Direction Light Shadow For Unshadowed Shaders set to 0, as Customs");
+                }
+            }
+            if (activeLevel == null)
+                problems.Add($"{active.name}: no LevelSettings in the active scene; the raid keeps the scene's own ambient");
+
+            // the active scene's RenderSettings are what the map's bundle carries (Skybox mode stores the sky's
+            // ambient in it); match them to LevelSettings as the raid does
+            if (activeLevel != null && (RenderSettings.ambientMode != activeLevel.AmbientMode || RenderSettings.ambientLight != activeLevel.SkyColor
+                                        || !Mathf.Approximately(RenderSettings.ambientIntensity, activeLevel.AmbientIntensity)))
+            {
+                RenderSettings.ambientMode = activeLevel.AmbientMode;
+                RenderSettings.ambientSkyColor = activeLevel.SkyColor;
+                RenderSettings.ambientEquatorColor = activeLevel.EquatorColor;
+                RenderSettings.ambientGroundColor = activeLevel.GroundColor;
+                RenderSettings.ambientLight = activeLevel.SkyColor;
+                RenderSettings.ambientIntensity = activeLevel.AmbientIntensity;
+                EditorSceneManager.MarkSceneDirty(active);
+                fixes.Add($"{active.name}: scene ambient (Lighting window) matched to LevelSettings");
+            }
+            if (RenderSettings.defaultReflectionMode != UnityEngine.Rendering.DefaultReflectionMode.Custom || RenderSettings.customReflectionTexture != null
+                                                                                                         || RenderSettings.reflectionIntensity != 0f)
+            {
+                TarkovLightingPreview.ApplyRetailReflection();
+                fixes.Add($"{active.name}: default reflection removed (it reflected a daytime sky on every surface)");
+            }
+
+            // baked light data is captured once; dynamic objects (the weapon too) take their ambient from light probes
+            foreach (var probe in All<ReflectionProbe>())
+                if (probe.mode != UnityEngine.Rendering.ReflectionProbeMode.Realtime && probe.enabled)
+                    problems.Add($"{Where(probe)}: baked reflection probe; it reflects the sky it was baked with, day and night (disable or delete it)");
+            foreach (var group in All<LightProbeGroup>())
+                if (group.enabled)
+                    problems.Add($"{Where(group)}: light probe group; baked probes give objects near them fixed ambient light, day and night");
+            if (Lightmapping.lightingDataAsset != null)
+                problems.Add($"{active.name}: has baked lighting data; lightmaps and probes don't follow the time of day");
+
+            foreach (var f in fixes)
+                Debug.Log("[Tarkov SDK] Fixed " + f);
+            foreach (var p in problems)
+                Debug.LogWarning("[Tarkov SDK] Needs a fix by hand: " + p);
+            EditorUtility.DisplayDialog("Fix Night Lighting",
+                (fixes.Count == 0 ? "The map's ambient already matches retail maps." : $"Fixed {fixes.Count} problem(s).") +
+                (problems.Count == 0 ? "" : $"\n\n{problems.Count} problem(s) need a fix by hand:\n" + string.Join("\n", problems.Take(8)) +
+                                            (problems.Count > 8 ? $"\n... and {problems.Count - 8} more" : "")) +
+                (fixes.Count + problems.Count > 0 ? "\n\nDetails are in the Console. Build the map again for the raid." : ""), "OK");
+        }
+
+        // Fix Shiny Materials: p0 materials without a reflection cubemap (TarkovReflectionCube); selected
+        // materials, or with none selected every material on the open scenes' renderers
+        [MenuItem(Menu + "Fix Shiny Materials (Missing Reflection Cubemaps)", priority = 202)]
+        public static void FixReflectionCubemaps()
+        {
+            var selected = Selection.GetFiltered<Material>(SelectionMode.Assets);
+            var materials = (selected.Length > 0 ? selected : All<Renderer>().SelectMany(r => r.sharedMaterials))
+                .Where(TarkovReflectionCube.IsMissing).Distinct().ToList();
+            string scope = selected.Length > 0 ? "the selected materials" : "the open scenes";
+            var readOnly = materials.Where(m => !IsEditable(m)).ToList();
+            materials = materials.Except(readOnly).ToList();
+            if (materials.Count > 0)
+            {
+                Undo.RecordObjects(materials.ToArray(), "Fix shiny materials");
+                foreach (var m in materials)
+                {
+                    TarkovReflectionCube.Assign(m);
+                    Debug.Log($"[Tarkov SDK] Fixed {AssetDatabase.GetAssetPath(m)} ({m.name}): reflection cubemap assigned", m);
+                }
+                AssetDatabase.SaveAssets();
+            }
+            foreach (var m in readOnly)
+                Debug.LogWarning($"[Tarkov SDK] {m.name} is inside {AssetDatabase.GetAssetPath(m)} and can't be changed; extract the model's materials first", m);
+            EditorUtility.DisplayDialog("Fix Shiny Materials",
+                (materials.Count == 0 && readOnly.Count == 0 ? $"Every p0 material in {scope} has a reflection cubemap." :
+                    $"Gave {materials.Count} material(s) in {scope} the SDK's reflection cubemap and a retail reflection colour. " +
+                    "Without one the game reflects a flat grey on them day and night." +
+                    (readOnly.Count > 0 ? $"\n\n{readOnly.Count} inside model files were skipped (see the Console)." : "") +
+                    "\n\nBuild the map again for the raid."), "OK");
+        }
+
+        // Convert SMap To Bumped Specular: "p0/Reflective/Bumped Specular SMap" adds a fixed cubemap reflection
+        // (_Cube x _ReflectColor) that never follows the time of day; "p0/Bumped Specular" has none. Converts the
+        // selected materials, or with none selected every material on the open scenes' renderers.
+        //  smoothness: SMap _SpecMap.r x _Specularness -> _SpecPower x _Shininess (the gloss map is dropped)
+        //  spec colour: SMap _SpecColor x MainTex.a x _Glossness -> _SpecColor x MainTex.a x _SpecPower
+        //  normal map: SMap samples it at the main uv x _BumpTiling -> Bumped Specular uses _BumpMap_ST
+        // the SDK stand-ins carry a "Tarkov/" prefix; the client's ShaderSwap puts the game's shader in its place
+        private const string SMapShader = "Tarkov/p0/Reflective/Bumped Specular SMap";
+        private const string BumpedSpecularShader = "Tarkov/p0/Bumped Specular";
+
+        [MenuItem(Menu + "Convert SMap Materials To Bumped Specular", priority = 203)]
+        public static void ConvertSMap()
+        {
+            var target = Shader.Find(BumpedSpecularShader);
+            if (target == null)
+            {
+                EditorUtility.DisplayDialog("Convert SMap Materials", $"The \"{BumpedSpecularShader}\" stand-in shader is missing from the project.", "OK");
+                return;
+            }
+            var selected = Selection.GetFiltered<Material>(SelectionMode.Assets);
+            var materials = (selected.Length > 0 ? selected : All<Renderer>().SelectMany(r => r.sharedMaterials))
+                .Where(m => m != null && m.shader != null && m.shader.name == SMapShader).Distinct().ToList();
+            string scope = selected.Length > 0 ? "the selected materials" : "the open scenes";
+            if (materials.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Convert SMap Materials", $"No \"{SMapShader}\" materials in {scope}.", "OK");
+                return;
+            }
+            var readOnly = materials.Where(m => !IsEditable(m)).ToList();
+            materials = materials.Except(readOnly).ToList();
+            if (!EditorUtility.DisplayDialog("Convert SMap Materials",
+                    $"Convert {materials.Count} material(s) in {scope} from \"{SMapShader}\" to \"{BumpedSpecularShader}\"? " +
+                    "They lose the cubemap reflection, the gloss map, tint and heat glow. Undo restores them." +
+                    (readOnly.Count > 0 ? $"\n\n{readOnly.Count} are inside a model file and can't be changed (extract them in the model's Materials tab first)." : ""),
+                    "Convert", "Cancel"))
+                return;
+
+            Undo.RecordObjects(materials.ToArray(), "Convert SMap materials");
+            foreach (var m in materials)
+            {
+                float glossness = m.GetFloat("_Glossness"), specularness = m.GetFloat("_Specularness"), tiling = m.GetFloat("_BumpTiling");
+                if (tiling == 0f)
+                    tiling = 1f;
+                var mainScale = m.GetTextureScale("_MainTex");
+                var mainOffset = m.GetTextureOffset("_MainTex");
+                var bump = m.GetTexture("_BumpMap");
+                var keep = new[] { "_Color", "_SpecColor", "_SpecVals", "_DefVals", "_Temperature" }
+                    .Where(m.HasProperty).ToDictionary(n => n, m.GetVector);
+                float stencil = m.HasProperty("_StencilType") ? m.GetFloat("_StencilType") : 0f;
+                var main = m.GetTexture("_MainTex");
+
+                m.shader = target;
+                foreach (var (name, value) in keep)
+                    m.SetVector(name, value);
+                m.SetFloat("_StencilType", stencil);
+                m.SetTexture("_MainTex", main);
+                m.SetTextureScale("_MainTex", mainScale);
+                m.SetTextureOffset("_MainTex", mainOffset);
+                m.SetTexture("_BumpMap", bump);
+                m.SetTextureScale("_BumpMap", mainScale * tiling);
+                m.SetTextureOffset("_BumpMap", mainOffset * tiling);
+                m.SetFloat("_SpecPower", Mathf.Clamp(glossness, 0.01f, 10f));
+                m.SetFloat("_Shininess", Mathf.Clamp(specularness, 0.03f, 1f));
+                m.shaderKeywords = new string[0];
+                EditorUtility.SetDirty(m);
+                Debug.Log($"[Tarkov SDK] Converted {AssetDatabase.GetAssetPath(m)} ({m.name}) to {BumpedSpecularShader}", m);
+            }
+            foreach (var m in readOnly)
+                Debug.LogWarning($"[Tarkov SDK] {m.name} is inside {AssetDatabase.GetAssetPath(m)} and can't be changed; extract the model's materials first", m);
+            AssetDatabase.SaveAssets();
+            EditorUtility.DisplayDialog("Convert SMap Materials", $"Converted {materials.Count} material(s)." +
+                (readOnly.Count > 0 ? $" {readOnly.Count} inside model files were skipped (see the Console)." : "") + "\n\nBuild the map again for the raid.", "OK");
+        }
+
+        // a material saved as its own .mat (or in the scene), not a model's embedded one
+        private static bool IsEditable(Material m)
+        {
+            string path = AssetDatabase.GetAssetPath(m);
+            return string.IsNullOrEmpty(path) || path.EndsWith(".mat", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void RecordLight(Object o)
+        {
+            Undo.RecordObject(o, "Fix night lighting");
+            EditorUtility.SetDirty(o);
+        }
+
         // every component of a type in the open scenes, inactive ones included
         private static IEnumerable<T> All<T>() where T : Component
         {

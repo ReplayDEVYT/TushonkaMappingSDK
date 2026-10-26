@@ -39,7 +39,7 @@ namespace TarkovSDK.Editor
         public static bool Available => GeometryType != null && MapType != null && AcousticMaterialType != null && PropertiesType != null;
 
         public const string InstallNote = "Room acoustics need the Meta XR Audio SDK 71.0.0 (com.meta.xr.sdk.audio, from Meta's npm registry). " +
-                                          "Tarkov SDK > Quick Fixes > Install Meta XR Audio SDK (71.0.0) adds it.";
+                                          "Tarkov SDK > Install Packages > Meta XR Audio SDK (71.0.0) adds it.";
 
         // bullet material -> Meta's built-in acoustic material
         private static string Preset(EFT.Ballistics.MaterialType type)
@@ -170,6 +170,9 @@ namespace TarkovSDK.Editor
         {
             var filter = renderer.GetComponent<MeshFilter>();
             if (filter == null || filter.sharedMesh == null || EditorOnly(renderer.transform))
+                return false;
+            // meshes made at runtime (TextMeshPro text) are empty when the scene loads; Meta can't bake them
+            if (filter.sharedMesh.vertexCount == 0 || renderer.GetComponents<MonoBehaviour>().Any(c => c != null && c.GetType().Namespace == "TMPro"))
                 return false;
             if (!renderer.enabled || !renderer.gameObject.activeInHierarchy || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
             {

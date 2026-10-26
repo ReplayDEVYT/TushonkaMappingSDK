@@ -3,14 +3,17 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using mizmii.CustomMapLoader.AI;
+using mizmii.CustomMapLoader.Features;
 using mizmii.CustomMapLoader.Loading;
 using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.6.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.7.0")]
     // loaded after SAIN when it is installed, so SainLocationPatch can find it; never required
     [BepInDependency("me.sol.sain", BepInDependency.DependencyFlags.SoftDependency)]
+    // after Fika when it is installed, so FikaForceTransitEnterPatch can find its host transit controller; never required
+    [BepInDependency("com.fika.core", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
@@ -44,10 +47,11 @@ namespace mizmii.CustomMapLoader
             }
             else
             {
-                LogSource.LogInfo($"Custom maps: {string.Join(", ", MapRegistry.MapIds)}");
+                Verbose($"Custom maps: {string.Join(", ", MapRegistry.MapIds)}");
             }
 
             MenuConfig.Load();
+            FeatureConfig.Load();
             ShaderSwap.Install();
             Diagnostics.RaidDiagnostics.Install();
             Diagnostics.AudioProbe.Install();
@@ -92,6 +96,10 @@ namespace mizmii.CustomMapLoader
             Enable(new NullClipPatch());
             Enable(new NullClipQueuedPatch());
             Enable(new BarbedWireSoundPatch());
+            Enable(new RaidFeaturesStartPatch());
+            Enable(new ForceTransitEnterPatch());
+            if (FikaForceTransitEnterPatch.Available())
+                Enable(new FikaForceTransitEnterPatch());
             if (SainLocationPatch.Available())
                 Enable(new SainLocationPatch());
         }

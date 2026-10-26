@@ -350,7 +350,8 @@ Types:
   full    Prism.Utils.BloomType
   full    Prism.Utils.DoFSamples
   full    Prism.Utils.NoiseType
-  shallow Prism.Utils.PrismPreset
+  full    Prism.Utils.PrismPreset
+  full    Prism.Utils.PrismPresetType
   full    Prism.Utils.SampleCount
   full    Prism.Utils.TonemapType
   full    PrismEffects
@@ -405,6 +406,7 @@ Types:
   full    TOD_SunParameters
   full    TOD_Time
   full    TOD_WorldParameters
+  full    TerrainBallistic
   shallow ThrowGrenadePlace
   full    TubeLight
   full    UnspawnPoint

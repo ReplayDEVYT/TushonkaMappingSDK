@@ -116,10 +116,14 @@ namespace mizmii.CustomMapLoader.Menu
     }
 
     // A custom map's location icon (menu.json Icon, else its pack's) in place of the white dot the
-    // game shows on an available location's button (LocationButton._availableIcon).
+    // game shows on an available location's button (LocationButton._availableIcon). The dot's sprite is
+    // 49 x 49 with the dot itself in the middle 31 px (the rest is transparent glow), so a picture on that
+    // Image would fill all 49 px and stretch to square; the icon gets its own child Image instead, fitted
+    // into the dot's visible size with its aspect kept, and the dot is hidden while it shows.
     internal class LocationIconPatch : ModulePatch
     {
-        private static Sprite _dot;
+        private const string IconName = "CustomMapLoader Icon";
+        private const float IconSize = 31f;
         // the icon each button last asked for, so a late picture never lands on a reused button
         private static readonly Dictionary<Image, string> Wanted = new Dictionary<Image, string>();
 
@@ -129,23 +133,48 @@ namespace mizmii.CustomMapLoader.Menu
         [PatchPostfix]
         private static void Postfix(LocationButton __instance, LocationSettings.Location location)
         {
-            var image = __instance._availableIcon != null ? __instance._availableIcon.GetComponent<Image>() : null;
-            if (image == null)
+            var dot = __instance._availableIcon != null ? __instance._availableIcon.GetComponent<Image>() : null;
+            if (dot == null)
                 return;
-            if (_dot == null)
-                _dot = image.sprite;
             var icon = MenuConfig.IconOf(location?.Id);
-            Wanted[image] = icon;
+            Wanted[dot] = icon;
+            Show(dot, null);
             if (icon == null)
-            {
-                image.sprite = _dot;
                 return;
-            }
             MenuConfig.GetSprite(icon, sprite =>
             {
-                if (image != null && Wanted.TryGetValue(image, out var wanted) && wanted == icon)
-                    image.sprite = sprite != null ? sprite : _dot;
+                if (dot != null && Wanted.TryGetValue(dot, out var wanted) && wanted == icon)
+                    Show(dot, sprite);
             });
+        }
+
+        // the icon over the dot, or the dot back when sprite is null
+        private static void Show(Image dot, Sprite sprite)
+        {
+            var existing = dot.transform.Find(IconName);
+            var image = existing != null ? existing.GetComponent<Image>() : null;
+            if (sprite == null)
+            {
+                dot.enabled = true;
+                if (image != null)
+                    image.gameObject.SetActive(false);
+                return;
+            }
+            if (image == null)
+            {
+                var go = new GameObject(IconName, typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(dot.transform, false);
+                var rect = (RectTransform)go.transform;
+                rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = Vector2.zero;
+                rect.sizeDelta = new Vector2(IconSize, IconSize);
+                image = go.GetComponent<Image>();
+                image.preserveAspect = true;
+                image.raycastTarget = false;
+            }
+            image.sprite = sprite;
+            image.gameObject.SetActive(true);
+            dot.enabled = false;
         }
     }
 

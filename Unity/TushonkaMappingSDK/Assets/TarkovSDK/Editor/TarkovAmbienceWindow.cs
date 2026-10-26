@@ -398,7 +398,7 @@ namespace TarkovSDK.Editor
             EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        [MenuItem("GameObject/Tarkov SDK/Sound/Ambient Sound Point", priority = 48)]
+        [MenuItem("GameObject/Tarkov SDK/Sound/Ambient Sound Point", priority = 50)]
         private static void MenuSoundPoint(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var go = new GameObject("[Nature] Ambient Sound Point");

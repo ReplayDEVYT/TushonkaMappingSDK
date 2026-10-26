@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaOffset: 0
+    - _AlphaOffset: -0.377
     - _DirtStrength: 3
     - _GlobalReflectionStrength: 0.2
     - _Metallic: 0.1

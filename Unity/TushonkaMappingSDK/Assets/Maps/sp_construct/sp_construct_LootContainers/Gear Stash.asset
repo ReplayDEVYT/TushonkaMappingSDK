@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b40ff1cc72324240949892878cdc8d2d, type: 3}
+  m_Name: Gear Stash
+  m_EditorClassIdentifier: 
+  NewContainer: 1
+  Template: 6ade677090e65cc78832801c
+  DisplayName: Gear Stash
+  ShortName: Gear Stash
+  Description: 
+  Width: 10
+  Height: 16
+  BaseTemplate: 578f87ad245977356274f2cc
+  Loot: 0
+  RetailLootTemplate: 578f87ad245977356274f2cc
+  MinItems: 1
+  MaxItems: 4
+  Items: []

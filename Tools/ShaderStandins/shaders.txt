@@ -1,6 +1,8 @@
 # Game shaders the SDK provides stand-ins for, most used first (material counts across
 # Customs, Shoreline, Woods and Factory scenes in 0.16.9).
 # Unity's built-in Standard shader also works in the game and needs no stand-in.
+# Names with a decompiled file in Assets/TarkovSDK/Shaders/Game/ are skipped by the generator
+# (see DECOMPILE.md); the rest get generated simple previews in Shaders/Standins/.
 
 # props, buildings, terrain meshes (802)
 p0/Reflective/Bumped Specular SMap

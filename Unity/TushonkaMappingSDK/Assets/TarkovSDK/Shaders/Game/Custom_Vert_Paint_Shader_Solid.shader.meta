@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 49b4cebcee9666e41bb9e8135dc97a5c
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: '{"shaderPath":"Tarkov/Custom/Vert Paint Shader Solid","attributes":[{"isBaseTexture":true,"channel":4,"index":0,"range":{"x":0.0,"y":1.0},"propertyTarget":"_MainTex0","mask":1},{"isBaseTexture":false,"channel":4,"index":1,"range":{"x":0.0,"y":1.0},"propertyTarget":"_MainTex1","mask":1},{"isBaseTexture":false,"channel":4,"index":2,"range":{"x":0.0,"y":1.0},"propertyTarget":"_MainTex2","mask":1}]}'
+  assetBundleName: 
+  assetBundleVariant: 

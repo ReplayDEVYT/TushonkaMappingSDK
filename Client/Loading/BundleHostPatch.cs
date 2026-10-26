@@ -52,7 +52,7 @@ namespace mizmii.CustomMapLoader.Loading
                     Loaded[file] = bundle;
                     if (bundle.isStreamedSceneAssetBundle)
                         MapRegistry.RegisterScenes(bundle);
-                    Plugin.LogSource.LogInfo($"Loaded '{bundleName}' from the plugin folder in {(Time.realtimeSinceStartup - started) * 1000f:F0} ms");
+                    Plugin.Verbose($"Loaded '{bundleName}' from the plugin folder in {(Time.realtimeSinceStartup - started) * 1000f:F0} ms");
                 }
 
                 // the reference starts with Counter = 1, matching a fresh download; when the game

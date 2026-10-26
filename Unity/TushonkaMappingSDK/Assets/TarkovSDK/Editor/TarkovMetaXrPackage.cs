@@ -20,7 +20,7 @@ namespace TarkovSDK.Editor
         private const string RegistryScope = "com.meta.xr.sdk";
         private const string ManifestPath = "Packages/manifest.json";
 
-        [MenuItem("Tarkov SDK/Quick Fixes/Install Meta XR Audio SDK (71.0.0)", priority = 203)]
+        [MenuItem("Tarkov SDK/Install Packages/Meta XR Audio SDK (71.0.0)", priority = 220)]
         private static void InstallMenu() => EditorApplication.delayCall += () => Install();
 
         public static void Install()

@@ -231,3 +231,7 @@ EFT.Vehicle.PathDestination
 EFT.Vehicle.PathSpline
 # physics broadphase bounds; the airdrop plane flies within them (ServerPlane.Init reads them unchecked)
 LevelPhysicsSettings
+
+# the camera post-processing preset LevelSettings.PrismPresetPrefab points at (CameraManager.SetPrismPreset)
+Prism.Utils.PrismPreset
+TerrainBallistic

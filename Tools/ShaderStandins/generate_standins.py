@@ -129,11 +129,16 @@ def main():
         if parsed.get("m_Name") in wanted:
             found[parsed["m_Name"]] = parsed
     os.makedirs(output, exist_ok=True)
+    # shaders decompiled by hand live in Game/ next to the output folder and are never overwritten
+    game_dir = os.path.join(os.path.dirname(os.path.normpath(output)), "Game")
     for name in wanted:
         if name not in found:
             print(f"not in the bundle: {name}")
             continue
         file_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", name) + ".shader"
+        if os.path.exists(os.path.join(game_dir, file_name)):
+            print(f"decompiled by hand in Game/, skipped: {name}")
+            continue
         with open(os.path.join(output, file_name), "w", encoding="utf-8", newline="\n") as f:
             f.write(standin(name, found[name]))
         print(f"wrote {file_name}")

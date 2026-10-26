@@ -136,7 +136,7 @@ namespace mizmii.CustomMapLoader.Loading
             }
 
             root.SetActive(true);
-            Plugin.LogSource.LogInfo($"Full weather system active on {scene.name}");
+            Plugin.Verbose($"Full weather system active on {scene.name}");
         }
 
         // Retail maps' camera prefabs carry the weather's camera components: TOD_Scattering (fog and

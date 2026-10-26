@@ -36,16 +36,16 @@ namespace TarkovSDK.Editor
         private const string AreaSourceMaterialPath = "Assets/TarkovSDK/Materials/AreaLightSource.mat";
         private static readonly Color Warm = new Color(1f, 0.86f, 0.68f);
 
-        [MenuItem(Menu + "Lamp", priority = 42)]
+        [MenuItem(Menu + "Lamp", priority = 44)]
         private static void MenuLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Point).gameObject);
 
-        [MenuItem(Menu + "Spot Lamp", priority = 43)]
+        [MenuItem(Menu + "Spot Lamp", priority = 45)]
         private static void MenuSpotLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Spot).gameObject);
 
-        [MenuItem(Menu + "Area Light", priority = 44)]
+        [MenuItem(Menu + "Area Light", priority = 46)]
         private static void MenuAreaLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAreaLight(p, LampOf(cmd)).gameObject);
 
-        [MenuItem(Menu + "Lens Flare", priority = 46)]
+        [MenuItem(Menu + "Lens Flare", priority = 48)]
         private static void MenuFlare(MenuCommand cmd)
         {
             TarkovSceneTools.Place(cmd, p => CreateFlare(p, LampOf(cmd)).gameObject);
@@ -54,11 +54,11 @@ namespace TarkovSDK.Editor
                 EditorApplication.delayCall += AddFlareSettingsMenu;
         }
 
-        [MenuItem(Menu + "Advanced Light", priority = 45)]
+        [MenuItem(Menu + "Advanced Light", priority = 47)]
         private static void MenuAdvancedLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAdvancedLight(p, LampOf(cmd)).gameObject);
 
         // right-clicking an object that holds lights makes it the group, as retail's INTERACTIVE_Light
-        [MenuItem(Menu + "Controlled Lamp Group", priority = 47)]
+        [MenuItem(Menu + "Controlled Lamp Group", priority = 49)]
         private static void MenuLampGroup(MenuCommand cmd)
         {
             var target = cmd.context as GameObject;

@@ -42,7 +42,7 @@ namespace mizmii.CustomMapLoader.AI
             CacheField.SetValue(covers, new AICoversDataCache(covers));
             covers._lastId = MaxPointId(covers) + 1;
 
-            Plugin.LogSource.LogInfo($"AI navigation data generated in {sw.ElapsedMilliseconds} ms: {covers.Points.Count} cover points, " +
+            Plugin.Verbose($"AI navigation data generated in {sw.ElapsedMilliseconds} ms: {covers.Points.Count} cover points, " +
                                      $"{covers.AICorePointsHolder.CorePoints.Count} core points, {covers.Voxels.VoxelsList.Count} voxels");
             return true;
         }

@@ -20,7 +20,7 @@ namespace TarkovSDK.Editor
         // TerraGroup Labs keycard (Yellow), retail's parking door
         public const string DefaultKeycard = "5c1d0d6d86f7744bb2683e1f";
 
-        [MenuItem("GameObject/Tarkov SDK/Interactables/Keycard Door", priority = 27)]
+        [MenuItem("GameObject/Tarkov SDK/Interactables/Keycard Door", priority = 28)]
         private static void MenuKeycardDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateKeycardDoor(p).transform.parent.gameObject);
 
         public static KeycardDoor CreateKeycardDoor(Transform parent)

@@ -452,7 +452,7 @@ namespace TarkovSDK.Editor
     {
         private Vector2 _scroll;
         private TarkovExtracts.Kind _newKind = TarkovExtracts.Kind.Regular;
-        private bool _newAsTransit;
+        private bool _newAsTransit, _newForced;
         private GameObject _carModel;
         private AudioClip _carIdle, _carStart;
         private readonly TarkovItemPicker.State _picker = new TarkovItemPicker.State();
@@ -468,7 +468,7 @@ namespace TarkovSDK.Editor
             (ERequirementState.Reference, "Climbing gear (Alpinist)", ""),
         };
 
-        [MenuItem("Tarkov SDK/Tools/Extracts/Extracts...", priority = 114)]
+        [MenuItem("Tarkov SDK/Tools/Extracts/Extracts...", priority = 115)]
         private static void Open() => GetWindow<TarkovExtractsWindow>("Extracts").minSize = new Vector2(440f, 420f);
 
         private void OnSelectionChange() => Repaint();
@@ -495,11 +495,15 @@ namespace TarkovSDK.Editor
             bool elevator = _newKind >= TarkovExtracts.Kind.Elevator;
             using (new EditorGUI.DisabledScope(elevator))
                 _newAsTransit = EditorGUILayout.Toggle(new GUIContent("As Transit", "The same zone takes the player to another map instead of ending the raid."), _newAsTransit && !elevator);
+            using (new EditorGUI.DisabledScope(!_newAsTransit || elevator))
+            using (new EditorGUI.IndentLevelScope())
+                _newForced = EditorGUILayout.Toggle(new GUIContent("Forced", "Sends the player on as soon as they walk in: no transit menu, no confirmation, no countdown " +
+                                                                              "(CustomMapLoader's own; Tarkov has none)."), _newForced && _newAsTransit && !elevator);
             if (GUILayout.Button("Create At Scene View Centre", GUILayout.Height(24f)))
             {
                 var kind = _newKind;
-                bool transit = _newAsTransit && !elevator;
-                EditorApplication.delayCall += () => CreateNew(kind, transit);
+                bool transit = _newAsTransit && !elevator, forced = _newForced && transit;
+                EditorApplication.delayCall += () => CreateNew(kind, transit, forced);
             }
 
             EditorGUILayout.Space();
@@ -508,7 +512,8 @@ namespace TarkovSDK.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     var kind = TarkovExtracts.KindOf(c);
-                    var name = c is ExfiltrationPoint e ? e.Settings?.Name ?? c.name : $"{c.name} -> {((TransitPoint)c).parameters?.location}";
+                    var name = c is ExfiltrationPoint e ? e.Settings?.Name ?? c.name
+                        : $"{c.name} -> {((TransitPoint)c).parameters?.location}" + ForcedLabel(c.GetComponentInChildren<TarkovForceTransit>(true));
                     bool selected = Selection.activeGameObject == c.gameObject;
                     EditorGUILayout.LabelField(name, selected ? EditorStyles.boldLabel : EditorStyles.label, GUILayout.MinWidth(120f));
                     EditorGUILayout.LabelField(TarkovExtracts.Label(kind), EditorStyles.miniLabel, GUILayout.Width(120f));
@@ -532,7 +537,7 @@ namespace TarkovSDK.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void CreateNew(TarkovExtracts.Kind kind, bool transit)
+        private void CreateNew(TarkovExtracts.Kind kind, bool transit, bool forced)
         {
             var root = kind == TarkovExtracts.Kind.Car ? TarkovExtracts.CreateCar(null, _carModel, _carIdle, _carStart) : TarkovExtracts.Create(kind, null);
             if (SceneView.lastActiveSceneView != null)
@@ -542,7 +547,12 @@ namespace TarkovSDK.Editor
             if (kind == TarkovExtracts.Kind.Car)
                 TarkovExtracts.UpdateDrivePath(root.GetComponentInChildren<CarExtraction>());
             if (transit && exfil != null)
-                Selection.activeGameObject = TarkovExtracts.ToTransit(exfil).gameObject;
+            {
+                var point = TarkovExtracts.ToTransit(exfil);
+                if (forced)
+                    Undo.RegisterCreatedObjectUndo(TarkovMapEvents.AddForce(point).gameObject, "Force transit");
+                Selection.activeGameObject = point.gameObject;
+            }
             else
                 Selection.activeGameObject = exfil != null ? exfil.gameObject : root;
         }
@@ -655,8 +665,73 @@ namespace TarkovSDK.Editor
                                        EditorStyles.wordWrappedMiniLabel);
             if (EditorGUI.EndChangeCheck())
                 EditorUtility.SetDirty(transit);
+            DrawForced(transit);
             if (GUILayout.Button("Make It An Extract"))
-                EditorApplication.delayCall += () => Selection.activeGameObject = TarkovExtracts.ToExtract(transit).gameObject;
+                EditorApplication.delayCall += () =>
+                {
+                    // an extract has nothing to force
+                    var force = transit.GetComponentInChildren<TarkovForceTransit>(true);
+                    if (force != null)
+                        Undo.DestroyObjectImmediate(force.gameObject);
+                    Selection.activeGameObject = TarkovExtracts.ToExtract(transit).gameObject;
+                };
+        }
+
+        private static string ForcedLabel(TarkovForceTransit force) => force == null ? "" : force.Hidden ? " (forced, hidden)" : " (forced)";
+
+        // CustomMapLoader's forced transit: its SDK_ForceTransit child (TarkovMapEvents)
+        private static void DrawForced(TransitPoint transit)
+        {
+            EditorGUILayout.Space();
+            var force = transit.GetComponentInChildren<TarkovForceTransit>(true);
+            bool forced = EditorGUILayout.Toggle(new GUIContent("Forced", "Sends the player on at once: no transit menu, no confirmation, no countdown " +
+                                                                           "(CustomMapLoader's own; Tarkov has none)."), force != null);
+            if (forced != (force != null))
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (forced)
+                        Undo.RegisterCreatedObjectUndo(TarkovMapEvents.AddForce(transit).gameObject, "Force transit");
+                    else if (force != null)
+                        Undo.DestroyObjectImmediate(force.gameObject);
+                };
+                return;
+            }
+            if (force == null)
+                return;
+            using (new EditorGUI.IndentLevelScope())
+            {
+                EditorGUI.BeginChangeCheck();
+                bool hidden = EditorGUILayout.Toggle(new GUIContent("Hidden (Trigger Only)", "Only its trigger sends players on: the game turns its zone off and never " +
+                                                                                              "shows it in the raid's transit list or timers."), force.Hidden);
+                bool onEnter = force.OnEnter;
+                using (new EditorGUI.DisabledScope(hidden))
+                    onEnter = EditorGUILayout.Toggle(new GUIContent("On Enter", "As soon as a player walks into the zone (Transit Time is skipped)."), force.OnEnter);
+                string triggerId = EditorGUILayout.TextField(new GUIContent("Trigger Id", hidden ? "The player who fires this trigger id is sent on, from anywhere."
+                                                                                                  : "Also for the player who fires this trigger id, from anywhere. Empty: none."), force.TriggerId);
+                bool ignore = EditorGUILayout.Toggle(new GUIContent("Ignore Requirements", "Off: a player without the transit's required items gets the game's 'access not granted'."), force.IgnoreRequirements);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(force, "Edit forced transit");
+                    force.Hidden = hidden;
+                    force.OnEnter = onEnter;
+                    force.TriggerId = triggerId;
+                    force.IgnoreRequirements = ignore;
+                    EditorUtility.SetDirty(force);
+                }
+                if (force.Hidden && string.IsNullOrEmpty(force.TriggerId))
+                    EditorGUILayout.HelpBox("Hidden needs a trigger id: connect a zone or switch.", MessageType.Error);
+                else if (!force.Hidden && !force.OnEnter && string.IsNullOrEmpty(force.TriggerId))
+                    EditorGUILayout.HelpBox("Neither On Enter nor a trigger: it works as an ordinary transit.", MessageType.Warning);
+                else if (force.Hidden)
+                    EditorGUILayout.LabelField("The zone's size and Transit Time don't matter; the destination and required items do.", EditorStyles.wordWrappedMiniLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Space(EditorGUI.indentLevel * 15f);
+                    if (GUILayout.Button(new GUIContent("Connect A Zone Or Switch...", "Opens Triggers & Sounds set to force this transit.")))
+                        EditorApplication.delayCall += () => TarkovTriggerWiringWindow.OpenForceTransit(transit);
+                }
+            }
         }
     }
 

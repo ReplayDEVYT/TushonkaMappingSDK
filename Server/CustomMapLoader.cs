@@ -39,6 +39,7 @@ public class CustomMapLoader(
     JsonUtil jsonUtil,
     ImageRouter imageRouter,
     MapMenuData menuData,
+    MapFeaturesData featuresData,
     ISptLogger<CustomMapLoader> logger) : IOnLoad
 {
     // map id -> location ids it connects to on the map select screen, resolved once every map is in
@@ -50,6 +51,8 @@ public class CustomMapLoader(
     // the maps this mod registered, and the container types they use
     private readonly HashSet<string> _customMaps = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<MongoId> _containerTypes = [];
+    private readonly HashSet<MongoId> _customContainerTypes = [];
+    private const string WoodenCrate = "578f87ad245977356274f2cc";
     private readonly object _staticLootLock = new();
     private Dictionary<MongoId, StaticLootDetails>? _staticLoot;
 
@@ -212,6 +215,8 @@ public class CustomMapLoader(
         List<SdkLootSpawn> lootSpawns = [];
         List<SdkContainer> containers = [];
         var extraLocales = new Dictionary<string, string>();
+        // container types whose loot this map sets (custom containers, changed retail ones)
+        var lootOverrides = new Dictionary<MongoId, SdkContainerType>();
         if (File.Exists(exportPath))
         {
             var export = await jsonUtil.DeserializeFromFileAsync<SdkExport>(exportPath, cancellationToken)
@@ -235,6 +240,11 @@ public class CustomMapLoader(
             locationBase.UnixDateTime = Math.Max(locationBase.UnixDateTime, export.UnixDateTime);
             if (export.Btr != null)
                 RegisterBtr(mapId, export.Btr, extraLocales);
+            foreach (var type in export.ContainerTypes ?? [])
+                if (RegisterContainerType(mapId, type, extraLocales))
+                    lootOverrides[new MongoId(type.Template)] = type;
+            if (export.Features is { ValueKind: JsonValueKind.Object } features)
+                featuresData.Maps[mapId] = features.Clone();
         }
         else
         {
@@ -246,10 +256,10 @@ public class CustomMapLoader(
         {
             Base = locationBase,
             StaticAmmo = donor?.StaticAmmo ?? new Dictionary<string, IEnumerable<StaticAmmoDetails>>(),
-            // every retail map's container pools, keyed by container type; only read, never mutated
-            StaticLoot = new LazyLoad<Dictionary<MongoId, StaticLootDetails>>(MergedStaticLoot, cacheValue: true),
+            // every retail map's container pools, keyed by container type, with this map's own on top; only read, never mutated
+            StaticLoot = new LazyLoad<Dictionary<MongoId, StaticLootDetails>>(() => MapStaticLoot(lootOverrides), cacheValue: true),
             // not cached: each raid rolls which containers spawn
-            StaticContainers = new LazyLoad<StaticContainerDetails>(() => BuildStaticContainers(containers), cacheValue: false),
+            StaticContainers = new LazyLoad<StaticContainerDetails>(() => BuildStaticContainers(mapId, containers), cacheValue: false),
             // not cached: SPT's loot generator mutates the loose loot it reads each raid
             LooseLoot = new LazyLoad<LooseLoot>(() => BuildLooseLoot(lootSpawns), cacheValue: false),
             AllExtracts = [],
@@ -269,11 +279,18 @@ public class CustomMapLoader(
     // The scene's lootable containers in retail's staticContainers layout: the root item is the
     // container type and the Id is the LootableContainer's. SPT spawns every container on a map
     // without container randomisation, so the spawn chance is rolled here, once per raid.
-    private static StaticContainerDetails BuildStaticContainers(List<SdkContainer> containers)
+    private StaticContainerDetails BuildStaticContainers(string mapId, List<SdkContainer> containers)
     {
         var list = new List<StaticContainerData>();
         foreach (var container in containers)
         {
+            // SPT's loot generator throws on a container type that isn't an item (its grid has no size), failing
+            // the whole raid; e.g. a custom container type from an SDK newer than this server mod
+            if (!templateTable.Items.TryGetValue(new MongoId(container.Template), out var item) || item.Properties?.Grids?.Any() != true)
+            {
+                logger.Warning($"[MappingSDK] {mapId}: container '{container.Id}' uses type {container.Template}, which isn't a container item; it's left out of the raid");
+                continue;
+            }
             if (!container.AlwaysSpawn && Random.Shared.NextDouble() >= container.Probability)
                 continue;
             var root = new MongoId();
@@ -344,6 +361,95 @@ public class CustomMapLoader(
                 }
             return _staticLoot = merged;
         }
+    }
+
+    // The map's container types over the retail pools: a custom container's own loot, or a retail type's loot changed
+    // for this map. The merged retail pools are shared by every map, so a map's changes go in its own copy.
+    private Dictionary<MongoId, StaticLootDetails> MapStaticLoot(Dictionary<MongoId, SdkContainerType> overrides)
+    {
+        var merged = MergedStaticLoot();
+        if (overrides.Count == 0)
+            return merged;
+        var loot = new Dictionary<MongoId, StaticLootDetails>(merged);
+        foreach (var (type, settings) in overrides)
+            loot[type] = BuildLoot(settings, merged);
+        return loot;
+    }
+
+    private StaticLootDetails BuildLoot(SdkContainerType type, Dictionary<MongoId, StaticLootDetails> retail)
+    {
+        StaticLootDetails? copied = null;
+        if (type.Loot is "CopyRetail" or "RetailPlusCustom" && Regex.IsMatch(type.RetailLootTemplate ?? "", "^[0-9a-fA-F]{24}$"))
+            retail.TryGetValue(new MongoId(type.RetailLootTemplate!), out copied);
+        if (type.Loot == "CopyRetail" && copied != null)
+            return copied;
+
+        var items = new List<ItemDistribution>();
+        if (type.Loot == "RetailPlusCustom" && copied?.ItemDistribution != null)
+            items.AddRange(copied.ItemDistribution);
+        if (type.Loot is "Custom" or "RetailPlusCustom")
+            foreach (var item in type.Items ?? [])
+                if (Regex.IsMatch(item.Template, "^[0-9a-fA-F]{24}$") && templateTable.Items.ContainsKey(new MongoId(item.Template)))
+                    items.Add(new ItemDistribution { Tpl = new MongoId(item.Template), RelativeProbability = Math.Max(1, item.Weight) });
+
+        IEnumerable<ItemCountDistribution> counts;
+        if (type.Loot == "Empty" || items.Count == 0)
+            counts = [new ItemCountDistribution { Count = 0, RelativeProbability = 1 }];
+        else if (type.Loot == "RetailPlusCustom" && copied?.ItemCountDistribution != null)
+            counts = copied.ItemCountDistribution;
+        else
+        {
+            int min = Math.Max(0, type.MinItems), max = Math.Max(min, type.MaxItems);
+            counts = Enumerable.Range(min, max - min + 1).Select(n => new ItemCountDistribution { Count = n, RelativeProbability = 1 }).ToList();
+        }
+        return new StaticLootDetails { ItemCountDistribution = counts, ItemDistribution = items };
+    }
+
+    // A custom container: a new item made from a retail loot container (its sounds, search time and menu look),
+    // with its own grid and name. Retail types only change their loot. Several maps can share a custom type.
+    private bool RegisterContainerType(string mapId, SdkContainerType type, Dictionary<string, string> locales)
+    {
+        if (!Regex.IsMatch(type.Template, "^[0-9a-fA-F]{24}$"))
+        {
+            logger.Warning($"[MappingSDK] {mapId}: container type '{type.Name}' has no valid Template, skipped");
+            return false;
+        }
+        var id = new MongoId(type.Template);
+        _containerTypes.Add(id);
+        if (!type.New)
+        {
+            if (!templateTable.Items.ContainsKey(id))
+            {
+                logger.Warning($"[MappingSDK] {mapId}: container type {id} is not an item; its loot change is skipped");
+                return false;
+            }
+            return true;
+        }
+        if (templateTable.Items.TryGetValue(id, out var existing) && !_customContainerTypes.Contains(id))
+        {
+            logger.Warning($"[MappingSDK] {mapId}: custom container '{type.Name}' uses the template id of existing item '{existing.Name}'; give it a new id in the SDK");
+            return false;
+        }
+        var baseId = Regex.IsMatch(type.BaseTemplate ?? "", "^[0-9a-fA-F]{24}$") ? new MongoId(type.BaseTemplate!) : new MongoId(WoodenCrate);
+        if (!templateTable.Items.TryGetValue(baseId, out var baseItem) && !templateTable.Items.TryGetValue(new MongoId(WoodenCrate), out baseItem))
+            return false;
+        if (_customContainerTypes.Add(id))
+        {
+            var item = cloner.Clone(baseItem)!;
+            item.Id = id;
+            item.Name = "custommaploader_" + Regex.Replace(type.Name ?? "container", "[^A-Za-z0-9]+", "_").ToLowerInvariant();
+            var grid = cloner.Clone(baseItem.Properties!.Grids!.First())!;
+            grid.Id = new MongoId();
+            grid.Parent = id;
+            grid.Properties!.CellsH = Math.Clamp(type.Width, 1, 20);
+            grid.Properties.CellsV = Math.Clamp(type.Height, 1, 40);
+            item.Properties!.Grids = [grid];
+            templateTable.Items[id] = item;
+        }
+        locales[$"{id} Name"] = type.Name ?? "Container";
+        locales[$"{id} ShortName"] = string.IsNullOrEmpty(type.ShortName) ? type.Name ?? "Container" : type.ShortName;
+        locales[$"{id} Description"] = type.Description ?? "";
+        return true;
     }
 
     // menu.json's pictures as the location's banners: the preview first (the map select screen's
@@ -594,7 +700,6 @@ public class CustomMapLoader(
             locales[$"Trading/Dialog/PlayerTaxi/{mapId}/{stop.Id}/Name"] = stop.Name;
             locales[$"Trading/Dialog/PlayerTaxi/{mapId}/{stop.Id}/Description"] = stop.Description;
         }
-        logger.Info($"[MappingSDK] {mapId}: BTR with {config.PathsConfigurations.Count()} route(s), {btr.Stops?.Count ?? 0} stop(s)");
     }
 
     private sealed record SdkBtr
@@ -654,6 +759,31 @@ public class CustomMapLoader(
 
         [JsonPropertyName("Btr")]
         public SdkBtr? Btr { get; init; }
+
+        [JsonPropertyName("ContainerTypes")]
+        public List<SdkContainerType>? ContainerTypes { get; init; }
+
+        // passed to the client as it is (MapFeatures.cs)
+        [JsonPropertyName("Features")]
+        public JsonElement? Features { get; init; }
+    }
+
+    private sealed record SdkContainerType
+    {
+        [JsonPropertyName("Template")] public string Template { get; init; } = "";
+        [JsonPropertyName("New")] public bool New { get; init; }
+        [JsonPropertyName("Name")] public string? Name { get; init; }
+        [JsonPropertyName("ShortName")] public string? ShortName { get; init; }
+        [JsonPropertyName("Description")] public string? Description { get; init; }
+        [JsonPropertyName("Width")] public int Width { get; init; } = 4;
+        [JsonPropertyName("Height")] public int Height { get; init; } = 4;
+        [JsonPropertyName("BaseTemplate")] public string? BaseTemplate { get; init; }
+        // Empty, CopyRetail, Custom, RetailPlusCustom
+        [JsonPropertyName("Loot")] public string Loot { get; init; } = "Custom";
+        [JsonPropertyName("RetailLootTemplate")] public string? RetailLootTemplate { get; init; }
+        [JsonPropertyName("MinItems")] public int MinItems { get; init; } = 1;
+        [JsonPropertyName("MaxItems")] public int MaxItems { get; init; } = 4;
+        [JsonPropertyName("Items")] public List<SdkLootItem>? Items { get; init; }
     }
 
     private sealed record SdkContainer

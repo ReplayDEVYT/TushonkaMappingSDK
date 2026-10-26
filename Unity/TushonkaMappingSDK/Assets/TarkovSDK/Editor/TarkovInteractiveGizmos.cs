@@ -33,7 +33,14 @@ namespace TarkovSDK.Editor
                 .Concat(Object.FindObjectsOfType<HandlerFilterOnce>(true))
                 .Concat(Object.FindObjectsOfType<HandlerDamage>(true))
                 .Concat(Object.FindObjectsOfType<HandlerEffect>(true))
-                .Concat(Object.FindObjectsOfType<HandlerTriggerState>(true)).ToList();
+                .Concat(Object.FindObjectsOfType<HandlerTriggerState>(true))
+                // CustomMapLoader's own listeners (forced transits, gear strips, notifications...), run by the client plugin
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovForceTransit>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovGearStrip>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovNotification>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovCaption>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovHealthChange>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovEffect>(true)).ToList();
 
         public static IEnumerable<Component> Listeners(string triggerId)
         {
@@ -52,6 +59,12 @@ namespace TarkovSDK.Editor
                     HandlerDamage d => d._triggerIdStartDamage == triggerId || d._triggerIdFinishDamage == triggerId,
                     HandlerEffect e => e._triggerId == triggerId,
                     HandlerTriggerState s => s._triggerId == triggerId,
+                    TarkovSDK.TarkovForceTransit f => f.TriggerId == triggerId,
+                    TarkovSDK.TarkovGearStrip g => g.TriggerId == triggerId,
+                    TarkovSDK.TarkovNotification n => n.TriggerId == triggerId,
+                    TarkovSDK.TarkovCaption c => c.TriggerId == triggerId,
+                    TarkovSDK.TarkovHealthChange hc => hc.TriggerId == triggerId || hc.StopTriggerId == triggerId,
+                    TarkovSDK.TarkovEffect fx => fx.TriggerId == triggerId,
                     _ => false,
                 };
                 if (listens)
@@ -89,6 +102,12 @@ namespace TarkovSDK.Editor
             HandlerPlaySoundAdvanced s => new[] { s._playTriggerId, s._stopTriggerId },
             BaseTriggerHandler b => new[] { b._triggerId },
             HandlerFilterOnce f => (f._inputTriggerIds ?? new string[0]).Concat(new[] { f._resetTriggerId }),
+            TarkovSDK.TarkovForceTransit f => new[] { f.TriggerId },
+            TarkovSDK.TarkovGearStrip g => new[] { g.TriggerId },
+            TarkovSDK.TarkovNotification n => new[] { n.TriggerId },
+            TarkovSDK.TarkovCaption c => new[] { c.TriggerId },
+            TarkovSDK.TarkovHealthChange hc => new[] { hc.TriggerId, hc.StopTriggerId },
+            TarkovSDK.TarkovEffect fx => new[] { fx.TriggerId },
             _ => Enumerable.Empty<string>(),
         };
 
@@ -126,6 +145,8 @@ namespace TarkovSDK.Editor
             HandlerPlaySoundAdvanced s when s._overrideSoundPosition != null => s._overrideSoundPosition.position,
             HandlerLamp l when l._controlledLampGroups != null && l._controlledLampGroups.Any(g => g != null) => l._controlledLampGroups.First(g => g != null).transform.position,
             HandlerLamp l when l._lampControllers != null && l._lampControllers.Any(g => g != null) => l._lampControllers.First(g => g != null).transform.position,
+            TarkovSDK.TarkovForceTransit f when f.Transit != null => f.Transit.transform.position,
+            TarkovSDK.TarkovGearStrip g when g.Container != null => g.Container.transform.position,
             _ => listener.transform.position,
         };
     }

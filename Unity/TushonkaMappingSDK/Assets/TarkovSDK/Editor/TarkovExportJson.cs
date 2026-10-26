@@ -34,10 +34,12 @@ namespace TarkovSDK.Editor
                 WriteExit(w, exfil);
             w.EndArray();
 
+            // a hidden forced transit is inactive for the game (no zone, not listed); only its trigger uses it
+            var hidden = new HashSet<TransitPoint>(report.ForceTransits.Where(f => f.Hidden).Select(f => f.Transit));
             w.Name("Transits");
             w.BeginArray();
             foreach (var transit in report.Transits)
-                WriteTransit(w, transit);
+                WriteTransit(w, transit, hidden.Contains(transit));
             w.EndArray();
 
             w.Name("LootSpawns");
@@ -46,11 +48,22 @@ namespace TarkovSDK.Editor
                 WriteLootSpawn(w, spawn);
             w.EndArray();
 
+            // a gear strip's stash must be in every raid, or the client has nowhere to put the gear
+            var stashes = new HashSet<LootableContainer>(report.GearStrips.Where(s => s.Mode == TarkovSDK.TarkovGearStrip.StripMode.MoveToContainer && s.Container != null).Select(s => s.Container));
             w.Name("Containers");
             w.BeginArray();
             foreach (var container in report.Containers)
-                WriteContainer(w, container);
+                WriteContainer(w, container, stashes.Contains(container));
             w.EndArray();
+
+            w.Name("ContainerTypes");
+            w.BeginArray();
+            foreach (var type in report.ContainerTypes)
+                WriteContainerType(w, type);
+            w.EndArray();
+
+            w.Name("Features");
+            WriteFeatures(w, report);
 
             if (report.Btr != null)
             {
@@ -130,12 +143,12 @@ namespace TarkovSDK.Editor
 
         // "target" (the destination's _Id) is left for the server mod to fill from "location", since
         // only the server knows the _Id of every map, custom ones included
-        private static void WriteTransit(JsonWriter w, TransitPoint transit)
+        private static void WriteTransit(JsonWriter w, TransitPoint transit, bool hidden)
         {
             var p = transit.parameters;
             w.BeginObject();
             w.Property("activateAfterSec", p.activateAfterSec);
-            w.Property("active", p.active);
+            w.Property("active", p.active && !hidden);
             w.Property("conditions", p.conditions ?? "");
             w.Property("description", p.description ?? "");
             w.Property("events", p.events);
@@ -229,13 +242,184 @@ namespace TarkovSDK.Editor
         // CustomMapLoader turns these into SPT static containers: the game only gives a container an
         // inventory (LootableContainer.Init) when the raid's loot lists it by Id. As in
         // LootableContainer.AsLootPointParameters, CanBeEmpty and AlwaysHasLoot always spawn.
-        private static void WriteContainer(JsonWriter w, LootableContainer container)
+        private static void WriteContainer(JsonWriter w, LootableContainer container, bool alwaysSpawn)
         {
             w.BeginObject();
             w.Property("Id", container.Id);
             w.Property("Template", container.Template.Trim().ToLowerInvariant());
             w.Property("Probability", Mathf.Clamp(container.SpawnChance, 0, 100) / 100f);
-            w.Property("AlwaysSpawn", container.SpawnType != ELootableContainerSpawnType.MayNotSpawn);
+            w.Property("AlwaysSpawn", alwaysSpawn || container.SpawnType != ELootableContainerSpawnType.MayNotSpawn);
+            w.EndObject();
+        }
+
+        // CustomMapLoader registers a new type as an item made from BaseTemplate with its own grid, and sets the
+        // map's loot pool for it (or for the retail type)
+        private static void WriteContainerType(JsonWriter w, TarkovSDK.TarkovContainerDefinition type)
+        {
+            w.BeginObject();
+            w.Property("Template", (type.Template ?? "").Trim().ToLowerInvariant());
+            w.Property("New", type.NewContainer);
+            w.Property("Name", type.DisplayName ?? "");
+            w.Property("ShortName", type.ShortName ?? "");
+            w.Property("Description", type.Description ?? "");
+            w.Property("Width", type.Width);
+            w.Property("Height", type.Height);
+            w.Property("BaseTemplate", (type.BaseTemplate ?? "").Trim().ToLowerInvariant());
+            w.Property("Loot", type.Loot.ToString());
+            w.Property("RetailLootTemplate", (type.RetailLootTemplate ?? "").Trim().ToLowerInvariant());
+            w.Property("MinItems", type.MinItems);
+            w.Property("MaxItems", type.MaxItems);
+            w.Name("Items");
+            w.BeginArray();
+            foreach (var item in type.Items.Where(i => System.Text.RegularExpressions.Regex.IsMatch(i.Template ?? "", "^[0-9a-fA-F]{24}$")))
+            {
+                w.BeginObject();
+                w.Property("Template", item.Template.Trim().ToLowerInvariant());
+                w.Property("Weight", item.Weight);
+                w.EndObject();
+            }
+            w.EndArray();
+            w.EndObject();
+        }
+
+        // the client plugin's own raid features (Client/Features/FeatureConfig.cs reads these names)
+        private static void WriteFeatures(JsonWriter w, TarkovScenePreparer.Report report)
+        {
+            w.BeginObject();
+            w.Name("ForceTransits");
+            w.BeginArray();
+            foreach (var force in report.ForceTransits)
+            {
+                w.BeginObject();
+                w.Property("TransitId", force.Transit.parameters.id);
+                w.Property("OnEnter", force.OnEnter);
+                w.Property("TriggerId", force.TriggerId ?? "");
+                w.Property("IgnoreRequirements", force.IgnoreRequirements);
+                w.Property("Hidden", force.Hidden);
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("GearStrips");
+            w.BeginArray();
+            foreach (var strip in report.GearStrips)
+            {
+                w.BeginObject();
+                w.Property("Name", strip.name);
+                w.Property("OnRaidStart", strip.OnRaidStart);
+                w.Property("TriggerId", strip.TriggerId ?? "");
+                w.Property("Once", strip.Once);
+                w.Property("Mode", strip.Mode.ToString());
+                w.Property("ContainerId", strip.Container != null ? strip.Container.Id ?? "" : "");
+                w.Name("Slots");
+                w.BeginArray();
+                foreach (var (slot, taken) in new[]
+                         {
+                             ("Headwear", strip.Headwear), ("Earpiece", strip.Earpiece), ("FaceCover", strip.FaceCover), ("Eyewear", strip.Eyewear),
+                             ("ArmBand", strip.ArmBand), ("ArmorVest", strip.ArmorVest), ("TacticalVest", strip.TacticalVest), ("Backpack", strip.Backpack),
+                             ("FirstPrimaryWeapon", strip.FirstPrimaryWeapon), ("SecondPrimaryWeapon", strip.SecondPrimaryWeapon), ("Holster", strip.Holster),
+                             ("Scabbard", strip.Scabbard),
+                         })
+                    if (taken)
+                        w.Value(slot);
+                w.EndArray();
+                w.Property("PocketContents", strip.PocketContents);
+                w.Property("SecuredContainerContents", strip.SecuredContainerContents);
+                w.Property("SpecialSlots", strip.SpecialSlots);
+                if (strip.Notify)
+                {
+                    w.Name("Notification");
+                    WriteNotification(w, strip.Notification);
+                }
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("Notifications");
+            w.BeginArray();
+            foreach (var notification in report.Notifications)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", notification.TriggerId ?? "");
+                w.Property("Once", notification.Once);
+                w.Name("Notification");
+                WriteNotification(w, notification.Notification);
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("Captions");
+            w.BeginArray();
+            foreach (var caption in report.Captions)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", caption.TriggerId ?? "");
+                w.Property("Once", caption.Once);
+                w.Name("Lines");
+                w.BeginArray();
+                foreach (var line in caption.Lines.Where(l => l != null && !string.IsNullOrWhiteSpace(l.Text)))
+                {
+                    w.BeginObject();
+                    w.Property("Text", line.Text);
+                    w.Property("Start", line.StartSeconds);
+                    w.Property("End", line.StartSeconds + line.Duration);
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.EndObject();
+            }
+            w.EndArray();
+
+            // the game's EBodyPart / EDamageType names
+            w.Name("HealthChanges");
+            w.BeginArray();
+            foreach (var health in report.HealthChanges)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", health.TriggerId ?? "");
+                w.Property("StopTriggerId", health.StopTriggerId ?? "");
+                w.Property("Once", health.Once);
+                w.Property("Chance", health.Chance);
+                w.Property("Change", health.Change.ToString());
+                w.Name("BodyParts");
+                w.BeginArray();
+                foreach (TarkovSDK.TarkovHealthChange.Parts part in Enum.GetValues(typeof(TarkovSDK.TarkovHealthChange.Parts)))
+                    if (part != TarkovSDK.TarkovHealthChange.Parts.All && (health.BodyParts & part) != 0)
+                        w.Value(part.ToString());
+                w.EndArray();
+                w.Property("Amount", health.Amount);
+                w.Property("DamageType", health.DamageType.ToString());
+                w.Property("Repeat", health.Repeat);
+                w.Property("Interval", health.Interval);
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("Effects");
+            w.BeginArray();
+            foreach (var effect in report.Effects)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", effect.TriggerId ?? "");
+                w.Property("Once", effect.Once);
+                w.Property("Chance", effect.Chance);
+                w.Name("Effects");
+                w.BeginArray();
+                foreach (var e in effect.Effects.Where(e => e != null))
+                {
+                    w.BeginObject();
+                    w.Property("Effect", e.Effect.ToString());
+                    w.Property("BodyPart", e.BodyPart.ToString());
+                    w.Property("Duration", e.Duration);
+                    w.Property("Strength", e.Strength);
+                    w.Property("Delay", e.Delay);
+                    w.Property("Buff", e.Buff.ToString());
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.EndObject();
+            }
+            w.EndArray();
             w.EndObject();
         }
 
@@ -273,6 +457,30 @@ namespace TarkovSDK.Editor
             w.EndArray();
         }
 
+        // the game's CustomNotification values by name (ENotificationIconType, ENotificationDurationType, EUISoundType)
+        private static void WriteNotification(JsonWriter w, TarkovSDK.TarkovNotification.Settings n)
+        {
+            w.BeginObject();
+            w.Property("Message", n.Message ?? "");
+            w.Property("Icon", n.Icon.ToString());
+            w.Property("Duration", n.Duration.ToString());
+            w.Property("Sound", n.Sound.ToString());
+            if (n.UseTextColor)
+            {
+                w.Name("Color");
+                WriteFloats(w, n.TextColor.r, n.TextColor.g, n.TextColor.b, n.TextColor.a);
+            }
+            w.EndObject();
+        }
+
+        private static void WriteFloats(JsonWriter w, params float[] values)
+        {
+            w.BeginArray();
+            foreach (var v in values)
+                w.Value(v);
+            w.EndArray();
+        }
+
         private static void WriteVector(JsonWriter w, Vector3 v)
         {
             w.BeginObject();
@@ -304,6 +512,7 @@ namespace TarkovSDK.Editor
             }
 
             public void Value(string value) { BeforeValue(); _sb.Append(Quote(value)); }
+            public void Value(float value) => Raw(value.ToString("R", CultureInfo.InvariantCulture));
             public void Property(string name, string value) { Name(name); Value(value); }
             public void Property(string name, bool value) { Name(name); Raw(value ? "true" : "false"); }
             public void Property(string name, int value) { Name(name); Raw(value.ToString(CultureInfo.InvariantCulture)); }

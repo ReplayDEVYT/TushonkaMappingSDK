@@ -36,10 +36,10 @@ namespace mizmii.CustomMapLoader.Loading
                 ? MapRegistry.FindAudioFile(Path.GetFileName(info.relativeBakeDataPath)) : null;
             if (bake != null && __instance.OcclusionSettings != null && __instance.poolsConfig != null)
             {
-                Plugin.LogSource.LogInfo($"Custom map: spatial audio from {Path.GetFileName(bake)} ({info.roomsCount} rooms, {info.portalsCount} portals)");
+                Plugin.Verbose($"Custom map: spatial audio from {Path.GetFileName(bake)} ({info.roomsCount} rooms, {info.portalsCount} portals)");
                 return true;
             }
-            Plugin.LogSource.LogInfo("Custom map: no baked spatial audio; spatial audio (occlusion) is not initialised and sounds play unoccluded.");
+            Plugin.Verbose("Custom map: no baked spatial audio; spatial audio (occlusion) is not initialised and sounds play unoccluded.");
             __result = Task.CompletedTask;
             return false;
         }

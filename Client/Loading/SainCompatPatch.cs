@@ -53,7 +53,7 @@ namespace mizmii.CustomMapLoader.Loading
                 }
                 _location.SetValue(__instance, Enum.Parse(_locationEnum, name));
                 _found.SetValue(__instance, true);
-                Plugin.LogSource.LogInfo($"SAIN treats custom map '{id}' as {name}");
+                Plugin.Verbose($"SAIN treats custom map '{id}' as {name}");
                 return false;
             }
             catch (Exception e)

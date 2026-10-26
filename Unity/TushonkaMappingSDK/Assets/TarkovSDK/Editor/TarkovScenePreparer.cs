@@ -25,6 +25,14 @@ namespace TarkovSDK.Editor
             public readonly List<TransitPoint> Transits = new List<TransitPoint>();
             public readonly List<TarkovSDK.TarkovLootSpawn> LootSpawns = new List<TarkovSDK.TarkovLootSpawn>();
             public readonly List<LootableContainer> Containers = new List<LootableContainer>();
+            // CustomMapLoader's own features (sdk_export.json "Features") and the container types the map uses
+            public readonly List<TarkovSDK.TarkovForceTransit> ForceTransits = new List<TarkovSDK.TarkovForceTransit>();
+            public readonly List<TarkovSDK.TarkovGearStrip> GearStrips = new List<TarkovSDK.TarkovGearStrip>();
+            public readonly List<TarkovSDK.TarkovNotification> Notifications = new List<TarkovSDK.TarkovNotification>();
+            public readonly List<TarkovSDK.TarkovCaption> Captions = new List<TarkovSDK.TarkovCaption>();
+            public readonly List<TarkovSDK.TarkovHealthChange> HealthChanges = new List<TarkovSDK.TarkovHealthChange>();
+            public readonly List<TarkovSDK.TarkovEffect> Effects = new List<TarkovSDK.TarkovEffect>();
+            public readonly List<TarkovSDK.TarkovContainerDefinition> ContainerTypes = new List<TarkovSDK.TarkovContainerDefinition>();
             // the baked audio files the raid loads (spatial audio routes, Meta acoustics), shipped next to the bundles
             public readonly List<string> AudioFiles = new List<string>();
             // the map's BTR route, if it has one
@@ -111,10 +119,13 @@ namespace TarkovSDK.Editor
                         EditorUtility.SetDirty(level);
                         report.Warnings.Add($"{scene.name}: LevelSettings had no skybox (a black sky in game); set to Assets/TarkovSDK/Materials/SDK_Skybox.mat");
                     }
-                    // the lighting rig supplies ambient; retail maps keep Unity's ambient near 0.02
+                    // the lighting rig supplies ambient; Unity's is added to every surface day and night (Customs: Flat, black, 0)
                     var ambient = level.SkyColor.maxColorComponent * level.AmbientIntensity;
-                    if (ambient > 0.15f)
-                        report.Warnings.Add($"{scene.name}: LevelSettings ambient (Sky Color x Ambient Intensity = {ambient:0.##}) is far above retail maps (about 0.02) and washes the map out in game; Factory uses Sky Color 0.03 at intensity 0.6");
+                    if (level.AmbientMode != UnityEngine.Rendering.AmbientMode.Flat)
+                        report.Warnings.Add($"{scene.name}: LevelSettings ambient mode is {level.AmbientMode}; retail maps use Flat (Skybox bakes a fixed sky, Trilight adds its colours day and night, both glow at night). Tarkov SDK > Quick Fixes > Fix Night Lighting");
+                    else if (fullWeather ? ambient > 0f : ambient > TarkovQuickFixes.SimpleRigAmbientLimit)
+                        report.Warnings.Add($"{scene.name}: LevelSettings ambient (Sky Color x Ambient Intensity = {ambient:0.###}) lights the map day and night and makes it glow at night; " +
+                                            (fullWeather ? "full weather maps keep it black (Customs)" : "Factory uses Sky Color 0.03 at intensity 0.6") + ". Tarkov SDK > Quick Fixes > Fix Night Lighting");
                 }
 
                 // Player.Init reads EnvironmentManager.Instance unchecked; a raid cannot start without one
@@ -129,6 +140,13 @@ namespace TarkovSDK.Editor
 
                 // gives an older SDK_Default its textures (white placeholders render white and glossy in game)
                 TarkovSceneTools.DefaultSurfaceMaterial();
+
+                // p0 materials without a cubemap reflect Unity's default grey day and night
+                var noCube = roots.SelectMany(r => r.GetComponentsInChildren<Renderer>(true)).SelectMany(r => r.sharedMaterials)
+                    .Where(TarkovReflectionCube.IsMissing).Distinct().ToList();
+                if (noCube.Count > 0)
+                    report.Warnings.Add($"{scene.name}: {noCube.Count} p0 material(s) have no reflection cubemap and shine flat grey day and night in game " +
+                                        $"(e.g. {string.Join(", ", noCube.Take(3).Select(m => m.name))}). Tarkov SDK > Quick Fixes > Fix Shiny Materials");
 
                 // BotsController.Init calls FindObjectOfType<AIStationaryController>().Init(...) unchecked
                 if (All<AIStationaryController>(roots).Count == 0)
@@ -193,10 +211,19 @@ namespace TarkovSDK.Editor
             SyncLootSpawns(scene, roots, report);
             SyncIndoorTriggers(scene, roots, report);
             FillLocationScene(locationScene, roots);
+            // before Validate: it gives terrains their TerrainBallistic
+            TarkovTerrains.Prepare(scene, roots, report);
+            TarkovProBuilder.Check(scene, roots, report);
             Validate(scene, roots, report);
             TarkovHazards.Prepare(roots, scene.name, report);
             TarkovExtracts.Prepare(roots, scene.name, report);
             TarkovBtr.Prepare(roots, scene.name, report);
+            // after the ids: a gear strip names its container by Id
+            TarkovMapEvents.Check(scene, roots, report);
+            TarkovAnimatedObjects.Prepare(scene, roots, report);
+            foreach (var type in TarkovLootContainers.UsedBy(All<LootableContainer>(roots)))
+                if (!report.ContainerTypes.Contains(type))
+                    report.ContainerTypes.Add(type);
             // after the ids: the audio portals take their doors' and windows' Ids
             var bake = TarkovSpatialAudio.Prepare(scene, report);
             if (bake != null)
@@ -663,7 +690,8 @@ namespace TarkovSDK.Editor
                 int layer = collider.gameObject.layer;
                 if (layer == 0)
                     defaultLayer.Add(PathOf(collider.transform));
-                if ((layer == highPoly || layer == terrain) && collider.GetComponent<BallisticCollider>() == null)
+                // a BallisticCollider, or a terrain's TerrainBallistic (both BaseBallistic, which hits ask)
+                if ((layer == highPoly || layer == terrain) && collider.GetComponent<BaseBallistic>() == null)
                     missingBallistic.Add(PathOf(collider.transform));
             }
             if (defaultLayer.Count > 0)

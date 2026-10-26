@@ -5,7 +5,7 @@
     <RootNamespace>mizmii.CustomMapLoader</RootNamespace>
     <Nullable>disable</Nullable>
     <Authors>mizmii</Authors>
-    <AssemblyVersion>1.6.0</AssemblyVersion>
+    <AssemblyVersion>1.7.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Configurations>Debug;Release</Configurations>
     <Version>$(AssemblyVersion)</Version>
@@ -38,6 +38,10 @@
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>C:\spt41\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="DissonanceVoip">
+      <HintPath>C:\spt41\EscapeFromTarkov_Data\Managed\DissonanceVoip.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx">
       <HintPath>C:\spt41\BepInEx\core\BepInEx.dll</HintPath>
@@ -88,6 +92,10 @@
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\spt41\EscapeFromTarkov_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>C:\spt41\EscapeFromTarkov_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
 

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace TarkovSDK.Editor
 {
-    // Builds working doors, lamps, lootable containers, switches and physics props from your own model,
+    // Builds working doors, lamps, lootable containers, switches, physics props and animated objects from your own model,
     // materials and sounds. Each is the SDK's ready-made object (GameObject > Tarkov SDK) with its placeholder replaced
     // by the model and its colliders fitted to the model's bounds; optionally saved as a prefab to reuse.
     //
@@ -22,11 +22,15 @@ namespace TarkovSDK.Editor
     //                  _EmissionColor on Unity's Standard shader.
     public class TarkovObjectBuilderWindow : EditorWindow
     {
-        private enum Kind { Door, Lamp, LootableContainer, Switch, PhysicsProp }
+        private enum Kind { Door, Lamp, LootableContainer, Switch, PhysicsProp, AnimatedObject }
+        private enum Pivot { LeftEdge, RightEdge, BottomCenter, Center, ModelPivot }
         private enum Emission { None, SwapMaterials, FadeEmission, EmissionColor }
 
-        // container types whose loot pools the server mod has (taken from Factory)
-        private static readonly (string Name, string Template)[] Containers =
+        // container types whose loot pools the server mod has (taken from Factory), then the project's custom ones
+        private static (string Name, string Template)[] Containers =>
+            RetailContainers.Concat(TarkovLootContainers.All().Where(d => d.NewContainer).Select(d => (d.DisplayName + " (custom)", d.Template))).ToArray();
+
+        private static readonly (string Name, string Template)[] RetailContainers =
         {
             ("Wooden crate", TarkovPrefabTools.WoodenCrateTemplate), ("Drawer", "578f87b7245977356274f2cd"),
             ("Jacket", "578f8778245977358849a9b5"), ("Duffle bag", "578f87a3245977356274f2cb"), ("Toolbox", "5909d50c86f774659e6aaebe"),
@@ -72,6 +76,13 @@ namespace TarkovSDK.Editor
         private string _particles = "";
         private float _timeOfLife = -1f;
         private float _shotSpeed = TarkovPhysicsProps.ShotSpeed, _touchSpeed = TarkovPhysicsProps.TouchSpeed, _explosionSpeed = TarkovPhysicsProps.ExplosionSpeed;
+        // animated object
+        private Pivot _pivot = Pivot.LeftEdge;
+        private Vector3 _moveBy = Vector3.zero, _rotateBy = new Vector3(0f, 90f, 0f);
+        private float _seconds = 1.5f;
+        private AnimationClip _openClip, _closeClip;
+        private AudioClip _animOpenSound, _animCloseSound;
+        private bool _ownSwitch = true;
         // output
         private bool _savePrefab;
         private string _prefabFolder = "Assets/Prefabs";
@@ -116,6 +127,7 @@ namespace TarkovSDK.Editor
                 case Kind.LootableContainer: DrawContainer(); break;
                 case Kind.Switch: DrawSwitch(); break;
                 case Kind.PhysicsProp: DrawPhysicsProp(); break;
+                case Kind.AnimatedObject: DrawAnimated(); break;
             }
 
             EditorGUILayout.Space();
@@ -241,6 +253,24 @@ namespace TarkovSDK.Editor
             }
         }
 
+        private void DrawAnimated()
+        {
+            EditorGUILayout.LabelField("Animated Object", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("A door, gate, hatch or platform that moves when used (the game's HandlerAnimator, like Labs' sliding doors). " +
+                                       "Model it closed; it opens by the offsets below or by your own animation.", EditorStyles.wordWrappedMiniLabel);
+            _pivot = (Pivot)EditorGUILayout.EnumPopup(new GUIContent("Pivot", "The point it turns around: a door's hinge edge, a hatch's centre, or the model's own pivot."), _pivot);
+            _moveBy = EditorGUILayout.Vector3Field(new GUIContent("Move By (m)", "How far it moves when open."), _moveBy);
+            _rotateBy = EditorGUILayout.Vector3Field(new GUIContent("Rotate By (deg)", "How far it turns when open, around its own axes (Y: a door)."), _rotateBy);
+            _seconds = Mathf.Max(0.05f, EditorGUILayout.FloatField(new GUIContent("Seconds", "Time to open or close."), _seconds));
+            _openClip = (AnimationClip)EditorGUILayout.ObjectField(new GUIContent("Open Clip", "Optional: your own opening animation, on the object's root (the moving part is \"Moving\")."), _openClip, typeof(AnimationClip), false);
+            _closeClip = (AnimationClip)EditorGUILayout.ObjectField(new GUIContent("Close Clip", "Optional: without one the opening plays backwards."), _closeClip, typeof(AnimationClip), false);
+            _animOpenSound = (AudioClip)EditorGUILayout.ObjectField("Open Sound", _animOpenSound, typeof(AudioClip), false);
+            _animCloseSound = (AudioClip)EditorGUILayout.ObjectField(new GUIContent("Close Sound", "Empty: the open sound."), _animCloseSound, typeof(AudioClip), false);
+            _ownSwitch = EditorGUILayout.Toggle(new GUIContent("Own Switch", "A switch next to it opens and closes it. Off: connect a zone or switch in " +
+                                                                              "Tarkov SDK > Tools > Interactables > Triggers & Sounds (Open / Close an animated object)."), _ownSwitch);
+            EditorGUILayout.LabelField("Players standing on a moving platform aren't carried by it.", EditorStyles.miniLabel);
+        }
+
         private static void ClipList(string label, List<AudioClip> clips)
         {
             EditorGUILayout.LabelField(label);
@@ -274,6 +304,7 @@ namespace TarkovSDK.Editor
                 case Kind.Lamp: root = CreateLamp(); break;
                 case Kind.LootableContainer: root = CreateContainer(); break;
                 case Kind.PhysicsProp: root = CreatePhysicsProp(); break;
+                case Kind.AnimatedObject: root = CreateAnimated(); break;
                 default: root = CreateSwitch(); break;
             }
             root.name = string.IsNullOrWhiteSpace(_name) ? _model.name : _name.Trim();
@@ -442,6 +473,43 @@ namespace TarkovSDK.Editor
             prop.TimeOfLife = _timeOfLife;
             TarkovPhysicsProps.SetPushSpeeds(prop, _shotSpeed, _touchSpeed, _explosionSpeed);
             return prop.gameObject;
+        }
+
+        // the SDK's animated object with the model as its moving part, pivoted where it turns; its own switch beside it
+        private GameObject CreateAnimated()
+        {
+            var settings = TarkovAnimatedObjects.Create(null, _ownSwitch);
+            var moving = settings.Moving;
+            Object.DestroyImmediate(moving.Find("Visual (replace with your model)").gameObject);
+            var model = Model(moving, out var b);
+            if (_pivot != Pivot.ModelPivot)
+            {
+                var pivot = _pivot switch
+                {
+                    Pivot.LeftEdge => new Vector3(b.min.x, b.min.y, b.center.z),
+                    Pivot.RightEdge => new Vector3(b.max.x, b.min.y, b.center.z),
+                    Pivot.BottomCenter => new Vector3(b.center.x, b.min.y, b.center.z),
+                    _ => b.center,
+                };
+                model.transform.position -= pivot - moving.position;
+                b.center -= pivot - moving.position;
+            }
+            FitBox(moving.Find("LowPoly").GetComponent<BoxCollider>(), b);
+            FitBox(moving.Find("HighPoly").GetComponent<BoxCollider>(), b);
+            SetBallistic(moving.Find("HighPoly").gameObject);
+            var sw = settings.Animator.transform.Find("Switch");
+            if (sw != null)
+                sw.localPosition = new Vector3(b.min.x - 0.35f, 1.2f, b.min.z - 0.1f);
+
+            settings.MoveBy = _moveBy;
+            settings.RotateBy = _rotateBy;
+            settings.Seconds = _seconds;
+            settings.OpenClip = _openClip;
+            settings.CloseClip = _closeClip;
+            settings.OpenSound = _animOpenSound;
+            settings.CloseSound = _animCloseSound;
+            TarkovAnimatedObjects.Rebuild(settings);
+            return settings.Animator.gameObject;
         }
 
         // ------------------------------------------------------------ helpers

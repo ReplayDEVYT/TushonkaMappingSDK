@@ -44,6 +44,15 @@ namespace TarkovSDK.Editor
             TrapsOn,
             OpenObject,
             CloseObject,
+            AnimateOpen,
+            AnimateClose,
+            PlayClip,
+            ForceTransit,
+            StripGear,
+            ShowNotification,
+            ShowCaption,
+            ChangeHealth,
+            ApplyEffect,
         }
 
         private static readonly string[] WhenNames =
@@ -54,7 +63,9 @@ namespace TarkovSDK.Editor
         private static readonly string[] ActionNames =
         {
             "Play a sound", "Stop a sound", "Announce on the PA", "Turn lamps on", "Turn lamps off", "Toggle lamp groups", "Turn traps off", "Turn traps on",
-            "Open a door or switch", "Close a door or switch",
+            "Open a door or switch", "Close a door or switch", "Open an animated object", "Close an animated object", "Play an animation",
+            "Force a transit (no confirmation)", "Strip the player's gear", "Show a notification",
+            "Show captions", "Change the player's health", "Give the player effects",
         };
 
         private When _when;
@@ -71,8 +82,18 @@ namespace TarkovSDK.Editor
         private WorldInteractiveObject _objectTarget;
         private Vector2 _scroll;
         private List<GameObject> _traps = new List<GameObject> { null };
+        private TarkovAnimatedObject _animated;
+        private Animator _animator;
+        private AnimationClip _animationClip;
+        private TransitPoint _transit;
+        private TarkovGearStrip _strip;
+        private TarkovNotification _notification;
+        private TarkovCaption _caption;
+        private TarkovHealthChange _health;
+        private TarkovEffect _effect;
+        private bool _stopHealthOnLeave = true;
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Triggers & Sounds...", priority = 115)]
+        [MenuItem("Tarkov SDK/Tools/Interactables/Triggers & Sounds...", priority = 116)]
         public static void Open()
         {
             var window = GetWindow<TarkovTriggerWiringWindow>("Triggers & Sounds");
@@ -81,7 +102,19 @@ namespace TarkovSDK.Editor
                 window._source = Selection.activeGameObject;
         }
 
+        // set up to force a transit (from the Extracts window); the mapper picks the zone or switch
+        public static void OpenForceTransit(TransitPoint transit)
+        {
+            var window = GetWindow<TarkovTriggerWiringWindow>("Triggers & Sounds");
+            window.minSize = new Vector2(420f, 420f);
+            window._action = Action.ForceTransit;
+            window._transit = transit;
+            window._source = null;
+            window.Repaint();
+        }
+
         private bool ZoneSource => _when <= When.LastPlayerLeavesZone;
+        private bool ObjectSource => _when == When.ObjectOpens || _when == When.ObjectCloses;
 
         private void OnGUI()
         {
@@ -193,6 +226,42 @@ namespace TarkovSDK.Editor
                     _objectTarget = (WorldInteractiveObject)EditorGUILayout.ObjectField("Door Or Switch", _objectTarget, typeof(WorldInteractiveObject), true);
                     EditorGUILayout.LabelField("A locked one is unlocked first, as the game does for triggers.", EditorStyles.miniLabel);
                     break;
+                case Action.AnimateOpen:
+                case Action.AnimateClose:
+                    _animated = (TarkovAnimatedObject)EditorGUILayout.ObjectField(new GUIContent("Animated Object", "Its SDK_Animation settings (GameObject > Tarkov SDK > Interactables > Animated Object)."),
+                        _animated, typeof(TarkovAnimatedObject), true);
+                    break;
+                case Action.PlayClip:
+                    _animator = (Animator)EditorGUILayout.ObjectField("Animator", _animator, typeof(Animator), true);
+                    _animationClip = (AnimationClip)EditorGUILayout.ObjectField("Animation", _animationClip, typeof(AnimationClip), false);
+                    EditorGUILayout.LabelField("The animation gets its own state on the Animator (a controller is made if it has none) and stays on its last frame.", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.ForceTransit:
+                    _transit = (TransitPoint)EditorGUILayout.ObjectField("Transit", _transit, typeof(TransitPoint), true);
+                    EditorGUILayout.LabelField("Sends the player who fires it on at once: no transit menu, no confirmation, no countdown (CustomMapLoader's own; Tarkov has none).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.StripGear:
+                    _strip = (TarkovGearStrip)EditorGUILayout.ObjectField(new GUIContent("Gear Strip", "Empty: one is made (GameObject > Tarkov SDK > Events > Gear Strip), with its stash."), _strip, typeof(TarkovGearStrip), true);
+                    EditorGUILayout.LabelField("Takes the player's gear into its stash or for good (CustomMapLoader's own; Tarkov has none).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.ShowNotification:
+                    _notification = (TarkovNotification)EditorGUILayout.ObjectField(new GUIContent("Notification", "Empty: one is made (GameObject > Tarkov SDK > Events > Notification); set its message, icon, sound and duration."), _notification, typeof(TarkovNotification), true);
+                    EditorGUILayout.LabelField("Shows the game's notification popup to the player who fires it (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.ShowCaption:
+                    _caption = (TarkovCaption)EditorGUILayout.ObjectField(new GUIContent("Caption", "Empty: one is made (GameObject > Tarkov SDK > Events > Caption); write its lines and times."), _caption, typeof(TarkovCaption), true);
+                    EditorGUILayout.LabelField("Shows lines in the game's caption view to the player who fires it, each at its time (CustomMapLoader's own). Connect a sound to the same zone to voice them.", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.ChangeHealth:
+                    _health = (TarkovHealthChange)EditorGUILayout.ObjectField(new GUIContent("Health Change", "Empty: one is made (GameObject > Tarkov SDK > Events > Health Change); set what it does."), _health, typeof(TarkovHealthChange), true);
+                    if (_when == When.PlayerEntersZone)
+                        _stopHealthOnLeave = EditorGUILayout.Toggle(new GUIContent("Stop When They Leave", "Repeats (a gas zone) stop when the player leaves the zone (its Stop Trigger Id)."), _stopHealthOnLeave);
+                    EditorGUILayout.LabelField("Damages, heals, restores or kills the player who fires it, or changes their energy or hydration (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.ApplyEffect:
+                    _effect = (TarkovEffect)EditorGUILayout.ObjectField(new GUIContent("Effect", "Empty: one is made (GameObject > Tarkov SDK > Events > Effect); pick its effects."), _effect, typeof(TarkovEffect), true);
+                    EditorGUILayout.LabelField("Gives the player who fires it health effects: bleeding, fractures, pain, contusion, stun, poison, stimulator buffs (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
+                    break;
             }
         }
 
@@ -230,7 +299,7 @@ namespace TarkovSDK.Editor
         {
             if (_source == null)
                 return ZoneSource ? "Pick the zone (any object in the scene)." : "Pick the switch or door.";
-            if (!ZoneSource && _source.GetComponent<WorldInteractiveObject>() == null)
+            if (ObjectSource && _source.GetComponent<WorldInteractiveObject>() == null)
                 return "The source has no interactive object.";
             switch (_action)
             {
@@ -247,6 +316,19 @@ namespace TarkovSDK.Editor
                 case Action.TrapsOff:
                 case Action.TrapsOn:
                     return _traps.Any(t => t != null && TarkovTraps.IsSwitchable(t)) ? null : "Pick a spike or flame trap.";
+                case Action.AnimateOpen:
+                case Action.AnimateClose:
+                    return _animated == null || _animated.Animator == null ? "Pick the animated object (its SDK_Animation child)." : null;
+                case Action.PlayClip:
+                    return _animator == null || _animationClip == null ? "Pick the Animator and the animation." : null;
+                case Action.ForceTransit:
+                    return _transit == null ? "Pick the transit." : null;
+                case Action.StripGear:
+                case Action.ShowNotification:
+                case Action.ShowCaption:
+                case Action.ChangeHealth:
+                case Action.ApplyEffect:
+                    return null;
                 default:
                     return _objectTarget == null ? "Pick the door or switch." : null;
             }
@@ -401,9 +483,102 @@ namespace TarkovSDK.Editor
                     var traps = _traps.Where(t => t != null && TarkovTraps.IsSwitchable(t)).ToList();
                     bool on = _action == Action.TrapsOn;
                     // a switch also sends the traps' stop ids, so a flame already burning someone goes out
-                    if (!on && !ZoneSource)
+                    if (!on && ObjectSource)
                         TarkovTraps.SendStops(_source.GetComponent<WorldInteractiveObject>(), _when == When.ObjectOpens ? EDoorState.Open : EDoorState.Shut, traps);
                     return TarkovTraps.AddToggle(_source.transform, id, traps, on);
+                }
+                case Action.AnimateOpen:
+                case Action.AnimateClose:
+                    TarkovAnimatedObjects.Connect(_animated, id, _action == Action.AnimateOpen);
+                    return _animated.Animator.gameObject;
+                case Action.PlayClip:
+                    TarkovAnimatedObjects.ConnectClip(_animator, _animationClip, id);
+                    return _animator.gameObject;
+                case Action.ForceTransit:
+                {
+                    var force = TarkovMapEvents.AddForce(_transit);
+                    Undo.RecordObject(force, "Force transit");
+                    Replaced(force.TriggerId, id, force.name);
+                    force.TriggerId = id;
+                    EditorUtility.SetDirty(force);
+                    return force.gameObject;
+                }
+                case Action.StripGear:
+                {
+                    var strip = _strip;
+                    if (strip == null)
+                    {
+                        strip = TarkovMapEvents.CreateGearStrip(null);
+                        strip.transform.parent.position = _source.transform.position;
+                        Undo.RegisterCreatedObjectUndo(strip.transform.parent.gameObject, "Create gear strip");
+                    }
+                    Undo.RecordObject(strip, "Strip gear");
+                    Replaced(strip.TriggerId, id, strip.name);
+                    strip.TriggerId = id;
+                    EditorUtility.SetDirty(strip);
+                    return strip.gameObject;
+                }
+                case Action.ShowNotification:
+                {
+                    var notification = _notification;
+                    if (notification == null)
+                    {
+                        notification = TarkovMapEvents.CreateNotification(null);
+                        notification.transform.position = _source.transform.position;
+                        Undo.RegisterCreatedObjectUndo(notification.gameObject, "Create notification");
+                    }
+                    Undo.RecordObject(notification, "Show notification");
+                    Replaced(notification.TriggerId, id, notification.name);
+                    notification.TriggerId = id;
+                    EditorUtility.SetDirty(notification);
+                    return notification.gameObject;
+                }
+                case Action.ShowCaption:
+                {
+                    var caption = _caption;
+                    if (caption == null)
+                    {
+                        caption = TarkovMapEvents.CreateCaption(null);
+                        caption.transform.position = _source.transform.position;
+                        Undo.RegisterCreatedObjectUndo(caption.gameObject, "Create caption");
+                    }
+                    Undo.RecordObject(caption, "Show caption");
+                    Replaced(caption.TriggerId, id, caption.name);
+                    caption.TriggerId = id;
+                    EditorUtility.SetDirty(caption);
+                    return caption.gameObject;
+                }
+                case Action.ChangeHealth:
+                {
+                    var health = _health;
+                    if (health == null)
+                    {
+                        health = TarkovMapEvents.CreateHealthChange(null);
+                        health.transform.position = _source.transform.position;
+                        Undo.RegisterCreatedObjectUndo(health.gameObject, "Create health change");
+                    }
+                    Undo.RecordObject(health, "Change health");
+                    Replaced(health.TriggerId, id, health.name);
+                    health.TriggerId = id;
+                    if (_when == When.PlayerEntersZone && _stopHealthOnLeave)
+                        health.StopTriggerId = ZoneId(_source, TriggerZone.ETriggerZoneMode.Exit, "Leave");
+                    EditorUtility.SetDirty(health);
+                    return health.gameObject;
+                }
+                case Action.ApplyEffect:
+                {
+                    var effect = _effect;
+                    if (effect == null)
+                    {
+                        effect = TarkovMapEvents.CreateEffect(null);
+                        effect.transform.position = _source.transform.position;
+                        Undo.RegisterCreatedObjectUndo(effect.gameObject, "Create effect");
+                    }
+                    Undo.RecordObject(effect, "Apply effect");
+                    Replaced(effect.TriggerId, id, effect.name);
+                    effect.TriggerId = id;
+                    EditorUtility.SetDirty(effect);
+                    return effect.gameObject;
                 }
                 default:
                 {
@@ -418,6 +593,13 @@ namespace TarkovSDK.Editor
             }
         }
 
+        // the SDK's own listeners take one trigger id
+        private static void Replaced(string old, string id, string name)
+        {
+            if (!string.IsNullOrEmpty(old) && old != id)
+                Debug.Log($"[Tarkov SDK] '{name}' listened to '{old}' before; it now listens to '{id}'.");
+        }
+
         private GameObject ConnectAnnouncement()
         {
             var pa = Object.FindObjectOfType<QueuePlayer>();
@@ -428,7 +610,7 @@ namespace TarkovSDK.Editor
                 Undo.RegisterCreatedObjectUndo(pa.gameObject, "Create PA system");
             }
             var clip = _clips.FirstOrDefault(c => c != null);
-            if (!ZoneSource)
+            if (ObjectSource)
             {
                 // an announcement follows the object's state itself
                 var subscriber = TarkovFacilitySystems.CreateAnnouncement(pa, _source.GetComponent<WorldInteractiveObject>(), "Announcement_" + _source.name);

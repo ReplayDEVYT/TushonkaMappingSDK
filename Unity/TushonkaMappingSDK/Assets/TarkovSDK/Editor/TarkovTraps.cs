@@ -38,20 +38,20 @@ namespace TarkovSDK.Editor
         // a trap's visuals that a trap switch hides
         public const string EffectsName = "Effects";
 
-        [MenuItem(Menu + "Barbed Wire", priority = 33)]
+        [MenuItem(Menu + "Barbed Wire", priority = 35)]
         private static void MenuWire(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateBarbedWire(p).gameObject);
 
-        [MenuItem(Menu + "Spike Trap", priority = 34)]
+        [MenuItem(Menu + "Spike Trap", priority = 36)]
         private static void MenuSpikes(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateSpikeTrap(p));
 
-        [MenuItem(Menu + "Flame Trap", priority = 35)]
+        [MenuItem(Menu + "Flame Trap", priority = 37)]
         private static void MenuFlames(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateFlameTrap(p));
 
-        [MenuItem(Menu + "Trap Door", priority = 36)]
+        [MenuItem(Menu + "Trap Door", priority = 38)]
         private static void MenuTrapDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateTrapDoor(p).gameObject);
 
         // no MenuCommand: Unity calls those once per selected object, and this makes one switch for all of them
-        [MenuItem(Menu + "Trap Switch (For Selected Traps)", priority = 37)]
+        [MenuItem(Menu + "Trap Switch (For Selected Traps)", priority = 39)]
         private static void MenuTrapSwitch()
         {
             var traps = Selection.gameObjects.Where(IsSwitchable).ToList();

@@ -47,7 +47,26 @@ namespace TarkovSDK.Editor
             bool enabled = EditorGUILayout.Toggle(new GUIContent("Preview Lighting",
                 "Light the Scene view the way the raid will: the sun for the preview hour and the game's ambient light."), TarkovLightingPreview.Enabled);
             if (enabled != TarkovLightingPreview.Enabled)
+            {
                 TarkovLightingPreview.Enabled = enabled;
+                // the preview lights the scene through the sky dome and its sun; off, nothing shows
+                if (enabled)
+                {
+                    var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+                    EditorApplication.delayCall += () => TarkovLightingPreview.EnableSky(scene);
+                }
+            }
+            string off = enabled ? TarkovLightingPreview.SkyOffReason(UnityEngine.SceneManagement.SceneManager.GetActiveScene()) : null;
+            if (off != null)
+            {
+                // the raid turns TOD_Sky on by itself, so this only matters for the editor
+                EditorGUILayout.HelpBox($"The sky is turned off ({off}), so the preview can't light the scene. The raid turns it on by itself; this is only for the Scene view.", MessageType.Warning);
+                if (GUILayout.Button("Turn The Sky Dome On"))
+                {
+                    var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+                    EditorApplication.delayCall += () => TarkovLightingPreview.EnableSky(scene);
+                }
+            }
             using (new EditorGUI.DisabledScope(!enabled))
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -60,6 +79,22 @@ namespace TarkovSDK.Editor
                     TarkovLightingPreview.Hour = 12f;
                 if (GUILayout.Button("Night", GUILayout.Width(48f)))
                     TarkovLightingPreview.Hour = 0f;
+            }
+            using (new EditorGUI.DisabledScope(!enabled))
+            {
+                // the raid's weather, as WeatherController hands it to the sky (full weather maps only)
+                float cloudiness = EditorGUILayout.Slider(new GUIContent("Preview Cloudiness", "The raid weather's Cloudiness: -1 clear, 1 overcast. Sets the sky's haze, " +
+                    "contrast and the ambient light like the raid's weather does. Only maps with the full weather system."), TarkovLightingPreview.Cloudiness, -1f, 1f);
+                if (!Mathf.Approximately(cloudiness, TarkovLightingPreview.Cloudiness))
+                    TarkovLightingPreview.Cloudiness = cloudiness;
+                float fog = EditorGUILayout.Slider(new GUIContent("Preview Fog", "The raid weather's Fog (0 none, 1 thickest): the atmospheric fog's density, " +
+                    "never thinner than a clear raid's. Only maps with the full weather system."), TarkovLightingPreview.Fog, 0f, 1f);
+                if (!Mathf.Approximately(fog, TarkovLightingPreview.Fog))
+                    TarkovLightingPreview.Fog = fog;
+                bool post = EditorGUILayout.Toggle(new GUIContent("Preview Post-Processing",
+                    "The raid camera's exposure, vignette and tonemap over the Scene view (the map's post-processing preset, else the retail camera's)."), TarkovPostPreview.Enabled);
+                if (post != TarkovPostPreview.Enabled)
+                    TarkovPostPreview.Enabled = post;
             }
         }
 

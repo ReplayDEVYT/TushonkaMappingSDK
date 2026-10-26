@@ -12,3 +12,92 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c9e77d4987325f4f9f1f152df18ace3, type: 3}
   m_Name: New PRISMPreset
   m_EditorClassIdentifier: 
+  PresetDescription: Enter description for your preset.
+  presetType: 0
+  useBloom: 0
+  bloomType: 1
+  bloomUseScreenBlend: 0
+  bloomDownsample: 2
+  bloomBlurPasses: 4
+  bloomIntensity: 0.05
+  bloomThreshold: 1.579
+  useBloomStability: 1
+  useBloomLensdirt: 1
+  bloomLensdirtIntensity: 0.759
+  bloomLensdirtTexture: {fileID: 2800000, guid: e2f557198ffa7be4295b707f0bfe6c83, type: 3}
+  useFullScreenBlur: 0
+  useUIBlur: 0
+  uiBlurGrabTextureFromPassNumber: 2
+  useFog: 0
+  fogAffectSkybox: 0
+  fogIntensity: 0
+  fogHeight: 2
+  fogStartPoint: 50
+  fogDistance: 500
+  fogColor: {r: 1, g: 1, b: 1, a: 1}
+  fogEndColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  useDoF: 0
+  dofRadius: 0.466
+  dofSampleCount: 1
+  dofBokehFactor: 157
+  dofFocusPoint: 6.75
+  dofFocusDistance: 55
+  useNearBlur: 1
+  dofBlurSkybox: 1
+  dofNearFocusDistance: 8
+  dofForceEnableMedian: 0
+  useAmbientObscurance: 0
+  aoIntensity: 1.117
+  aoRadius: 1.345
+  aoBias: 0.448
+  aoDownsample: 1
+  aoBlurIterations: 1
+  aoBlurFilterDistance: 1.25
+  useAODistanceCutoff: 0
+  aoDistanceCutoffLength: 150
+  aoDistanceCutoffStart: 4
+  aoSampleCount: 10
+  aoBlurType: 1
+  aoLightingContribution: 0.353
+  useChromaticAb: 0
+  aberrationType: 1
+  chromIntensity: 0.0171
+  chromStart: 0.29
+  chromEnd: 0.599
+  useChromaticBlur: 0
+  chromaticBlurWidth: 1
+  useVignette: 1
+  vignetteStart: 0.9
+  vignetteEnd: 0.4
+  vignetteIntensity: 0.887
+  vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+  useNoise: 0
+  noiseIntensity: 0.09
+  useTonemap: 1
+  toneType: 0
+  toneValues: {x: 5, y: 0.3, z: 0.3}
+  secondaryToneValues: {x: -0.05, y: 0.25, z: 0}
+  useGammaCorrection: 0
+  gammaValue: 1
+  useExposure: 1
+  exposureSpeed: 6
+  exposureMiddleGrey: 0.238
+  exposureLowerLimit: -10
+  exposureUpperLimit: 1.2
+  useLUT: 0
+  lutPath: 
+  lutIntensity: 0.083
+  twoDLookupTex: {fileID: 2800000, guid: 1873e99b3835ec2498a7d17b2ab4c738, type: 3}
+  useSecondLut: 0
+  secondaryLutPath: 
+  secondaryTwoDLookupTex: {fileID: 0}
+  secondaryLutLerpAmount: 0
+  useNV: 0
+  nvColor: {r: 0, g: 1, b: 0.1724138, a: 0}
+  nvBleachColor: {r: 1, g: 1, b: 1, a: 0}
+  nvLightingContrib: 0.0302
+  nvLightSensitivity: 10.8
+  useRays: 0
+  rayWeight: 0.629
+  rayColor: {r: 1, g: 1, b: 1, a: 1}
+  rayThreshold: {r: 0.87, g: 0.74, b: 0.65, a: 1}
