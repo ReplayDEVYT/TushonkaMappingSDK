@@ -55,7 +55,7 @@ namespace TarkovSDK.Editor
             prop.OnBlowUpForceMultiplier = explosion * mass;
         }
 
-        [MenuItem("GameObject/Tarkov SDK/Interactables/Physics Prop", priority = 33)]
+        [MenuItem("GameObject/Tarkov SDK/Interactables/Physics Prop", priority = 35)]
         private static void MenuProp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             // a small placeholder box, sounding like a generic object

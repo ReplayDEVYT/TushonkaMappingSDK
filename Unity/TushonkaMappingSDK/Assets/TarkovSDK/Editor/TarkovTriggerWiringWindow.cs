@@ -10,12 +10,12 @@ using Object = UnityEngine.Object;
 
 namespace TarkovSDK.Editor
 {
-    // Tarkov SDK > Tools > Interactables > Triggers & Sounds: connects "when" to "do" with the game's trigger system,
+    // Tarkov SDK > Tools > Triggers > Triggers & Sounds: connects "when" to "do" with the game's trigger system,
     // so nobody has to match trigger ids by hand.
     //
     // A trigger id is a name a sender emits and listeners react to:
     //  - senders: a TriggerZone (a player enters or leaves its box), a switch or door's Triggers Map
-    //    (it reaches a state)
+    //    (it reaches a state), a TriggerBallistic (the object is shot, or a blast reaches it), a world event's step
     //  - listeners: HandlerPlaySoundAdvanced (play / stop), HandlerLamp, HandlerInteractable (open or
     //    close an object), HandlerAnimator
     // PA announcements follow an object's state directly (InteractiveSubscriber); a zone announces by
@@ -30,6 +30,7 @@ namespace TarkovSDK.Editor
             LastPlayerLeavesZone,
             ObjectOpens,
             ObjectCloses,
+            ObjectShot,
         }
 
         private enum Action
@@ -53,11 +54,18 @@ namespace TarkovSDK.Editor
             ShowCaption,
             ChangeHealth,
             ApplyEffect,
+            SpawnBots,
+            SpawnLoot,
+            SpawnPrefab,
+            MortarStrike,
+            Explode,
+            StartWorldEvent,
         }
 
         private static readonly string[] WhenNames =
         {
             "A player enters a zone", "A player leaves a zone", "The last player leaves a zone", "A switch or door opens", "A switch or door closes",
+            "An object is shot (or caught in a blast)",
         };
 
         private static readonly string[] ActionNames =
@@ -66,6 +74,8 @@ namespace TarkovSDK.Editor
             "Open a door or switch", "Close a door or switch", "Open an animated object", "Close an animated object", "Play an animation",
             "Force a transit (no confirmation)", "Strip the player's gear", "Show a notification",
             "Show captions", "Change the player's health", "Give the player effects",
+            "Spawn bots", "Spawn loot", "Spawn, show or hide a prefab", "Shell a mortar zone",
+            "Set off an explosion", "Start a scripted world event",
         };
 
         private When _when;
@@ -91,9 +101,16 @@ namespace TarkovSDK.Editor
         private TarkovCaption _caption;
         private TarkovHealthChange _health;
         private TarkovEffect _effect;
+        private TarkovSpawnBots _bots;
+        private TarkovSpawnLoot _loot;
+        private TarkovSpawnPrefab _prefab;
+        private TarkovMortarZone _mortarZone;
         private bool _stopHealthOnLeave = true;
+        private bool _shotOnce = true;
+        private Transform _explosionAt;
+        private TarkovWorldEvent _worldEvent;
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Triggers & Sounds...", priority = 116)]
+        [MenuItem("Tarkov SDK/Tools/Triggers/Triggers & Sounds...", priority = 118)]
         public static void Open()
         {
             var window = GetWindow<TarkovTriggerWiringWindow>("Triggers & Sounds");
@@ -115,16 +132,24 @@ namespace TarkovSDK.Editor
 
         private bool ZoneSource => _when <= When.LastPlayerLeavesZone;
         private bool ObjectSource => _when == When.ObjectOpens || _when == When.ObjectCloses;
+        private bool ShotSource => _when == When.ObjectShot;
 
         private void OnGUI()
         {
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUILayout.LabelField("Connect", EditorStyles.boldLabel);
             _when = (When)EditorGUILayout.Popup("When", (int)_when, WhenNames);
-            _source = (GameObject)EditorGUILayout.ObjectField(ZoneSource ? "Zone" : "Switch Or Door", _source, typeof(GameObject), true);
+            _source = (GameObject)EditorGUILayout.ObjectField(ZoneSource ? "Zone" : ShotSource ? "Object" : "Switch Or Door", _source, typeof(GameObject), true);
             if (ZoneSource)
                 EditorGUILayout.LabelField(_source == null ? "Any object: it becomes (or gets) a trigger zone. Size its box to the area."
                                                : ZoneNote(_source), EditorStyles.wordWrappedMiniLabel);
+            else if (ShotSource)
+            {
+                EditorGUILayout.LabelField(_source != null && _source.GetComponentInChildren<EFT.Ballistics.BallisticCollider>(true) == null
+                    ? "It has no BallisticCollider, so a hit box is added round it (on HighPolyCollider)."
+                    : "Its BallisticCollider is what gets shot (the game's TriggerBallistic; blasts that reach it count too).", EditorStyles.wordWrappedMiniLabel);
+                _shotOnce = EditorGUILayout.Toggle(new GUIContent("Only The First Hit", "Fire only once per raid; off: on every hit."), _shotOnce);
+            }
             else if (_source != null && _source.GetComponent<WorldInteractiveObject>() == null)
                 EditorGUILayout.HelpBox("Pick an object with a Door, Switch, container or other interactive object.", MessageType.Warning);
 
@@ -241,26 +266,50 @@ namespace TarkovSDK.Editor
                     EditorGUILayout.LabelField("Sends the player who fires it on at once: no transit menu, no confirmation, no countdown (CustomMapLoader's own; Tarkov has none).", EditorStyles.wordWrappedMiniLabel);
                     break;
                 case Action.StripGear:
-                    _strip = (TarkovGearStrip)EditorGUILayout.ObjectField(new GUIContent("Gear Strip", "Empty: one is made (GameObject > Tarkov SDK > Events > Gear Strip), with its stash."), _strip, typeof(TarkovGearStrip), true);
+                    _strip = (TarkovGearStrip)EditorGUILayout.ObjectField(new GUIContent("Gear Strip", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Gear Strip), with its stash."), _strip, typeof(TarkovGearStrip), true);
                     EditorGUILayout.LabelField("Takes the player's gear into its stash or for good (CustomMapLoader's own; Tarkov has none).", EditorStyles.wordWrappedMiniLabel);
                     break;
                 case Action.ShowNotification:
-                    _notification = (TarkovNotification)EditorGUILayout.ObjectField(new GUIContent("Notification", "Empty: one is made (GameObject > Tarkov SDK > Events > Notification); set its message, icon, sound and duration."), _notification, typeof(TarkovNotification), true);
+                    _notification = (TarkovNotification)EditorGUILayout.ObjectField(new GUIContent("Notification", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Notification); set its message, icon, sound and duration."), _notification, typeof(TarkovNotification), true);
                     EditorGUILayout.LabelField("Shows the game's notification popup to the player who fires it (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
                     break;
                 case Action.ShowCaption:
-                    _caption = (TarkovCaption)EditorGUILayout.ObjectField(new GUIContent("Caption", "Empty: one is made (GameObject > Tarkov SDK > Events > Caption); write its lines and times."), _caption, typeof(TarkovCaption), true);
+                    _caption = (TarkovCaption)EditorGUILayout.ObjectField(new GUIContent("Caption", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Caption); write its lines and times."), _caption, typeof(TarkovCaption), true);
                     EditorGUILayout.LabelField("Shows lines in the game's caption view to the player who fires it, each at its time (CustomMapLoader's own). Connect a sound to the same zone to voice them.", EditorStyles.wordWrappedMiniLabel);
                     break;
                 case Action.ChangeHealth:
-                    _health = (TarkovHealthChange)EditorGUILayout.ObjectField(new GUIContent("Health Change", "Empty: one is made (GameObject > Tarkov SDK > Events > Health Change); set what it does."), _health, typeof(TarkovHealthChange), true);
+                    _health = (TarkovHealthChange)EditorGUILayout.ObjectField(new GUIContent("Health Change", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Health Change); set what it does."), _health, typeof(TarkovHealthChange), true);
                     if (_when == When.PlayerEntersZone)
                         _stopHealthOnLeave = EditorGUILayout.Toggle(new GUIContent("Stop When They Leave", "Repeats (a gas zone) stop when the player leaves the zone (its Stop Trigger Id)."), _stopHealthOnLeave);
                     EditorGUILayout.LabelField("Damages, heals, restores or kills the player who fires it, or changes their energy or hydration (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
                     break;
                 case Action.ApplyEffect:
-                    _effect = (TarkovEffect)EditorGUILayout.ObjectField(new GUIContent("Effect", "Empty: one is made (GameObject > Tarkov SDK > Events > Effect); pick its effects."), _effect, typeof(TarkovEffect), true);
+                    _effect = (TarkovEffect)EditorGUILayout.ObjectField(new GUIContent("Effect", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Effect); pick its effects."), _effect, typeof(TarkovEffect), true);
                     EditorGUILayout.LabelField("Gives the player who fires it health effects: bleeding, fractures, pain, contusion, stun, poison, stimulator buffs (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.SpawnBots:
+                    _bots = (TarkovSpawnBots)EditorGUILayout.ObjectField(new GUIContent("Spawn Bots", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Spawn Bots) at the source; move its spawn points."), _bots, typeof(TarkovSpawnBots), true);
+                    EditorGUILayout.LabelField("Spawns bots of a role and difficulty at its points (CustomMapLoader's own; on the host in co-op).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.SpawnLoot:
+                    _loot = (TarkovSpawnLoot)EditorGUILayout.ObjectField(new GUIContent("Spawn Loot", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Spawn Loot) at the source; pick its items."), _loot, typeof(TarkovSpawnLoot), true);
+                    EditorGUILayout.LabelField("Drops items at its points (CustomMapLoader's own; in co-op only the host sees them).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.SpawnPrefab:
+                    _prefab = (TarkovSpawnPrefab)EditorGUILayout.ObjectField(new GUIContent("Spawn Prefab", "Empty: one is made (GameObject > Tarkov SDK > Triggers > Spawn Prefab) at the source; pick its prefab."), _prefab, typeof(TarkovSpawnPrefab), true);
+                    EditorGUILayout.LabelField("Puts a copy of a prefab at its points, or switches a scene object on or off (CustomMapLoader's own).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.MortarStrike:
+                    _mortarZone = (TarkovMortarZone)EditorGUILayout.ObjectField(new GUIContent("Mortar Zone", "Empty: one is made at the source (with the map's mortar setup if it has none)."), _mortarZone, typeof(TarkovMortarZone), true);
+                    EditorGUILayout.LabelField("Shells the zone after its Trigger Delay, with the game's warning (CustomMapLoader's own trigger; the shelling is the game's).", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.Explode:
+                    _explosionAt = (Transform)EditorGUILayout.ObjectField(new GUIContent("Explode At", "Empty: at the source."), _explosionAt, typeof(Transform), true);
+                    EditorGUILayout.LabelField("The game's explosion (HandlerExplosion, retail's gas cylinder blast): goes off once, hurts and stuns those in range and sets off shootable triggers it reaches.", EditorStyles.wordWrappedMiniLabel);
+                    break;
+                case Action.StartWorldEvent:
+                    _worldEvent = (TarkovWorldEvent)EditorGUILayout.ObjectField(new GUIContent("World Event", "Empty: one is made (GameObject > Tarkov SDK > World Events > Scripted Event)."), _worldEvent, typeof(TarkovWorldEvent), true);
+                    EditorGUILayout.LabelField("Starts the event's steps (CustomMapLoader's own); one set to start at a raid time can still start earlier on this.", EditorStyles.wordWrappedMiniLabel);
                     break;
             }
         }
@@ -298,7 +347,9 @@ namespace TarkovSDK.Editor
         private string Problem()
         {
             if (_source == null)
-                return ZoneSource ? "Pick the zone (any object in the scene)." : "Pick the switch or door.";
+                return ZoneSource ? "Pick the zone (any object in the scene)." : ShotSource ? "Pick the object that gets shot." : "Pick the switch or door.";
+            if (ShotSource && _action == Action.Announce)
+                return "PA announcements follow a zone or a switch; use Play a sound for a shot.";
             if (ObjectSource && _source.GetComponent<WorldInteractiveObject>() == null)
                 return "The source has no interactive object.";
             switch (_action)
@@ -328,6 +379,12 @@ namespace TarkovSDK.Editor
                 case Action.ShowCaption:
                 case Action.ChangeHealth:
                 case Action.ApplyEffect:
+                case Action.SpawnBots:
+                case Action.SpawnLoot:
+                case Action.SpawnPrefab:
+                case Action.MortarStrike:
+                case Action.Explode:
+                case Action.StartWorldEvent:
                     return null;
                 default:
                     return _objectTarget == null ? "Pick the door or switch." : null;
@@ -397,6 +454,13 @@ namespace TarkovSDK.Editor
                 case When.PlayerLeavesZone: return ZoneId(_source, TriggerZone.ETriggerZoneMode.Exit, "Leave");
                 case When.LastPlayerLeavesZone: return ZoneId(_source, TriggerZone.ETriggerZoneMode.LastExit, "LastLeave");
                 case When.ObjectOpens: return StateId(_source.GetComponent<WorldInteractiveObject>(), EDoorState.Open);
+                case When.ObjectShot:
+                {
+                    var shot = TarkovExplosives.AddShootable(_source, _shotOnce);
+                    Undo.RecordObject(shot, "Shootable");
+                    shot._once = _shotOnce;
+                    return shot._triggerId;
+                }
                 default: return StateId(_source.GetComponent<WorldInteractiveObject>(), EDoorState.Shut);
             }
         }
@@ -580,6 +644,47 @@ namespace TarkovSDK.Editor
                     EditorUtility.SetDirty(effect);
                     return effect.gameObject;
                 }
+                case Action.SpawnBots:
+                    return Listen(_bots != null ? _bots : Made(TarkovTriggeredSpawns.CreateBots(null), "Create bot spawn"), id, "Spawn bots");
+                case Action.SpawnLoot:
+                    return Listen(_loot != null ? _loot : Made(TarkovTriggeredSpawns.CreateLoot(null), "Create loot spawn"), id, "Spawn loot");
+                case Action.SpawnPrefab:
+                    return Listen(_prefab != null ? _prefab : Made(TarkovTriggeredSpawns.CreatePrefab(null), "Create prefab spawn"), id, "Spawn prefab");
+                case Action.MortarStrike:
+                {
+                    var zone = _mortarZone;
+                    if (zone == null)
+                    {
+                        var root = TarkovMortar.EnsureRoot(_source.scene);
+                        zone = TarkovMortar.CreateZone(root.transform);
+                        zone.transform.position = _source.transform.position;
+                        zone.Planned = false;
+                        Undo.RegisterCreatedObjectUndo(zone.gameObject, "Create mortar zone");
+                        if (!root.GetComponentsInChildren<TarkovMortarBattery>(true).Any())
+                            Undo.RegisterCreatedObjectUndo(TarkovMortar.CreateBattery(root.transform, zone.transform.position + new Vector3(350f, 0f, 0f)).gameObject, "Create mortar battery");
+                    }
+                    return Listen(zone, id, "Mortar strike");
+                }
+                case Action.Explode:
+                {
+                    var explosion = TarkovExplosives.CreateExplosion(null, id);
+                    if (explosion.gameObject.scene != _source.scene)
+                        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(explosion.gameObject, _source.scene);
+                    explosion.transform.position = _explosionAt != null ? _explosionAt.position : _source.transform.position;
+                    Undo.RegisterCreatedObjectUndo(explosion.gameObject, "Create explosion");
+                    return explosion.gameObject;
+                }
+                case Action.StartWorldEvent:
+                {
+                    var evt = _worldEvent != null ? _worldEvent : Made(TarkovWorldEvents.Create(null), "Create world event");
+                    Undo.RecordObject(evt, "Start world event");
+                    Replaced(evt.TriggerId, id, evt.name);
+                    evt.TriggerId = id;
+                    if (evt.Start == TarkovWorldEvent.StartMode.RaidTime)
+                        evt.Start = TarkovWorldEvent.StartMode.Trigger;
+                    EditorUtility.SetDirty(evt);
+                    return evt.gameObject;
+                }
                 default:
                 {
                     var go = HandlerObject((_action == Action.OpenObject ? "Open " : "Close ") + _objectTarget.name);
@@ -591,6 +696,25 @@ namespace TarkovSDK.Editor
                     return go;
                 }
             }
+        }
+
+        // a new SDK listener placed at the source
+        private T Made<T>(T listener, string undo) where T : Component
+        {
+            listener.transform.position = _source.transform.position;
+            Undo.RegisterCreatedObjectUndo(listener.gameObject, undo);
+            return listener;
+        }
+
+        // points an SDK listener with a TriggerId field (spawns, mortar zones) at the id
+        private static GameObject Listen(Component listener, string id, string undo)
+        {
+            var field = listener.GetType().GetField("TriggerId");
+            Undo.RecordObject(listener, undo);
+            Replaced(field.GetValue(listener) as string, id, listener.name);
+            field.SetValue(listener, id);
+            EditorUtility.SetDirty(listener);
+            return listener.gameObject;
         }
 
         // the SDK's own listeners take one trigger id

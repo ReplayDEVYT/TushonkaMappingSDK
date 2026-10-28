@@ -31,7 +31,7 @@ namespace TarkovSDK.Editor
         public const string RootName = "BTR_MapPathsConfiguration";
         public const string StopsName = "Stops", RoadsName = "Roads", SettingsName = "SDK_BtrSettings";
 
-        [MenuItem("GameObject/Tarkov SDK/Events/BTR Route", priority = 65)]
+        [MenuItem("GameObject/Tarkov SDK/World Events/BTR Route", priority = 77)]
         private static void MenuRoute(MenuCommand cmd)
         {
             var existing = Find(SceneManager.GetActiveScene());
@@ -50,7 +50,7 @@ namespace TarkovSDK.Editor
             var config = Find(SceneManager.GetActiveScene());
             if (config == null)
             {
-                EditorUtility.DisplayDialog("BTR", "The active scene has no BTR route. Add one with GameObject > Tarkov SDK > Events > BTR Route.", "OK");
+                EditorUtility.DisplayDialog("BTR", "The active scene has no BTR route. Add one with GameObject > Tarkov SDK > World Events > BTR Route.", "OK");
                 return;
             }
             MapPathConfigEditor.Report(GenerateRoads(config, replace: true));
@@ -71,7 +71,9 @@ namespace TarkovSDK.Editor
             return settings;
         }
 
-        // the three starter stops are laid out around origin (default: the Scene view's centre)
+        // The starter route, laid out around origin (default: the Scene view's centre): it comes in at p1, drives
+        // laps of p2 > p3 > p4 and leaves to p5, with the stops facing the way it drives. A route of only two stops
+        // drives the same road back and forth, so it would turn round at every stop.
         public static MapPathConfig Create(Transform parent, Vector3? origin = null)
         {
             var go = TarkovFacilitySystems.Child(parent, RootName, Vector3.zero);
@@ -84,19 +86,23 @@ namespace TarkovSDK.Editor
             TarkovFacilitySystems.Child(go.transform, RoadsName, Vector3.zero);
             Settings(config, true);
             var center = origin ?? (SceneView.lastActiveSceneView != null ? SceneView.lastActiveSceneView.pivot : Vector3.zero);
-            AddStop(config, center + new Vector3(-30f, 0f, 0f), "Start");
-            AddStop(config, center + new Vector3(30f, 0f, 0f), "Stop 2");
-            AddStop(config, center + new Vector3(0f, 0f, 40f), "Stop 3");
+            AddStop(config, center + new Vector3(-40f, 0f, -30f), "Comes In");
+            AddStop(config, center + new Vector3(15f, 0f, -30f), "Stop 2");
+            AddStop(config, center + new Vector3(40f, 0f, 20f), "Stop 3");
+            AddStop(config, center + new Vector3(-5f, 0f, 30f), "Stop 4");
+            AddStop(config, center + new Vector3(52f, 0f, -12f), "Leaves");
             config.PathsConfiguration = new BTRMapPath
             {
-                pathsConfigurations = new[] { NewRoute("RouteOne", "p1", new List<string> { "p2", "p3" }) },
+                pathsConfigurations = new[] { NewRoute("RouteOne", "p1", new List<string> { "p2", "p3", "p4" }, "p5") },
             };
+            Sync(config);
+            FaceAlongRoutes(config);
             return config;
         }
 
-        public static PathConfig NewRoute(string id, string enter, List<string> points) => new PathConfig
+        public static PathConfig NewRoute(string id, string enter, List<string> points, string exit = null) => new PathConfig
         {
-            id = id, active = true, enterPoint = enter, exitPoint = enter, pathPoints = points, circle = true, circleCount = 5, once = false,
+            id = id, active = true, enterPoint = enter, exitPoint = exit ?? enter, pathPoints = points, circle = true, circleCount = 5, once = false,
         };
 
         public static PathDestination AddStop(MapPathConfig config, Vector3 position, string name = null)
@@ -142,12 +148,153 @@ namespace TarkovSDK.Editor
             return pairs.Select(p => (p.Item1, p.Item2)).ToList();
         }
 
-        // a road along the navmesh for every needed pair that has none; returns the pairs it couldn't join
-        public static List<string> GenerateRoads(MapPathConfig config, bool replace)
+        // how far roads keep off the navmesh's edges: half the hull (1.45 m) and a metre
+        public const float RoadClearance = 2.5f;
+        // straight run out of and into a stop, along its heading
+        public const float RoadLead = 8f;
+
+        // The legs a route drives, in order, as the game picks them (VehicleBase.ToNextDestination): enter to the
+        // first stop, stop to stop, the last stop back to the first for another lap (circle), and on to the exit
+        // (from the first stop after the last lap, from the last stop when once through).
+        public static List<(string From, string To)> RouteLegs(PathConfig route)
+        {
+            var legs = new List<(string, string)>();
+            var points = route.pathPoints ?? new List<string>();
+            if (points.Count == 0)
+                return legs;
+            if (!string.IsNullOrEmpty(route.enterPoint))
+                legs.Add((route.enterPoint, points[0]));
+            for (int i = 0; i + 1 < points.Count; i++)
+                legs.Add((points[i], points[i + 1]));
+            if (route.circle && points.Count > 1)
+                legs.Add((points[points.Count - 1], points[0]));
+            if (!string.IsNullOrEmpty(route.exitPoint))
+                legs.Add((route.circle ? points[0] : points[points.Count - 1], route.exitPoint));
+            return legs.Where(l => l.Item1 != l.Item2).ToList();
+        }
+
+        private static IEnumerable<PathConfig> RoutesOf(MapPathConfig config) =>
+            (config.PathsConfiguration.pathsConfigurations ?? new PathConfig[0]).OrderByDescending(r => r.active);
+
+        // Turns every stop of a route to face the way the BTR drives through it (half way between coming in and
+        // going out). Drive-through roads then leave and arrive along those headings, so it drives on without the
+        // three-point turn. Returns the stops it turned.
+        public static List<PathDestination> FaceAlongRoutes(MapPathConfig config)
+        {
+            var stops = Stops(config).ToDictionary(s => s.id);
+            var headings = new Dictionary<string, Vector3>();
+            foreach (var route in RoutesOf(config))
+                foreach (var (from, to) in RouteLegs(route))
+                {
+                    if (!stops.TryGetValue(from, out var a) || !stops.TryGetValue(to, out var b))
+                        continue;
+                    var dir = Vector3.ProjectOnPlane(b.transform.position - a.transform.position, Vector3.up).normalized;
+                    headings[from] = (headings.TryGetValue(from, out var h) ? h : Vector3.zero) + dir;
+                    headings[to] = (headings.TryGetValue(to, out h) ? h : Vector3.zero) + dir;
+                }
+            var turned = new List<PathDestination>();
+            foreach (var pair in headings)
+            {
+                if (!stops.TryGetValue(pair.Key, out var stop) || pair.Value.sqrMagnitude < 0.01f)
+                    continue;
+                Undo.RecordObject(stop.transform, "Face BTR stops");
+                stop.transform.rotation = Quaternion.LookRotation(pair.Value.normalized, Vector3.up);
+                turned.Add(stop);
+            }
+            return turned;
+        }
+
+        // the way a road between a and b should leave a and come into b: along the legs the routes drive (the
+        // first one found), else along whichever way each stop faces that points more towards the other
+        private static (Vector3 Leave, Vector3 Arrive, bool Flip) RoadHeadings(MapPathConfig config, PathDestination a, PathDestination b)
+        {
+            Vector3 Flat(Vector3 v) => Vector3.ProjectOnPlane(v, Vector3.up).normalized;
+            foreach (var route in RoutesOf(config))
+                foreach (var (from, to) in RouteLegs(route))
+                {
+                    if (from == a.id && to == b.id)
+                        return (Flat(a.transform.forward), Flat(b.transform.forward), false);
+                    if (from == b.id && to == a.id)
+                        return (Flat(b.transform.forward), Flat(a.transform.forward), true);
+                }
+            var ab = Flat(b.transform.position - a.transform.position);
+            var leave = Flat(a.transform.forward) * (Vector3.Dot(a.transform.forward, ab) >= 0f ? 1f : -1f);
+            var arrive = Flat(b.transform.forward) * (Vector3.Dot(b.transform.forward, ab) >= 0f ? 1f : -1f);
+            return (leave, arrive, false);
+        }
+
+        // Builds one road between two stops: drive-through (along their headings, see RoadHeadings) or the plain
+        // shortest navmesh path; either way kept off the navmesh's edges. Null if the navmesh doesn't join them.
+        public static List<Vector3> RoadWaypoints(MapPathConfig config, PathDestination a, PathDestination b, bool driveThrough)
+        {
+            if (!driveThrough)
+                return TarkovSplines.NavMeshRoad(a.transform.position, b.transform.position, 12f, RoadClearance);
+            var (leave, arrive, flip) = RoadHeadings(config, a, b);
+            var from = flip ? b : a;
+            var to = flip ? a : b;
+            var road = TarkovSplines.DirectedRoad(from.transform.position, leave, to.transform.position, arrive, RoadLead, 12f, RoadClearance);
+            if (road != null && flip)
+                road.Reverse();
+            return road;
+        }
+
+        public static PathSpline CreateRoad(MapPathConfig config, string id, List<Vector3> waypoints)
         {
             var roadsRoot = config.transform.Find(RoadsName) ?? TarkovFacilitySystems.Child(config.transform, RoadsName, Vector3.zero).transform;
+            var go = TarkovFacilitySystems.Child(roadsRoot, "Road " + id, Vector3.zero);
+            go.transform.position = Vector3.zero;
+            var spline = go.AddComponent<BezierSpline>();
+            TarkovSplines.FromWaypoints(spline, waypoints);
+            var part = go.AddComponent<PathSpline>();
+            part.id = id;
+            part.spline = spline;
+            Undo.RegisterCreatedObjectUndo(go, "BTR road");
+            return part;
+        }
+
+        // Rebuilds one road from its stops (after moving them, or to undo hand edits); false if the navmesh
+        // doesn't join them.
+        public static bool RegenerateRoad(MapPathConfig config, PathSpline road, bool driveThrough)
+        {
+            var ids = road.id.Split('_');
             var stops = Stops(config).ToDictionary(s => s.id);
-            var existing = Roads(config).ToDictionary(r => r.id, r => r);
+            if (ids.Length < 3 || !stops.TryGetValue(ids[1], out var a) || !stops.TryGetValue(ids[2], out var b))
+                return false;
+            var waypoints = RoadWaypoints(config, a, b, driveThrough);
+            if (waypoints == null)
+                return false;
+            Undo.RecordObject(road.spline, "Regenerate BTR road");
+            TarkovSplines.FromWaypoints(road.spline, waypoints);
+            EditorUtility.SetDirty(road.spline);
+            SetEdited(config, road.id, false);
+            return true;
+        }
+
+        // roads changed by hand in the path editor; Generate keeps them unless told otherwise
+        public static bool IsEdited(MapPathConfig config, string id) => Settings(config, false)?.EditedRoads.Contains(id) ?? false;
+
+        public static void SetEdited(MapPathConfig config, string id, bool edited)
+        {
+            var settings = Settings(config, edited);
+            if (settings == null || settings.EditedRoads.Contains(id) == edited)
+                return;
+            Undo.RecordObject(settings, "BTR road edited");
+            if (edited)
+                settings.EditedRoads.Add(id);
+            else
+                settings.EditedRoads.Remove(id);
+            EditorUtility.SetDirty(settings);
+        }
+
+        // A road for every needed pair that has none (replace: every road, except hand-edited ones unless
+        // replaceEdited). Drive-through turns the route stops along their routes first and shapes the roads to
+        // their headings. Returns what it couldn't make.
+        public static List<string> GenerateRoads(MapPathConfig config, bool replace, bool driveThrough = true, bool replaceEdited = false)
+        {
+            if (driveThrough && replace)
+                FaceAlongRoutes(config);
+            var stops = Stops(config).ToDictionary(s => s.id);
+            var existing = Roads(config).GroupBy(r => r.id).ToDictionary(g => g.Key, g => g.First());
             var failed = new List<string>();
             foreach (var (a, b) in NeededPairs(config))
             {
@@ -159,24 +306,18 @@ namespace TarkovSDK.Editor
                 }
                 if (existing.TryGetValue(id, out var old))
                 {
-                    if (!replace)
+                    if (!replace || (IsEdited(config, id) && !replaceEdited))
                         continue;
                     Undo.DestroyObjectImmediate(old.gameObject);
+                    SetEdited(config, id, false);
                 }
-                var road = TarkovSplines.NavMeshRoad(sa.transform.position, sb.transform.position);
+                var road = RoadWaypoints(config, sa, sb, driveThrough);
                 if (road == null)
                 {
                     failed.Add($"{id} (the navmesh doesn't join {a} and {b})");
                     continue;
                 }
-                var go = TarkovFacilitySystems.Child(roadsRoot, "Road " + id, Vector3.zero);
-                go.transform.position = Vector3.zero;
-                var spline = go.AddComponent<BezierSpline>();
-                TarkovSplines.FromWaypoints(spline, road);
-                var part = go.AddComponent<PathSpline>();
-                part.id = id;
-                part.spline = spline;
-                Undo.RegisterCreatedObjectUndo(go, "BTR road");
+                CreateRoad(config, id, road);
             }
             Sync(config);
             // the turns are built in each stop's frame, so the enter points are turned to their road first
@@ -416,6 +557,26 @@ namespace TarkovSDK.Editor
                                           "Regenerate All Roads (it turns enter points to their road)");
                 if (Settings(config, false) == null)
                     report.Warnings.Add($"{sceneName}/{config.name}: no {SettingsName} (BTR chance and timing); defaults are used");
+                foreach (var route in routes.Where(r => r.active && r.once && !string.IsNullOrEmpty(r.exitPoint) && r.exitPoint == r.enterPoint))
+                    report.Warnings.Add($"{sceneName}/{config.name}: route '{route.id}' drives once through but leaves to its own enter point, which the game never drives back to " +
+                                        "(its parts are keyed by stop), so the BTR stays at its last stop for good; give it its own Leaves To stop");
+
+                // drive every active route as the game would and report where it turns round or slides
+                if (missing.Count > 0)
+                    continue;
+                float speed = Settings(config, false)?.MoveSpeed ?? 8f;
+                foreach (var route in routes.Where(r => r.active && r.pathPoints != null && r.pathPoints.Count > 0))
+                {
+                    var events = TarkovBtrSim.Check(config, route, speed);
+                    var turns = events.Where(e => e.Kind == TarkovBtrSim.EventKind.Turn).Select(e => e.Text.Split(':')[0].Replace("three-point turn at ", "")).Distinct().ToList();
+                    if (turns.Count > 0)
+                        report.Warnings.Add($"{sceneName}/{config.name}: route '{route.id}' makes a three-point turn at {string.Join(", ", turns)} (the next road starts behind it); " +
+                                            "Tools > World Events > BTR Path Editor shows it. Drive-through roads (Regenerate All Roads) leave each stop the way the BTR came in");
+                    foreach (var slide in events.Where(e => e.Kind == TarkovBtrSim.EventKind.Slide).Select(e => e.Text).Distinct().Take(3))
+                        report.Warnings.Add($"{sceneName}/{config.name}: route '{route.id}': the BTR {slide}; smooth that road in the BTR Path Editor");
+                    foreach (var problem in events.Where(e => e.Kind == TarkovBtrSim.EventKind.Problem))
+                        report.Warnings.Add($"{sceneName}/{config.name}: route '{route.id}': {problem.Text}");
+                }
             }
         }
     }
@@ -432,6 +593,8 @@ namespace TarkovSDK.Editor
             EditorGUILayout.LabelField("BTR route", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Stops (blue in the Scene view) are where the BTR pauses and where the taxi goes; roads join every two stops of a route. " +
                                        "Bake the navmesh first: roads follow it. The BTR is as wide as a car lane, so check them.", EditorStyles.wordWrappedMiniLabel);
+            if (GUILayout.Button(new GUIContent("Open BTR Path Editor", "Edit roads point by point and watch the BTR drive its routes, with its turns and slides marked.")))
+                EditorApplication.delayCall += () => TarkovBtrEditorWindow.Open(config);
 
             if (settings != null)
             {
@@ -505,7 +668,8 @@ namespace TarkovSDK.Editor
             {
                 if (GUILayout.Button(new GUIContent("Generate Missing Roads", "Along the navmesh, for every pair of stops a route needs.")))
                     EditorApplication.delayCall += () => Report(TarkovBtr.GenerateRoads(config, replace: false));
-                if (GUILayout.Button(new GUIContent("Regenerate All Roads", "Replaces every road (after moving stops).")))
+                if (GUILayout.Button(new GUIContent("Regenerate All Roads", "Turns the stops along their routes and replaces every road (after moving stops) with one that " +
+                                                                            "leaves and enters each stop the way the BTR drives, so it never turns round there. Roads edited by hand are kept.")))
                     EditorApplication.delayCall += () => Report(TarkovBtr.GenerateRoads(config, replace: true));
             }
             _showRaw = EditorGUILayout.Foldout(_showRaw, "All fields");
@@ -522,7 +686,7 @@ namespace TarkovSDK.Editor
                 Debug.LogWarning("[Tarkov SDK] BTR roads not made: " + string.Join("; ", failed));
         }
 
-        private static void DrawRoutes(MapPathConfig config, string[] stopIds)
+        internal static bool DrawRoutes(MapPathConfig config, string[] stopIds)
         {
             var routes = (config.PathsConfiguration.pathsConfigurations ?? new PathConfig[0]).ToList();
             EditorGUILayout.LabelField($"Routes ({routes.Count}); one active route is picked each raid", EditorStyles.boldLabel);
@@ -584,9 +748,10 @@ namespace TarkovSDK.Editor
                 config.PathsConfiguration = path;
                 EditorUtility.SetDirty(config);
             }
+            return changed;
         }
 
-        private static string StopPopup(string label, string value, string[] ids, string tooltip)
+        internal static string StopPopup(string label, string value, string[] ids, string tooltip)
         {
             int index = Array.IndexOf(ids, value);
             int next = EditorGUILayout.Popup(new GUIContent(label, tooltip), index, ids);

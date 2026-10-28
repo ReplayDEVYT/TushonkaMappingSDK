@@ -1,0 +1,145 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SDK_Crow
+  m_Shader: {fileID: 4800000, guid: 23bf1e5a00bb8a74abec8d34096425f6, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap0:
+        m_Texture: {fileID: -6821359574364609733, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap1:
+        m_Texture: {fileID: 8591326490710228854, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap2:
+        m_Texture: {fileID: 6426758348514000199, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Cube:
+        m_Texture: {fileID: 8900000, guid: f1db42f30d699814683ff511941260f3, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Heights:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 5f39668b46657f54cb77521d3d4f20b8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex0:
+        m_Texture: {fileID: 5156254985899734875, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex1:
+        m_Texture: {fileID: -8310543951467425654, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex2:
+        m_Texture: {fileID: 589693511206373921, guid: 8f988c6a878e5514bb312ac1d7ce0e92, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShitTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecMap:
+        m_Texture: {fileID: 2800000, guid: 699c90f723fb15e40ab8d3cbd594789b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TintMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ValsTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - USEHEAT: 0
+    - _BlendStrength: 1
+    - _BumpTiling: 1
+    - _Cutoff: 0.85
+    - _DepthOffset: 1
+    - _DropsSpec: 128
+    - _Factor: 0
+    - _FadeDepthOffset: 0.4
+    - _FallofShift: 1
+    - _FallofStrength: 16
+    - _FresnelDiffuse0: 0
+    - _FresnelDiffuse1: 0
+    - _FresnelDiffuse2: 0
+    - _FresnelSpecular0: 0
+    - _FresnelSpecular1: 0
+    - _FresnelSpecular2: 0
+    - _Glossness: 1
+    - _HasTint: 0
+    - _HeatTemp: 0
+    - _HeatVisible: 1
+    - _Intensity: 1
+    - _NdotLOffset: 0.4
+    - _NightRippleFakeLightOffset: 0.2
+    - _NoiseIntensity: 5
+    - _NormalIntensity: 1
+    - _NormalUVMultiplier: 1
+    - _ReflectionStrength: 1
+    - _RippleFakeLightIntensityOffset: 0.7
+    - _RippleTexScale: 4
+    - _Shininess: 0.078125
+    - _SkinnedMeshMaterial: 0
+    - _Smoothness0: 0
+    - _Smoothness1: 0
+    - _Smoothness2: 0
+    - _SpecPower: 1
+    - _Specular0: 0
+    - _Specular1: 0
+    - _Specular2: 0
+    - _Specularness: 0.078125
+    - _StencilType: 0
+    - _USERAIN: 0
+    - _Units: 0
+    - _UseMergedTextures: 0
+    - _VisibilityCheckerSize: 0.01
+    m_Colors:
+    - _BaseTintColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color0: {r: 1, g: 1, b: 1, a: 1}
+    - _Color1: {r: 1, g: 1, b: 1, a: 1}
+    - _Color2: {r: 1, g: 1, b: 1, a: 1}
+    - _DefVals: {r: 0.5, g: 0.7, b: 0, a: 0}
+    - _HeatCenter: {r: 0, g: 0, b: 0, a: 1}
+    - _HeatColor1: {r: 1, g: 0, b: 0, a: 1}
+    - _HeatColor2: {r: 1, g: 0.34, b: 0, a: 1}
+    - _HeatSize: {r: 0.02, g: 0.04, b: 0.02, a: 1}
+    - _NoiseScale: {r: 2, g: 2, b: 1, a: 0}
+    - _ReflectColor: {r: 0.23, g: 0.23, b: 0.23, a: 0.5}
+    - _SpecColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _SpecVals: {r: 1.1, g: 2, b: 0, a: 0}
+    - _Temperature: {r: 0.1, g: 0.2, b: 0.28, a: 0}
+    - _Temperature2: {r: 0.1, g: 0.3, b: 0.35, a: 0}
+  m_BuildTextureStacks: []

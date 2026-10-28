@@ -62,6 +62,31 @@ namespace TarkovSDK.Editor
                 WriteContainerType(w, type);
             w.EndArray();
 
+            // the server picks Min..Max of each group's containers per raid (by their Probability)
+            w.Name("ContainerGroups");
+            w.BeginArray();
+            foreach (var group in report.ContainerGroups)
+            {
+                w.BeginObject();
+                w.Property("Id", group.Id);
+                w.Property("Min", group.Min);
+                w.Property("Max", group.Max);
+                w.EndObject();
+            }
+            w.EndArray();
+
+            // the server adds each gun's weapon to the raid's loot as a static weapon (retail Woods' / Reserve's rows)
+            w.Name("MountedGuns");
+            w.BeginArray();
+            foreach (var gun in report.MountedGuns)
+            {
+                w.BeginObject();
+                w.Property("Id", gun.Id);
+                w.Property("Weapon", gun.Weapon);
+                w.EndObject();
+            }
+            w.EndArray();
+
             w.Name("Features");
             WriteFeatures(w, report);
 
@@ -69,6 +94,12 @@ namespace TarkovSDK.Editor
             {
                 w.Name("Btr");
                 WriteBtr(w, report.Btr);
+            }
+
+            if (report.Mortar != null)
+            {
+                w.Name("Mortar");
+                WriteMortar(w, report);
             }
 
             w.EndObject();
@@ -209,6 +240,92 @@ namespace TarkovSDK.Editor
             w.EndObject();
         }
 
+        // globals ArtilleryShelling.ArtilleryMapsConfigs[map] as the game reads it (ArtilleryShellingMapConfiguration);
+        // CustomMapLoader puts it there as it is. The Vector2 fields ride in x/y with z 0, as retail
+        private static void WriteMortar(JsonWriter w, TarkovScenePreparer.Report report)
+        {
+            var s = report.Mortar;
+            void Range(string name, Vector2 v)
+            {
+                w.Name(name);
+                WriteVector(w, new Vector3(v.x, v.y, 0f));
+            }
+            w.BeginObject();
+            w.Property("PlanedShellingOn", s.PlannedShelling);
+            w.Property("InitShellingTimer", s.FirstShellingAfter);
+            w.Property("InitCalledShellingTime", s.CalledStrikeDelay);
+            w.Property("BeforeShellingSignalTime", s.WarningTime);
+            w.Property("ShellingCount", s.Shellings);
+            w.Property("ZonesInShelling", s.ZonesPerShelling);
+            w.Property("NewZonesForEachShelling", s.NewZonesEachShelling);
+            Range("PauseBetweenShellings", s.PauseBetweenShellings);
+            // retail's, switched off: the shelling's own airdrop
+            w.Name("ArtilleryShellingAirDropSettings");
+            w.BeginObject();
+            w.Property("UseAirDrop", false);
+            w.Property("AirDropTime", 600);
+            w.Name("AirDropPosition");
+            WriteVector(w, Vector3.zero);
+            w.Property("LootTemplateId", "66da1b49099cf6adcc07a36b");
+            w.EndObject();
+            // the called-strike template first: the game takes the first UseInCalledShelling zone
+            w.Name("ShellingZones");
+            w.BeginArray();
+            foreach (var zone in report.MortarZones.OrderByDescending(z => z.CalledStrikeTemplate))
+            {
+                w.BeginObject();
+                w.Property("ID", zone.Id);
+                Range("PointsInShellings", zone.PointsPerShelling);
+                w.Property("ShellingRounds", zone.Rounds);
+                w.Property("ShotCount", zone.ShotsPerRound);
+                Range("PauseBetweenRounds", zone.PauseBetweenRounds);
+                Range("PauseBetweenShots", zone.PauseBetweenShots);
+                w.Name("Center");
+                WriteVector(w, zone.transform.position);
+                Range("ExplosionDistanceRange", zone.BurstHeight);
+                w.Property("Rotate", zone.transform.eulerAngles.y);
+                Range("GridStep", zone.GridStep);
+                Range("Points", zone.Points);
+                w.Property("PointRadius", zone.PointRadius);
+                w.Name("AlarmStages");
+                w.BeginArray();
+                foreach (var stage in TarkovMortar.RetailAlarmStages)
+                {
+                    w.BeginObject();
+                    w.Name("Value");
+                    WriteVector(w, new Vector3(stage.x, stage.y, 0f));
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.Property("BeforeShellingSignalTime", s.WarningTime);
+                w.Property("UsedInPlanedShelling", zone.Planned && !zone.CalledStrikeTemplate);
+                w.Property("UseInCalledShelling", zone.CalledStrikeTemplate);
+                w.Property("IsActive", zone.Active);
+                w.EndObject();
+            }
+            w.EndArray();
+            w.Name("Brigades");
+            w.BeginArray();
+            foreach (var battery in report.MortarBatteries)
+            {
+                w.BeginObject();
+                w.Property("ID", battery.Id);
+                w.Name("ArtilleryGuns");
+                w.BeginArray();
+                foreach (var gun in TarkovMortar.Guns(battery))
+                {
+                    w.BeginObject();
+                    w.Name("Position");
+                    WriteVector(w, gun.position);
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.EndObject();
+            }
+            w.EndArray();
+            w.EndObject();
+        }
+
         // CustomMapLoader turns these into SPT loose loot spawnpoints
         private static void WriteLootSpawn(JsonWriter w, TarkovSDK.TarkovLootSpawn spawn)
         {
@@ -249,6 +366,8 @@ namespace TarkovSDK.Editor
             w.Property("Template", container.Template.Trim().ToLowerInvariant());
             w.Property("Probability", Mathf.Clamp(container.SpawnChance, 0, 100) / 100f);
             w.Property("AlwaysSpawn", alwaysSpawn || container.SpawnType != ELootableContainerSpawnType.MayNotSpawn);
+            var group = TarkovContainerGroups.GroupOf(container);
+            w.Property("Group", group != null ? group.Id : "");
             w.EndObject();
         }
 
@@ -420,7 +539,159 @@ namespace TarkovSDK.Editor
                 w.EndObject();
             }
             w.EndArray();
+
+            // the zones a trigger shells (the shelling itself is the game's, set up from "Mortar")
+            w.Name("MortarStrikes");
+            w.BeginArray();
+            foreach (var zone in report.MortarZones.Where(z => !string.IsNullOrEmpty(z.TriggerId)))
+            {
+                w.BeginObject();
+                w.Property("TriggerId", zone.TriggerId);
+                w.Property("ZoneId", zone.Id.ToString(CultureInfo.InvariantCulture));
+                w.Property("Delay", zone.TriggerDelay);
+                w.Property("Once", zone.Once);
+                w.EndObject();
+            }
+            w.EndArray();
+
+            // the game's WildSpawnType / BotDifficulty names
+            w.Name("SpawnBots");
+            w.BeginArray();
+            foreach (var bots in report.SpawnBots)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", bots.TriggerId);
+                w.Property("Once", bots.Once);
+                w.Property("Chance", bots.Chance);
+                w.Property("Role", bots.BotRole.ToString());
+                w.Property("Difficulty", bots.BotDifficulty.ToString());
+                w.Property("Count", bots.Count);
+                w.Property("AsGroup", bots.AsGroup);
+                w.Property("Delay", bots.Delay);
+                w.Property("MaxAliveBots", bots.MaxAliveBots);
+                w.Name("Points");
+                WritePoints(w, TarkovTriggeredSpawns.Points(bots));
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("SpawnLoot");
+            w.BeginArray();
+            foreach (var loot in report.SpawnLoot)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", loot.TriggerId);
+                w.Property("Once", loot.Once);
+                w.Property("Chance", loot.Chance);
+                w.Property("Pick", loot.Pick.ToString());
+                w.Property("UseGravity", loot.UseGravity);
+                w.Property("RandomRotation", loot.RandomRotation);
+                w.Property("Delay", loot.Delay);
+                w.Name("Items");
+                w.BeginArray();
+                foreach (var item in loot.Items.Where(i => i != null && System.Text.RegularExpressions.Regex.IsMatch(i.Template?.Trim() ?? "", "^[0-9a-fA-F]{24}$")))
+                {
+                    w.BeginObject();
+                    w.Property("Template", item.Template.Trim().ToLowerInvariant());
+                    w.Property("Weight", Mathf.Max(1, item.Weight));
+                    w.Property("StackCount", Mathf.Max(1, item.StackCount));
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.Name("Points");
+                WritePoints(w, TarkovTriggeredSpawns.Points(loot));
+                w.EndObject();
+            }
+            w.EndArray();
+
+            // the SDK's mounted gun markers: the client places the game's prefab with its root here
+            w.Name("MountedGuns");
+            w.BeginArray();
+            foreach (var gun in report.MountedGuns.Where(g => !g.InScene))
+            {
+                w.BeginObject();
+                w.Property("Id", gun.Id);
+                w.Property("Gun", gun.Weapon);
+                w.Name("Position");
+                WriteVector(w, gun.Marker.position + Vector3.up * TarkovMountedGuns.UtesRootHeight);
+                w.Name("Rotation");
+                WriteVector(w, new Vector3(0f, gun.Marker.eulerAngles.y, 0f));
+                w.EndObject();
+            }
+            w.EndArray();
+
+            // times in seconds; a step's object by scene and hierarchy path
+            w.Name("WorldEvents");
+            w.BeginArray();
+            foreach (var (evt, name, steps) in report.WorldEvents)
+            {
+                w.BeginObject();
+                w.Property("Name", name);
+                w.Property("Start", evt.Start.ToString());
+                w.Property("Earliest", evt.EarliestMinute * 60f);
+                w.Property("Latest", Mathf.Max(evt.EarliestMinute, evt.LatestMinute) * 60f);
+                w.Property("TriggerId", evt.TriggerId ?? "");
+                w.Property("Chance", evt.Chance);
+                w.Property("Repeat", evt.Repeat);
+                w.Property("RepeatMin", evt.RepeatAfterMinMinutes * 60f);
+                w.Property("RepeatMax", Mathf.Max(evt.RepeatAfterMinMinutes, evt.RepeatAfterMaxMinutes) * 60f);
+                w.Name("Steps");
+                w.BeginArray();
+                foreach (var (step, scene, path) in steps)
+                {
+                    w.BeginObject();
+                    w.Property("Wait", Mathf.Max(0f, step.Wait));
+                    w.Property("Kind", step.Kind.ToString());
+                    w.Property("TriggerId", step.TriggerId ?? "");
+                    w.Property("Scene", scene ?? "");
+                    w.Property("Path", path ?? "");
+                    if (step.Kind == TarkovSDK.TarkovWorldEvent.StepKind.Notification)
+                    {
+                        w.Name("Notification");
+                        WriteNotification(w, step.Notification);
+                    }
+                    w.EndObject();
+                }
+                w.EndArray();
+                w.EndObject();
+            }
+            w.EndArray();
+
+            w.Name("SpawnPrefabs");
+            w.BeginArray();
+            foreach (var (spawn, scene, path) in report.SpawnPrefabs)
+            {
+                w.BeginObject();
+                w.Property("TriggerId", spawn.TriggerId);
+                w.Property("Once", spawn.Once);
+                w.Property("Chance", spawn.Chance);
+                w.Property("Action", spawn.Action.ToString());
+                w.Property("Scene", scene);
+                w.Property("Path", path);
+                w.Property("Delay", spawn.Delay);
+                w.Property("Lifetime", spawn.Lifetime);
+                w.Name("Points");
+                WritePoints(w, TarkovTriggeredSpawns.Points(spawn));
+                w.EndObject();
+            }
+            w.EndArray();
             w.EndObject();
+        }
+
+        // spawn points: position and rotation (euler degrees)
+        private static void WritePoints(JsonWriter w, IEnumerable<Transform> points)
+        {
+            w.BeginArray();
+            foreach (var p in points)
+            {
+                w.BeginObject();
+                w.Name("Position");
+                WriteVector(w, p.position);
+                w.Name("Rotation");
+                WriteVector(w, p.eulerAngles);
+                w.EndObject();
+            }
+            w.EndArray();
         }
 
         // retail data names composite masks ("Pmc") when the value is exactly one of them

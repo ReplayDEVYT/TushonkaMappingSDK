@@ -51,6 +51,28 @@ float4 _DefVals;
 #define TARKOV_FRESNEL_LUT 0.5
 #endif
 
+#if defined(P0_WIRES_WIND)
+// set by the game's WiresController (and the SDK's wind preview)
+float3 _WireWind;
+float _WireWindFreq, _WireWindScale, _WireDetailWindScale, _WireDetailWindFreq, _WireDetailWindAmp;
+float2 _WindFuncOffsetAndScale;
+
+// p0/Bumped Specular Wires Wind's vertex sway: along the wind (a steady push plus two waves) and across it (detail),
+// both scaled by the vertex's weight w.x, the waves sped up by w.y
+float3 TarkovWireWind(float3 p, float2 w)
+{
+    float4 phase = w.y * _Time.y * float4(0.976, 1.323, 1.027, 1.583) * float4(_WireWindFreq, _WireWindFreq, _WireDetailWindFreq, _WireDetailWindFreq)
+                   + p.xzzx * float4(_WireWindScale, _WireWindScale, _WireDetailWindScale, _WireDetailWindScale);
+    float4 s = (sin(phase) + _WindFuncOffsetAndScale.x) * w.x * _WindFuncOffsetAndScale.y;
+    float sway = s.x + s.y + w.x * 0.7;
+    float detail = s.z + s.w;
+    float3 wind = mul((float3x3)unity_WorldToObject, _WireWind);
+    p += wind * sway;
+    p += float3(detail * wind.z, 0.0, -detail * wind.x) * _WireDetailWindAmp;
+    return p;
+}
+#endif
+
 struct TarkovP0Input
 {
     float4 vertex : POSITION;
@@ -76,6 +98,9 @@ TarkovP0V2F TarkovP0Vert(TarkovP0Input v)
 {
     TarkovP0V2F o;
     UNITY_INITIALIZE_OUTPUT(TarkovP0V2F, o);
+#if defined(P0_WIRES_WIND)
+    v.vertex.xyz = TarkovWireWind(v.vertex.xyz, v.texcoord1.xy);
+#endif
     o.pos = UnityObjectToClipPos(v.vertex);
     o.uv.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
     o.uv.zw = TRANSFORM_TEX(v.texcoord, _BumpMap);

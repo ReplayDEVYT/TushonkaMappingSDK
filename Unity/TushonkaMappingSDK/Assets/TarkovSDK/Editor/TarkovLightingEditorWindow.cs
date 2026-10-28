@@ -21,7 +21,7 @@ namespace TarkovSDK.Editor
         private Vector2 _scroll;
         private bool _advanced;
 
-        [MenuItem("Tarkov SDK/Tools/Lighting/Lighting Editor...", priority = 125)]
+        [MenuItem("Tarkov SDK/Tools/Lighting/Lighting Editor...", priority = 131)]
         public static void Open() => GetWindow<TarkovLightingEditorWindow>("Lighting Editor");
 
         // the readout follows the preview

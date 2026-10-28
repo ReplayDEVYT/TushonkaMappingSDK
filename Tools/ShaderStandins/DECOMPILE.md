@@ -20,7 +20,9 @@ dump.py <cache/x.pkl> <out dir> [--all]          summary.txt (properties, passes
 
 Listings are Microsoft's D3D disassembly (`d3dcompiler_47.dll`, present on every Windows) with every
 `cbN[k]` / `tN` / `sN` annotated with the Unity parameter it holds. Variants with only engine keywords
-(stereo, instancing, fog, lightmaps, TAA/DLSS, snow, rain...) are skipped unless `--all`.
+(stereo, instancing, fog, lightmaps, TAA/DLSS, snow, rain...) are skipped unless `--all`. Listings are named
+`p<pass>_<stage>_<keywords>.txt`, with an `s<n>_` prefix for subshaders after the first (a shader's fallback
+subshaders reuse the pass numbers; `Nature/SpeedTreeEFT`'s second subshader has no wind).
 
 Facts about the game's rendering that every stand-in depends on:
 

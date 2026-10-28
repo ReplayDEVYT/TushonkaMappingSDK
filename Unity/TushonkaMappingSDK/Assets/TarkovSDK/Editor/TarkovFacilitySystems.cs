@@ -97,7 +97,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ automatic sliding door
 
-        [MenuItem(Menu + "Interactables/Automatic Sliding Door", priority = 31)]
+        [MenuItem(Menu + "Interactables/Automatic Sliding Door", priority = 33)]
         private static void MenuSlidingDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateSlidingDoor(p, 2f, 2.2f, true));
 
         public static GameObject CreateSlidingDoor(Transform parent, float width, float height, bool twoPanels)
@@ -303,10 +303,10 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ PA system
 
-        [MenuItem(Menu + "Sound/PA/PA System", priority = 54)]
+        [MenuItem(Menu + "Sound/PA/PA System", priority = 61)]
         private static void MenuPa(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreatePa(p).gameObject);
 
-        [MenuItem(Menu + "Sound/PA/Speaker", priority = 55)]
+        [MenuItem(Menu + "Sound/PA/Speaker", priority = 62)]
         private static void MenuSpeaker(MenuCommand cmd)
         {
             var pa = (cmd.context as GameObject)?.GetComponentInParent<QueuePlayer>() ?? Object.FindObjectOfType<QueuePlayer>();
@@ -322,7 +322,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = speaker;
         }
 
-        [MenuItem(Menu + "Sound/PA/Announcement On Interaction", priority = 56)]
+        [MenuItem(Menu + "Sound/PA/Announcement On Interaction", priority = 63)]
         private static void MenuAnnounceInteraction(MenuCommand cmd)
         {
             var wio = (cmd.context as GameObject)?.GetComponent<WorldInteractiveObject>() ?? Selection.activeGameObject?.GetComponent<WorldInteractiveObject>();
@@ -337,7 +337,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = announcement.gameObject;
         }
 
-        [MenuItem(Menu + "Sound/PA/Announcement Zone", priority = 57)]
+        [MenuItem(Menu + "Sound/PA/Announcement Zone", priority = 64)]
         private static void MenuAnnounceZone(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAnnouncementZone(p, PaFor(p)));
 
         // the scene's PA, or a new one
@@ -444,7 +444,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ sound zone
 
-        [MenuItem(Menu + "Sound/Sound Zone", priority = 53)]
+        [MenuItem(Menu + "Sound/Sound Zone", priority = 60)]
         private static void MenuSoundZone(MenuCommand cmd) => TarkovSceneTools.Place(cmd, CreateSoundZone);
 
         // plays a random clip from its pool when a player enters; a looping one stops when the last leaves

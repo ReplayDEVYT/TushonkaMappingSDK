@@ -1,0 +1,175 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4657572932674371766
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4087475618126882843}
+  - component: {fileID: 5643391939717537821}
+  - component: {fileID: 4786760612746166284}
+  - component: {fileID: 4601647186769616914}
+  - component: {fileID: 8124212766113136396}
+  - component: {fileID: 6841297129690469378}
+  m_Layer: 30
+  m_Name: BreakableWindow 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4087475618126882843
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &5643391939717537821
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  m_Mesh: {fileID: 4300000, guid: a59d8147c0b49194cb516e4fe03886a1, type: 2}
+--- !u!23 &4786760612746166284
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: efbd5f1929bb24743bfd1d8e7362dbd4, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!64 &4601647186769616914
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: a59d8147c0b49194cb516e4fe03886a1, type: 2}
+--- !u!114 &8124212766113136396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3448067c8ef8cc84883ac6b415552461, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SurfaceSound: 0
+  _presetId: -900
+  NetId: 0
+  HitType: 0
+  _typeOfMaterial: 10
+  PenetrationLevel: 0
+  PenetrationChance: 0
+  RicochetChance: 0
+  FragmentationChance: 0
+  TrajectoryDeviationChance: 0
+  TrajectoryDeviation: 0
+--- !u!114 &6841297129690469378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657572932674371766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4783700561b9bfc46bfd122ad3fccb9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Id: window_sp_construct_BreakableWindow_27bfdcb3
+  BrakeByDefault: 0
+  ObstructiveCollider: {fileID: 0}
+  GlassBallisticCollider: {fileID: 8124212766113136396}
+  BrokenWindow: {fileID: 11400000, guid: f463df03dd043a54294636e0d212e57c, type: 2}
+  Material: {fileID: 2100000, guid: efbd5f1929bb24743bfd1d8e7362dbd4, type: 2}
+  Renderer: {fileID: 4786760612746166284}
+  AngleMode: 0
+  MinThickness: 0.002
+  ThicknessMultyplier: 1
+  EdgesWidth: 0.005
+  CracksScale: 1
+  MassMultyplier: 1
+  AirDrag: 2
+  TimeUntilPartDie: 1
+  FirstShotRadius: 0.4
+  ShotRadius: 0.6
+  FirstShotSoundVolume: 1
+  TorqueRandomMinMaxCoefs: {x: 2, y: 6}
+  InstantExplosionCoef: 15
+  ShotDirectionCoef: 1.5
+  AxisX: 0
+  AxisY: 1
+  AxisZ: 2
+  UvMult: {x: 0.8333333, y: 1}
+  UvAdd: {x: 0.5, y: 0.5}
+  ZSurfs: {x: -0.002, y: 0.002}
+  Box: {x: -0.6, y: -0.5, z: 0.6, w: 0.5}
+  Rotation: {x: 0, y: 0, z: 0, w: 1}
+  NeedToSwap: 0

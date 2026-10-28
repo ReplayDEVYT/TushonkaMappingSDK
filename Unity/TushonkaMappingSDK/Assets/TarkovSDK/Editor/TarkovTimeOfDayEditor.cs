@@ -96,6 +96,8 @@ namespace TarkovSDK.Editor
                 if (post != TarkovPostPreview.Enabled)
                     TarkovPostPreview.Enabled = post;
             }
+            // trees and wires sway on any map, with or without the lighting preview
+            TarkovWindPreview.DrawControls();
         }
 
         // same model as CustomMapLoader's SimpleTimeOfDay.SunDirection

@@ -30,6 +30,31 @@ namespace mizmii.CustomMapLoader.Loading
         }
     }
 
+    // Running a player over: BTRVehicle.HitPedestrian (on the host) hits the head with EDamageType.Btr, no attacker. Under
+    // Fika the host's own player is a FikaPlayer, whose ApplyShot only applies landmine, sniper and AI hits (player hits
+    // come through its packets) and returns null for the rest, so the BTR never hurt the host. Other players are
+    // ObservedPlayers on the host, which apply it and send it on. This applies BTR hits through FikaPlayer's own
+    // SimulatedApplyShot, as it does a landmine's. Enabled when Fika is installed; acts on custom maps only.
+    internal class FikaBtrRunOverPatch : ModulePatch
+    {
+        private static readonly System.Type FikaPlayer = AccessTools.TypeByName("Fika.Core.Main.Players.FikaPlayer");
+        private static readonly MethodInfo Simulated = FikaPlayer != null ? AccessTools.Method(FikaPlayer, "SimulatedApplyShot") : null;
+
+        public static bool Available() => FikaPlayer != null && Simulated != null && AccessTools.Method(FikaPlayer, "ApplyShot") != null;
+
+        protected override MethodBase GetTargetMethod() => AccessTools.Method(FikaPlayer, "ApplyShot");
+
+        [PatchPrefix]
+        private static bool Prefix(object __instance, EFT.Ballistics.DamageInfo damageInfo, EBodyPart bodyPartType, EBodyPartColliderType colliderType,
+                                   EArmorPlateCollider armorPlateCollider, ref EFT.PlayerHitInfo __result)
+        {
+            if (damageInfo.DamageType != EFT.EDamageType.Btr || !MapRegistry.IsCustomMapActive())
+                return true;
+            __result = (EFT.PlayerHitInfo)Simulated.Invoke(__instance, new object[] { damageInfo, bodyPartType, colliderType, armorPlateCollider });
+            return false;
+        }
+    }
+
     // A game bug that only "once" routes reach (every retail route is a circle): CalculatePricesToDestination
     // asks GetNearestDestinationIndex for "<map>/<stop>", which compares it with the route's bare stop ids, finds
     // none and indexes an empty list. The throw leaves the taxi without destinations, and with no ride paid,

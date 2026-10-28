@@ -41,6 +41,8 @@ namespace mizmii.CustomMapLoader.Loading
             }
             // the full weather system ships inactive and is woken only once its shaders are the game's
             WeatherActivation.Activate(scene);
+            // after the weather has had its chance to wake its WindController
+            WindFallback.Apply();
             WeatherActivation.ActivateFlares(scene);
             AmbientAudio.Setup(scene);
             GraphicsModsCompat.PrepareScene(scene);

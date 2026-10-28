@@ -17,10 +17,10 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/Quests/";
 
-        [MenuItem(Menu + "Visit Zone", priority = 62)]
+        [MenuItem(Menu + "Visit Zone", priority = 74)]
         private static void MenuVisit(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateVisitZone(p).gameObject);
 
-        [MenuItem(Menu + "Place Item Zone", priority = 63)]
+        [MenuItem(Menu + "Place Item Zone", priority = 75)]
         private static void MenuPlace(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreatePlaceItemZone(p).gameObject);
 
         public static ExperienceTrigger CreateVisitZone(Transform parent)

@@ -235,3 +235,35 @@ LevelPhysicsSettings
 # the camera post-processing preset LevelSettings.PrismPresetPrefab points at (CameraManager.SetPrismPreset)
 Prism.Utils.PrismPreset
 TerrainBallistic
+
+# --- trees (retail SpeedTree prefabs, as Woods' pines): wind per LOD renderer (LevelSettings applies LocationScene's
+# presets), the canopy trigger that rustles and tells bots a player is in it, and the root's link to it ---
+EFT.SpeedTree.TreeWind
+EFT.Interactive.TreeInteractive
+TreeInteractivePart
+
+# --- fire, explosives and shootable triggers (retail Interchange's gas cylinders: TriggerBallistic -> HandlerExplosion +
+# HandlerGOState hiding the cylinder), the fire's flickering light, breachable doors' splinters, container groups ---
+FlickeringLights
+EFT.GameTriggers.TriggerBallistic
+EFT.GameTriggers.HandlerExplosion
+EFT.GameTriggers.HandlerGOState
+BrokenDoor
+EFT.Interactive.LootableContainersGroup
+# volumetric light shafts (the raid camera's VolumetricLightRenderer draws them, Sandbox/VolumetricLight is always loaded)
+VolumetricLight
+
+# --- mounted guns (retail scenes' Utes/AGS; the SDK places the game's own Utes world prefab at raid start) ---
+EFT.Interactive.StationaryWeapon
+EFT.Animations.UtesMachinery
+EFT.Animations.AGSMachinery
+MgBelt
+BezierSplineTools.BezierCurve
+MagVisualController
+FollowerCullingObject
+
+# --- birds: BirdsSpawner flies its bird prefabs (Bird: Animator triggers flight/soar, float speedMult; Carina turned along the flight)
+# round its BezierSpline paths (BirdCurveBrain, added at spawn); BirdBoidsSpawner flocks them round itself (BirdBoidBrain) ---
+EFT.Animals.Bird
+EFT.Animals.BirdsSpawner
+EFT.Animals.BirdBoidsSpawner

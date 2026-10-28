@@ -30,7 +30,7 @@ namespace TarkovSDK.Editor
         public static readonly Surface[] Surfaces = { Surface.Soil, Surface.Grass, Surface.Gravel, Surface.Asphalt, Surface.Concrete, Surface.Puddle };
         public static readonly string[] SurfaceLabels = { "Soil (dirt, mud, sand)", "Grass", "Gravel (rock, rubble)", "Asphalt", "Concrete", "Water (puddles)" };
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Terrain", priority = 61)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Terrain", priority = 68)]
         private static void MenuTerrain(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p).gameObject);
 
         // A 256 x 256 m terrain with grass and dirt layers, set up for the game.
@@ -296,7 +296,7 @@ namespace TarkovSDK.Editor
     {
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Terrain Surfaces...", priority = 123)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Terrain Surfaces...", priority = 127)]
         private static void Open() => GetWindow<TarkovTerrainSurfacesWindow>("Terrain Surfaces");
 
         private void OnGUI()

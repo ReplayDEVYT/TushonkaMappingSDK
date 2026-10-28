@@ -152,7 +152,8 @@ def main():
                             continue
                         version, ptype, _, code, rest = read_subprogram(entry_bytes(segs, entries, e["m_BlobIndex"]))
                         text = annotate(dxbc.disassemble(code), common_cbs, common_bind, common_tex, params)
-                        fname = f"p{pi}_{short}_{sanitize('_'.join(kws))}.txt"
+                        # later subshaders' passes share the first's numbers; keep them apart
+                        fname = (f"s{si}_" if si else "") + f"p{pi}_{short}_{sanitize('_'.join(kws))}.txt"
                         with open(os.path.join(out, fname), "w", encoding="utf-8") as f:
                             f.write(f"// {name} pass {pi} {stage} keywords {kws}\n// {state_text(p['m_State'])}\n")
                             f.write("// cbuffers: " + "; ".join(f"b{slot}={cbn}" for cbn, slot in cb_slots(common_bind, params).items()) + "\n")

@@ -34,16 +34,16 @@ namespace TarkovSDK.Editor
         // the 7.62x54R the game's snipers fire (SniperFiringZone default)
         public const string SniperAmmo = "560d61e84bdc2da74d8b4571";
 
-        [MenuItem(Menu + "Sniper Zone", priority = 40)]
+        [MenuItem(Menu + "Sniper Zone", priority = 43)]
         private static void MenuSniper(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateSniperZone(p).gameObject);
 
-        [MenuItem(Menu + "Flare Zone (Sniper Immunity)", priority = 41)]
+        [MenuItem(Menu + "Flare Zone (Sniper Immunity)", priority = 44)]
         private static void MenuFlare(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateFlareZone(p).gameObject);
 
-        [MenuItem(Menu + "Minefield", priority = 42)]
+        [MenuItem(Menu + "Minefield", priority = 45)]
         private static void MenuMinefield(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateMinefield(p).gameObject);
 
-        [MenuItem(Menu + "Claymore", priority = 43)]
+        [MenuItem(Menu + "Claymore", priority = 46)]
         private static void MenuClaymore(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateClaymore(p).gameObject);
 
         // a BorderZone's box: centred on its transform (the game measures from the transform), on Triggers

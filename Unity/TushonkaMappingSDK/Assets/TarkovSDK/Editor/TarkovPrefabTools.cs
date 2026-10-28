@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
         [MenuItem(Menu + "Interactables/Door", priority = 27)]
         private static void MenuDoor(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateDoor(p, 1f, 2.1f).gameObject);
 
-        [MenuItem(Menu + "Interactables/Switch", priority = 29)]
+        [MenuItem(Menu + "Interactables/Switch", priority = 30)]
         private static void MenuSwitch(MenuCommand cmd)
         {
             // right-clicking a door makes a switch that opens it
@@ -50,7 +50,7 @@ namespace TarkovSDK.Editor
             return go;
         });
 
-        [MenuItem(Menu + "Interactables/Lootable Container", priority = 30)]
+        [MenuItem(Menu + "Interactables/Lootable Container", priority = 31)]
         private static void MenuContainer(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateContainer(p).gameObject);
 
         // ------------------------------------------------------------ door
@@ -291,7 +291,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 120)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 124)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

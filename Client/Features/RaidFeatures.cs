@@ -38,8 +38,11 @@ namespace mizmii.CustomMapLoader.Features
             Done.Clear();
             SdkHealth.Reset();
             SdkCaptions.Reset();
+            SdkSpawns.Reset();
+            SdkWorldEvents.Reset();
             if (world == null || !MapRegistry.IsCustomMapActive())
                 return;
+            Loading.WindFallback.Apply();
             var features = FeatureConfig.For(world.LocationId);
             if (features == null)
                 return;
@@ -116,8 +119,68 @@ namespace mizmii.CustomMapLoader.Features
                     });
             }
 
+            // bots, loot and shelling belong to the host in co-op; prefabs are shown on every machine
+            bool host = SdkSpawns.IsHost();
+            var mortar = features.MortarStrikes ?? new List<FeatureConfig.MortarStrike>();
+            for (int i = 0; i < mortar.Count; i++)
+            {
+                var strike = mortar[i];
+                string key = "mortar:" + i;
+                if (host && !string.IsNullOrEmpty(strike.TriggerId))
+                    SubscribeAny(emitter, strike.TriggerId, player =>
+                    {
+                        if (SdkSpawns.FirstTime(strike.Once, key))
+                            SdkSpawns.Mortar(strike);
+                    });
+            }
+
+            var bots = features.SpawnBots ?? new List<FeatureConfig.SpawnBotsLink>();
+            for (int i = 0; i < bots.Count; i++)
+            {
+                var spawn = bots[i];
+                string key = "bots:" + i;
+                if (host && !string.IsNullOrEmpty(spawn.TriggerId))
+                    SubscribeAny(emitter, spawn.TriggerId, player =>
+                    {
+                        if (SdkSpawns.FirstTime(spawn.Once, key))
+                            SdkSpawns.Bots(spawn);
+                    });
+            }
+
+            var loot = features.SpawnLoot ?? new List<FeatureConfig.SpawnLootLink>();
+            for (int i = 0; i < loot.Count; i++)
+            {
+                var spawn = loot[i];
+                string key = "loot:" + i;
+                if (host && !string.IsNullOrEmpty(spawn.TriggerId))
+                    SubscribeAny(emitter, spawn.TriggerId, player =>
+                    {
+                        if (SdkSpawns.FirstTime(spawn.Once, key))
+                            SdkSpawns.Loot(spawn);
+                    });
+            }
+
+            var prefabs = features.SpawnPrefabs ?? new List<FeatureConfig.SpawnPrefabLink>();
+            for (int i = 0; i < prefabs.Count; i++)
+            {
+                var spawn = prefabs[i];
+                string key = "prefab:" + i;
+                if (!string.IsNullOrEmpty(spawn.TriggerId))
+                    SubscribeAny(emitter, spawn.TriggerId, player =>
+                    {
+                        if (SdkSpawns.FirstTime(spawn.Once, key))
+                            SdkSpawns.Prefab(spawn);
+                    });
+            }
+
+            // after every listener above is subscribed: an event's first step can fire straight away
+            var worldEvents = features.WorldEvents ?? new List<FeatureConfig.WorldEvent>();
+            SdkWorldEvents.Start(world, worldEvents);
+
             Plugin.Verbose($"Map features: {transits.Count} forced transit(s), {strips.Count} gear strip(s), {notifications.Count} notification(s), " +
-                           $"{captions.Count} caption(s), {healthChanges.Count} health change(s), {effects.Count} effect(s)");
+                           $"{captions.Count} caption(s), {healthChanges.Count} health change(s), {effects.Count} effect(s), {mortar.Count} mortar strike(s), " +
+                           $"{bots.Count} bot spawn(s), {loot.Count} loot spawn(s), {prefabs.Count} prefab spawn(s), {worldEvents.Count} world event(s)" +
+                           (host ? "" : " (bots, loot and shelling run on the host)"));
         }
 
         private static void Subscribe(TriggersEmitter emitter, string triggerId, Action<Player> action)
@@ -133,6 +196,29 @@ namespace mizmii.CustomMapLoader.Features
                 {
                     var player = Singleton<GameWorld>.Instance?.GetAlivePlayerByProfileID(e.OriginProfileId);
                     if (player != null && player.IsYourPlayer)
+                        action(player);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogSource.LogError($"Map features: trigger '{triggerId}' failed: {ex}");
+                }
+            });
+        }
+
+        // for triggered spawns: whoever fires it (any player alive in the raid, a bot included)
+        private static void SubscribeAny(TriggersEmitter emitter, string triggerId, Action<Player> action)
+        {
+            if (emitter == null)
+            {
+                Plugin.LogSource.LogWarning($"Map features: the raid has no trigger emitter, so trigger '{triggerId}' does nothing");
+                return;
+            }
+            emitter.Subscribe(triggerId, (TriggerEvent e) =>
+            {
+                try
+                {
+                    var player = Singleton<GameWorld>.Instance?.GetAlivePlayerByProfileID(e.OriginProfileId);
+                    if (player != null)
                         action(player);
                 }
                 catch (Exception ex)

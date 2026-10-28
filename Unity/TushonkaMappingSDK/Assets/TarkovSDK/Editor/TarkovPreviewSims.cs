@@ -343,6 +343,10 @@ namespace TarkovSDK.Editor
                 return;
             Interaction.InitSmoothOpen(EDoorState.Breaching, door.CloseAngle, door.OpenAngle, door.KickCurve);
             StartRoutine(SmoothDoorOpen(EDoorState.Open, 1f));
+            // the BrokenDoor Door.Start found, breached from the door's own position (KickOpen(bool)'s default)
+            var broken = BrokenDoorSim.Of(door);
+            if (broken != null)
+                TarkovPreview.Get<BrokenDoorSim>(broken).Breach(door.transform.position);
             if (door.BreachSound != null)
                 TarkovPreview.Play(GetSoundPos(), door.BreachSound, 1f, door._breachSoundRolloff);
         }

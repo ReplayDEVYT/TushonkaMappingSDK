@@ -1,0 +1,919 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1597019741713856628
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3792975790209718090}
+  - component: {fileID: 4714524061369563814}
+  - component: {fileID: 1450404070715193880}
+  - component: {fileID: 1461730554099935266}
+  m_Layer: 0
+  m_Name: SDK_Pine_LOD2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3792975790209718090
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1597019741713856628}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6376495044431723168}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &4714524061369563814
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1597019741713856628}
+  m_Mesh: {fileID: 4300000, guid: c28778e6f22f6e644a581d3689071cc3, type: 2}
+--- !u!23 &1450404070715193880
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1597019741713856628}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: bd22854c94ae3ee499f46be35e66dbc4, type: 2}
+  - {fileID: 2100000, guid: 1a1842d5fb84ae8458bae53429b62c5a, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1461730554099935266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1597019741713856628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515ed8cf8f5a6f04c81eca11db030246, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BaseMinWindData:
+    _ST_WindGlobal: {x: 0.726, y: 0.00889, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  BaseMaxWindData:
+    _ST_WindGlobal: {x: 4.35, y: 1.51, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  MinWindData:
+    _ST_WindGlobal_B: {x: 0.0298, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  MaxWindData:
+    _ST_WindGlobal_B: {x: 0.446, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  settings:
+    BaseMinWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    BaseMaxWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    MinWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+    MaxWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &5400609871672874602
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8439517892446660919}
+  - component: {fileID: 6550513901403627614}
+  m_Layer: 18
+  m_Name: Trunk
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8439517892446660919
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400609871672874602}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 3.4392624, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7150522601007052462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &6550513901403627614
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400609871672874602}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.26444447
+  m_Height: 10.5
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &6244831349420958138
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2824479920332423507}
+  - component: {fileID: 5784610561816400747}
+  - component: {fileID: 6234979656557290156}
+  - component: {fileID: 1779842132389132101}
+  m_Layer: 0
+  m_Name: SDK_Pine_LOD0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2824479920332423507
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244831349420958138}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6376495044431723168}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &5784610561816400747
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244831349420958138}
+  m_Mesh: {fileID: 4300000, guid: be3536759a5b4b743818193f8afd8e5b, type: 2}
+--- !u!23 &6234979656557290156
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244831349420958138}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: bd22854c94ae3ee499f46be35e66dbc4, type: 2}
+  - {fileID: 2100000, guid: 1a1842d5fb84ae8458bae53429b62c5a, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1779842132389132101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244831349420958138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515ed8cf8f5a6f04c81eca11db030246, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BaseMinWindData:
+    _ST_WindGlobal: {x: 0.726, y: 0.00889, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  BaseMaxWindData:
+    _ST_WindGlobal: {x: 4.35, y: 1.51, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  MinWindData:
+    _ST_WindGlobal_B: {x: 0.0298, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  MaxWindData:
+    _ST_WindGlobal_B: {x: 0.446, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  settings:
+    BaseMinWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    BaseMaxWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    MinWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+    MaxWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &6938009143001660139
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6376495044431723168}
+  - component: {fileID: 6133580467146580826}
+  - component: {fileID: 2820110343534052372}
+  m_Layer: 0
+  m_Name: SDK_Pine
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6376495044431723168
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6938009143001660139}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2824479920332423507}
+  - {fileID: 3009204729809745748}
+  - {fileID: 3792975790209718090}
+  - {fileID: 7150522601007052462}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!205 &6133580467146580826
+LODGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6938009143001660139}
+  serializedVersion: 2
+  m_LocalReferencePoint: {x: 0.0068178177, y: 7.1000004, z: 0.078495026}
+  m_Size: 14.200001
+  m_FadeMode: 0
+  m_AnimateCrossFading: 0
+  m_LastLODIsBillboard: 0
+  m_LODs:
+  - screenRelativeHeight: 0.7
+    fadeTransitionWidth: 0
+    renderers:
+    - renderer: {fileID: 6234979656557290156}
+  - screenRelativeHeight: 0.45
+    fadeTransitionWidth: 0
+    renderers:
+    - renderer: {fileID: 931004243684103987}
+  - screenRelativeHeight: 0.02
+    fadeTransitionWidth: 0
+    renderers:
+    - renderer: {fileID: 1450404070715193880}
+  m_Enabled: 1
+--- !u!114 &2820110343534052372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6938009143001660139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d54a62191944a81bc9f4e2a86312ac4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InteractivePart: {fileID: 8994157010786147539}
+--- !u!1 &7025101349068353277
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5506056236311908410}
+  - component: {fileID: 7944224486561772776}
+  - component: {fileID: 1013366570548576702}
+  m_Layer: 12
+  m_Name: LOD0Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5506056236311908410
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7025101349068353277}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.000000006031189, y: -1.8107376, z: 0.03111112}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7150522601007052462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!64 &7944224486561772776
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7025101349068353277}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: a0618f07f55fa0046a3ea20836922c56, type: 2}
+--- !u!114 &1013366570548576702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7025101349068353277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3448067c8ef8cc84883ac6b415552461, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SurfaceSound: 2
+  _presetId: -900
+  NetId: 0
+  HitType: 0
+  _typeOfMaterial: 28
+  PenetrationLevel: 0
+  PenetrationChance: 0
+  RicochetChance: 0
+  FragmentationChance: 0
+  TrajectoryDeviationChance: 0
+  TrajectoryDeviation: 0
+--- !u!1 &8235081545500338017
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3009204729809745748}
+  - component: {fileID: 1538472851246950925}
+  - component: {fileID: 931004243684103987}
+  - component: {fileID: 1044634380047165115}
+  m_Layer: 0
+  m_Name: SDK_Pine_LOD1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3009204729809745748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235081545500338017}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6376495044431723168}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &1538472851246950925
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235081545500338017}
+  m_Mesh: {fileID: 4300000, guid: e78dbb8829216e241a16e0b3364820b9, type: 2}
+--- !u!23 &931004243684103987
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235081545500338017}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: bd22854c94ae3ee499f46be35e66dbc4, type: 2}
+  - {fileID: 2100000, guid: 1a1842d5fb84ae8458bae53429b62c5a, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1044634380047165115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8235081545500338017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515ed8cf8f5a6f04c81eca11db030246, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BaseMinWindData:
+    _ST_WindGlobal: {x: 0.726, y: 0.00889, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  BaseMaxWindData:
+    _ST_WindGlobal: {x: 4.35, y: 1.51, z: 0.07042253, w: 1.75}
+    _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindBranchAdherences: {x: 0.1, y: 0, z: 0, w: 0}
+    _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+  MinWindData:
+    _ST_WindGlobal_B: {x: 0.0298, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  MaxWindData:
+    _ST_WindGlobal_B: {x: 0.446, y: 0, z: 0, w: 0}
+    _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+    _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+  settings:
+    BaseMinWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    BaseMaxWindData:
+      _ST_WindGlobal: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchTwitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchWhip: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAnchor: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranchAdherences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindTurbulences: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple: {x: 0, y: 0, z: 0, w: 0}
+    MinWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+    MaxWindData:
+      _ST_WindGlobal_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindBranch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf1Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Ripple_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Tumble_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindLeaf2Twitch_B: {x: 0, y: 0, z: 0, w: 0}
+      _ST_WindFrondRipple_B: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &8994157010786147539
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7150522601007052462}
+  - component: {fileID: 6240969719714588448}
+  - component: {fileID: 6961173455258504411}
+  - component: {fileID: 1810749341564797261}
+  - component: {fileID: 715774393960439286}
+  m_Layer: 26
+  m_Name: AICollider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7150522601007052462
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8994157010786147539}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.000000006031189, y: 1.8107376, z: -0.03111112}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8439517892446660919}
+  - {fileID: 5506056236311908410}
+  m_Father: {fileID: 6376495044431723168}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6240969719714588448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8994157010786147539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e007bdea58c4b3ca07aeaf2bf3219a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _soundBank: {fileID: 0}
+--- !u!135 &6961173455258504411
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8994157010786147539}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 2.5635452
+  m_Center: {x: 0, y: 1.8583895, z: 0}
+--- !u!135 &1810749341564797261
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8994157010786147539}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.9043478
+  m_Center: {x: 0, y: 5.5751686, z: 0}
+--- !u!135 &715774393960439286
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8994157010786147539}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.2451504
+  m_Center: {x: 0, y: 9.291947, z: 0}

@@ -34,13 +34,19 @@ namespace TarkovSDK.Editor
                 .Concat(Object.FindObjectsOfType<HandlerDamage>(true))
                 .Concat(Object.FindObjectsOfType<HandlerEffect>(true))
                 .Concat(Object.FindObjectsOfType<HandlerTriggerState>(true))
+                .Concat(Object.FindObjectsOfType<HandlerGOState>(true))
                 // CustomMapLoader's own listeners (forced transits, gear strips, notifications...), run by the client plugin
                 .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovForceTransit>(true))
                 .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovGearStrip>(true))
                 .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovNotification>(true))
                 .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovCaption>(true))
                 .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovHealthChange>(true))
-                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovEffect>(true)).ToList();
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovEffect>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovSpawnBots>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovSpawnLoot>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovSpawnPrefab>(true))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovMortarZone>(true).Where(z => !string.IsNullOrEmpty(z.TriggerId)))
+                .Concat(Object.FindObjectsOfType<TarkovSDK.TarkovWorldEvent>(true).Where(e => !string.IsNullOrEmpty(e.TriggerId))).ToList();
 
         public static IEnumerable<Component> Listeners(string triggerId)
         {
@@ -59,12 +65,18 @@ namespace TarkovSDK.Editor
                     HandlerDamage d => d._triggerIdStartDamage == triggerId || d._triggerIdFinishDamage == triggerId,
                     HandlerEffect e => e._triggerId == triggerId,
                     HandlerTriggerState s => s._triggerId == triggerId,
+                    HandlerGOState g => g._triggerIdEnable == triggerId || g._triggerIdDisable == triggerId,
                     TarkovSDK.TarkovForceTransit f => f.TriggerId == triggerId,
                     TarkovSDK.TarkovGearStrip g => g.TriggerId == triggerId,
                     TarkovSDK.TarkovNotification n => n.TriggerId == triggerId,
                     TarkovSDK.TarkovCaption c => c.TriggerId == triggerId,
                     TarkovSDK.TarkovHealthChange hc => hc.TriggerId == triggerId || hc.StopTriggerId == triggerId,
                     TarkovSDK.TarkovEffect fx => fx.TriggerId == triggerId,
+                    TarkovSDK.TarkovSpawnBots sb => sb.TriggerId == triggerId,
+                    TarkovSDK.TarkovSpawnLoot sl => sl.TriggerId == triggerId,
+                    TarkovSDK.TarkovSpawnPrefab sp => sp.TriggerId == triggerId,
+                    TarkovSDK.TarkovMortarZone mz => mz.TriggerId == triggerId,
+                    TarkovSDK.TarkovWorldEvent we => we.TriggerId == triggerId,
                     _ => false,
                 };
                 if (listens)
@@ -92,6 +104,13 @@ namespace TarkovSDK.Editor
                         Add(pair.TriggerId, wio);
             foreach (var filter in Object.FindObjectsOfType<HandlerFilterOnce>(true))
                 Add(filter._outputTriggerId, filter);
+            // shot or caught in a blast
+            foreach (var shot in Object.FindObjectsOfType<TriggerBallistic>(true))
+                Add(shot._triggerId, shot);
+            // a scripted world event's Fire Trigger steps
+            foreach (var evt in Object.FindObjectsOfType<TarkovSDK.TarkovWorldEvent>(true))
+                foreach (var step in evt.Steps.Where(s => s != null && s.Kind == TarkovSDK.TarkovWorldEvent.StepKind.FireTrigger))
+                    Add(step.TriggerId, evt);
             return senders;
         }
 
@@ -108,6 +127,12 @@ namespace TarkovSDK.Editor
             TarkovSDK.TarkovCaption c => new[] { c.TriggerId },
             TarkovSDK.TarkovHealthChange hc => new[] { hc.TriggerId, hc.StopTriggerId },
             TarkovSDK.TarkovEffect fx => new[] { fx.TriggerId },
+            TarkovSDK.TarkovSpawnBots sb => new[] { sb.TriggerId },
+            TarkovSDK.TarkovSpawnLoot sl => new[] { sl.TriggerId },
+            TarkovSDK.TarkovSpawnPrefab sp => new[] { sp.TriggerId },
+            TarkovSDK.TarkovMortarZone mz => new[] { mz.TriggerId },
+            HandlerGOState g => new[] { g._triggerIdEnable, g._triggerIdDisable },
+            TarkovSDK.TarkovWorldEvent we => new[] { we.TriggerId },
             _ => Enumerable.Empty<string>(),
         };
 
@@ -126,8 +151,8 @@ namespace TarkovSDK.Editor
                     if (senders.ContainsKey(id))
                         continue;
                     string hint = objectIds.TryGetValue(id, out var owner)
-                        ? $" '{id}' is the Id of '{owner.name}', but an object's Id isn't a trigger id: add it to that object's Triggers Map (or connect it with Tarkov SDK > Tools > Interactables > Triggers & Sounds)."
-                        : " Connect a zone or a switch to it with Tarkov SDK > Tools > Interactables > Triggers & Sounds.";
+                        ? $" '{id}' is the Id of '{owner.name}', but an object's Id isn't a trigger id: add it to that object's Triggers Map (or connect it with Tarkov SDK > Tools > Triggers > Triggers & Sounds)."
+                        : " Connect a zone or a switch to it with Tarkov SDK > Tools > Triggers > Triggers & Sounds.";
                     problems.Add((listener, $"{listener.GetType().Name} listens to '{id}', but nothing sends it.{hint}"));
                 }
             foreach (var pair in senders)

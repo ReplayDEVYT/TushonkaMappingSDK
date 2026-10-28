@@ -6,4 +6,25 @@
 
 public class VolumetricLight : global::UnityEngine.MonoBehaviour
 {
+    [global::UnityEngine.Range(1f, 64f)]
+    public int SampleCount = 8;
+    [global::UnityEngine.Range(0f, 1f)]
+    public float ScatteringCoef = 0.5f;
+    [global::UnityEngine.Range(0f, 0.1f)]
+    public float ExtinctionCoef = 0.01f;
+    [global::UnityEngine.Range(0f, 1f)]
+    public float SkyboxExtinctionCoef = 0.9f;
+    [global::UnityEngine.Range(0f, 0.999f)]
+    public float MieG = 0.1f;
+    public bool HeightFog;
+    [global::UnityEngine.Range(0f, 0.5f)]
+    public float HeightScale = 0.1f;
+    public float GroundLevel;
+    public bool Noise;
+    public float NoiseScale = 0.015f;
+    public float NoiseIntensity = 1f;
+    public float NoiseIntensityOffset = 0.3f;
+    public global::UnityEngine.Vector2 NoiseVelocity = new global::UnityEngine.Vector2(3f, 3f);
+    [global::UnityEngine.Tooltip("")]
+    public float MaxRayLength = 400f;
 }

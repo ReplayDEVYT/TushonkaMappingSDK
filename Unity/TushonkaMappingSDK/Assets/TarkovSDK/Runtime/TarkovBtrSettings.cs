@@ -28,6 +28,9 @@ namespace TarkovSDK
 
         public List<Stop> Stops = new List<Stop>();
 
+        [Tooltip("Roads changed by hand in the BTR Path Editor; Regenerate All Roads leaves them alone.")]
+        public List<string> EditedRoads = new List<string>();
+
         [Serializable]
         public class Stop
         {

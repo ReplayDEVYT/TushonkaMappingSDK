@@ -32,12 +32,33 @@ namespace TarkovSDK.Editor
             public readonly List<TarkovSDK.TarkovCaption> Captions = new List<TarkovSDK.TarkovCaption>();
             public readonly List<TarkovSDK.TarkovHealthChange> HealthChanges = new List<TarkovSDK.TarkovHealthChange>();
             public readonly List<TarkovSDK.TarkovEffect> Effects = new List<TarkovSDK.TarkovEffect>();
+            public readonly List<TarkovSDK.TarkovSpawnBots> SpawnBots = new List<TarkovSDK.TarkovSpawnBots>();
+            public readonly List<TarkovSDK.TarkovSpawnLoot> SpawnLoot = new List<TarkovSDK.TarkovSpawnLoot>();
+            // with the scene and hierarchy path the client finds the object (or its template) by
+            public readonly List<(TarkovSDK.TarkovSpawnPrefab Spawn, string Scene, string Path)> SpawnPrefabs = new List<(TarkovSDK.TarkovSpawnPrefab, string, string)>();
+            // the map's mortar shelling (sdk_export.json "Mortar"), if it has one
+            public TarkovSDK.TarkovMortarSettings Mortar;
+            public readonly List<TarkovSDK.TarkovMortarZone> MortarZones = new List<TarkovSDK.TarkovMortarZone>();
+            public readonly List<TarkovSDK.TarkovMortarBattery> MortarBatteries = new List<TarkovSDK.TarkovMortarBattery>();
             public readonly List<TarkovSDK.TarkovContainerDefinition> ContainerTypes = new List<TarkovSDK.TarkovContainerDefinition>();
+            // container groups (Min..Max of their containers spawn per raid; sdk_export.json "ContainerGroups")
+            public readonly List<LootableContainersGroup> ContainerGroups = new List<LootableContainersGroup>();
+            // mounted guns: their static weapon id and weapon ("Utes", "AGS"); the SDK's markers are placed by the client,
+            // StationaryWeapons already in the scene (ripped) only need their item
+            public readonly List<(string Id, string Weapon, Transform Marker, bool InScene)> MountedGuns = new List<(string, string, Transform, bool)>();
+            // scripted world events with their steps (scene and hierarchy path of what a step switches or plays)
+            public readonly List<(TarkovSDK.TarkovWorldEvent Event, string Name, List<(TarkovSDK.TarkovWorldEvent.Step Step, string Scene, string Path)> Steps)> WorldEvents =
+                new List<(TarkovSDK.TarkovWorldEvent, string, List<(TarkovSDK.TarkovWorldEvent.Step, string, string)>)>();
             // the baked audio files the raid loads (spatial audio routes, Meta acoustics), shipped next to the bundles
             public readonly List<string> AudioFiles = new List<string>();
             // the map's BTR route, if it has one
             public EFT.Vehicle.MapPathConfig Btr;
             public long UnixDateTime;
+            // ids the game looks up map-wide, so unique across the map's scenes (a copied scene shares all of them):
+            // interactive objects, lamps and windows; sync objects' random part; quest zones by type
+            public readonly HashSet<string> Ids = new HashSet<string>();
+            public readonly HashSet<uint> SyncRandoms = new HashSet<uint>();
+            public readonly HashSet<string> QuestZoneIds = new HashSet<string>();
         }
 
         // LocationScene arrays the game fills with active objects only
@@ -46,11 +67,13 @@ namespace TarkovSDK.Editor
         // LocationScene arrays that BSG fills from interfaces we do not stub; empty is valid for them
         private static readonly HashSet<string> AlwaysEmptyArrays = new HashSet<string>
         {
-            "AudioSources", "BroadcastPlayers", "EventSoundContentChangers", "treeWindSettingsPresets",
+            "AudioSources", "BroadcastPlayers", "EventSoundContentChangers",
         };
 
         public static void Prepare(Scene scene, bool isActiveScene, Report report)
         {
+            // the last build's spawn templates go before anything collects the scene's components
+            TarkovTriggeredSpawns.ClearTemplates(scene);
             var roots = scene.GetRootGameObjects();
 
             var locationScenes = All<LocationScene>(roots);
@@ -202,7 +225,15 @@ namespace TarkovSDK.Editor
                 }
             }
 
+            // before the ids (they give sync objects their random part) and FillLocationScene (it lists what these make)
+            TarkovExplosives.Prepare(scene, roots, report);
+            TarkovWires.Prepare(scene, roots, report);
+            TarkovTrees.PrepareWind(scene, roots);
+            roots = scene.GetRootGameObjects();
             AssignInteractiveIds(scene, roots, report);
+            TarkovContainerGroups.Prepare(scene, roots, report);
+            TarkovMountedGuns.Prepare(scene, roots, report);
+            TarkovBreachableDoors.Prepare(scene, roots, report);
             SyncPatrolWays(roots);
             SyncSpawnPoints(scene, roots, report);
             SyncBotZones(roots);
@@ -211,6 +242,9 @@ namespace TarkovSDK.Editor
             SyncLootSpawns(scene, roots, report);
             SyncIndoorTriggers(scene, roots, report);
             FillLocationScene(locationScene, roots);
+            // after FillLocationScene: the spawn templates aren't the raid's own objects (copies are made of them)
+            TarkovTriggeredSpawns.Prepare(scene, roots, report);
+            roots = scene.GetRootGameObjects();
             // before Validate: it gives terrains their TerrainBallistic
             TarkovTerrains.Prepare(scene, roots, report);
             TarkovProBuilder.Check(scene, roots, report);
@@ -220,6 +254,11 @@ namespace TarkovSDK.Editor
             TarkovBtr.Prepare(roots, scene.name, report);
             // after the ids: a gear strip names its container by Id
             TarkovMapEvents.Check(scene, roots, report);
+            TarkovMortar.Prepare(scene, roots, report);
+            TarkovVolumetricLights.Prepare(scene, roots, report);
+            TarkovBirds.Prepare(scene, roots, report);
+            // after the spawns and mortar zones: it reports steps nothing listens to
+            TarkovWorldEvents.Prepare(scene, roots, report);
             TarkovAnimatedObjects.Prepare(scene, roots, report);
             foreach (var type in TarkovLootContainers.UsedBy(All<LootableContainer>(roots)))
                 if (!report.ContainerTypes.Contains(type))
@@ -253,7 +292,7 @@ namespace TarkovSDK.Editor
 
         private static void AssignInteractiveIds(Scene scene, GameObject[] roots, Report report)
         {
-            var seen = new HashSet<string>();
+            var seen = report.Ids;
             foreach (var wio in All<WorldInteractiveObject>(roots))
             {
                 if (string.IsNullOrEmpty(wio.Id) || !seen.Add(wio.Id))
@@ -319,9 +358,10 @@ namespace TarkovSDK.Editor
             }
             // an ISyncAble's scene id is its path hash with this random part
             foreach (var sync in All<ISyncAble>(roots))
-                if (sync._random == 0)
+                if (sync._random == 0 || !report.SyncRandoms.Add(sync._random))
                 {
-                    sync._random = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0) | 1u;
+                    do sync._random = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 0) | 1u;
+                    while (!report.SyncRandoms.Add(sync._random));
                     EditorUtility.SetDirty(sync);
                 }
             foreach (var pa in All<QueuePlayer>(roots))
@@ -340,7 +380,7 @@ namespace TarkovSDK.Editor
                 // only HandlerLamp switches a group (references here; the game's id list holds scene ids)
                 if (!lampHandlers.Any(h => h._controlledLampGroups != null && h._controlledLampGroups.Contains(group)))
                     report.Warnings.Add($"{scene.name}/{group.name}: nothing switches this lamp group, so it stays {(group._initialLightState ? "on" : "off")} " +
-                                        "(Add Light Switch in its inspector, or Tools > Interactables > Triggers & Sounds)");
+                                        "(Add Light Switch in its inspector, or Tools > Triggers > Triggers & Sounds)");
             }
             // keycard doors: the game reads Proxies[0] unchecked when unlocking, and a proxy's Start needs its lights
             foreach (var door in All<KeycardDoor>(roots))
@@ -363,7 +403,7 @@ namespace TarkovSDK.Editor
                     report.Warnings.Add($"{scene.name}/{proxy.name}: card reader needs a collider on the Interactive layer on its own object, or players can't use it");
             }
             // quest zones are found by id
-            var questIds = new HashSet<string>();
+            var questIds = report.QuestZoneIds;
             foreach (var zone in All<TriggerWithId>(roots))
             {
                 if (string.IsNullOrWhiteSpace(zone._id))
@@ -428,7 +468,8 @@ namespace TarkovSDK.Editor
 
         private static void SyncSpawnPoints(Scene scene, GameObject[] roots, Report report)
         {
-            var ids = new HashSet<string>();
+            // across the map: the server keys spawn points by id
+            var ids = new HashSet<string>(report.SpawnPoints.Select(m => m._spawnPoint?.Id));
             foreach (var marker in All<SpawnPointMarker>(roots))
             {
                 if (marker._spawnPoint == null)
@@ -582,7 +623,8 @@ namespace TarkovSDK.Editor
 
         private static void SyncExfils(Scene scene, GameObject[] roots, Report report)
         {
-            var names = new HashSet<string>();
+            // across the map: the server matches exits to base.json by name
+            var names = new HashSet<string>(report.Exfils.Select(e => e.Settings?.Name));
             foreach (var exfil in All<ExfiltrationPoint>(roots))
             {
                 if (exfil.Settings == null)
@@ -591,7 +633,7 @@ namespace TarkovSDK.Editor
                 if (string.IsNullOrEmpty(s.Name))
                     s.Name = exfil.gameObject.name;
                 if (!names.Add(s.Name))
-                    report.Errors.Add($"{scene.name}/{exfil.name}: duplicate exfil name '{s.Name}'");
+                    report.Errors.Add($"{scene.name}/{exfil.name}: duplicate exfil name '{s.Name}'" + (report.Exfils.Any(e => e.Settings?.Name == s.Name && e.gameObject.scene != scene) ? " (in another of the map's scenes)" : ""));
                 if (string.IsNullOrEmpty(s.EntryPoints))
                     report.Warnings.Add($"{scene.name}/{exfil.name}: exfil has no EntryPoints, no PMC will be able to use it");
 
@@ -628,6 +670,10 @@ namespace TarkovSDK.Editor
                 {
                     value = TriggerEntities(roots);
                 }
+                else if (field.Name == "treeWindSettingsPresets")
+                {
+                    value = TreeWindPresets(roots);
+                }
                 else if (AlwaysEmptyArrays.Contains(field.Name) || element == null || !typeof(Component).IsAssignableFrom(element))
                 {
                     value = Array.CreateInstance(element ?? typeof(object), 0);
@@ -647,6 +693,28 @@ namespace TarkovSDK.Editor
                 field.SetValue(locationScene, value);
             }
             EditorUtility.SetDirty(locationScene);
+        }
+
+        // LocationScene.FillTreeWinds: each TreeWind's four wind sets copied into its settings, and the distinct ones;
+        // LevelSettings makes one property block per preset and gives each TreeWind the one matching its settings
+        // (without a match it logs "_mpb == null" and makes its own)
+        private static System.Array TreeWindPresets(GameObject[] roots)
+        {
+            var presets = new List<EFT.SpeedTree.TreeWind.Settings>();
+            foreach (var wind in roots.SelectMany(r => r.GetComponentsInChildren<EFT.SpeedTree.TreeWind>(true)))
+            {
+                wind.settings = new EFT.SpeedTree.TreeWind.Settings
+                {
+                    BaseMinWindData = wind.BaseMinWindData,
+                    BaseMaxWindData = wind.BaseMaxWindData,
+                    MinWindData = wind.MinWindData,
+                    MaxWindData = wind.MaxWindData,
+                };
+                EditorUtility.SetDirty(wind);
+                if (!presets.Contains(wind.settings))
+                    presets.Add(wind.settings);
+            }
+            return presets.ToArray();
         }
 
         // LocationScene.FillArraysFrom: the objects with an ITriggerEntity that has trigger ids (the stubs

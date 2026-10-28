@@ -8,6 +8,13 @@ namespace EFT.SpeedTree
 {
     public class TreeWind : global::UnityEngine.MonoBehaviour
     {
+        public global::EFT.SpeedTree.TreeWind.BaseTreeData BaseMinWindData;
+        public global::EFT.SpeedTree.TreeWind.BaseTreeData BaseMaxWindData;
+        public global::EFT.SpeedTree.TreeWind.FactorTreeData MinWindData;
+        public global::EFT.SpeedTree.TreeWind.FactorTreeData MaxWindData;
+        [global::UnityEngine.HideInInspector]
+        public global::EFT.SpeedTree.TreeWind.Settings settings;
+
         [global::System.Serializable]
         public struct BaseTreeData
         {

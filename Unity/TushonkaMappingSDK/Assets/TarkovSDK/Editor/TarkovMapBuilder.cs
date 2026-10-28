@@ -57,6 +57,9 @@ namespace TarkovSDK.Editor
 
             var setup = EditorSceneManager.GetSceneManagerSetup();
             var report = new TarkovScenePreparer.Report();
+            // a scene the mapper works in but never added isn't built (its objects are missing in the raid)
+            foreach (var stray in TarkovMapScenes.NotInMap(def))
+                report.Warnings.Add($"{stray.name}: is open but not one of the Map Definition's scenes, so it isn't in the map (add it to Scenes, or close it)");
             try
             {
                 EditorUtility.DisplayProgressBar("Tarkov SDK", "Preparing scenes", 0.1f);
@@ -64,6 +67,8 @@ namespace TarkovSDK.Editor
                 for (int i = 0; i < scenePaths.Count; i++)
                     scenes.Add(EditorSceneManager.OpenScene(scenePaths[i], i == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive));
 
+                // before Prepare, which adds a missing manager or time of day to the first scene
+                report.Warnings.AddRange(TarkovMapScenes.Gather(scenes));
                 // before Prepare, which sizes indoor triggers and checks the rain cover
                 TarkovIndoorMap.Apply(def, scenes, report);
                 for (int i = 0; i < scenes.Count; i++)
@@ -72,6 +77,9 @@ namespace TarkovSDK.Editor
                 // all map scenes are open together here, so this sees a navmesh baked into any of them
                 if (UnityEngine.AI.NavMesh.CalculateTriangulation().indices.Length == 0)
                     report.Warnings.Add("No navmesh found in any map scene. Bake one (Window > AI > Navigation) or bots cannot move");
+                else if (scenes.Count > 1 && scenes.Skip(1).Any(s => TarkovMapScenes.NavMeshCovers(s) == false))
+                    report.Warnings.Add("Part of the map has no navmesh under it: " + string.Join(", ", scenes.Skip(1).Where(s => TarkovMapScenes.NavMeshCovers(s) == false).Select(s => s.name)) +
+                                        ". Bake with all the map's scenes open (Map Definition > Open All Scenes), or bots can't walk there");
                 if (report.SpawnPoints.Count == 0)
                     report.Errors.Add("The map has no SpawnPointMarker; the game cannot spawn the player");
 
@@ -82,9 +90,12 @@ namespace TarkovSDK.Editor
                     Debug.LogWarning("[Tarkov SDK] " + w);
                 foreach (var e in report.Errors)
                     Debug.LogError("[Tarkov SDK] " + e);
+                // Tarkov SDK > Help > Errors explains them
+                TarkovHelpWindow.RememberBuild(report.Errors, report.Warnings);
                 if (report.Errors.Count > 0)
                 {
-                    EditorUtility.DisplayDialog("Tarkov SDK", $"{report.Errors.Count} error(s) in the map, see the Console.", "OK");
+                    if (EditorUtility.DisplayDialog("Tarkov SDK", $"{report.Errors.Count} error(s) in the map, see the Console.", "Explain Them", "OK"))
+                        EditorApplication.delayCall += () => TarkovHelpWindow.Open("Errors");
                     return false;
                 }
                 if (!buildBundles)
@@ -136,8 +147,9 @@ namespace TarkovSDK.Editor
                     foreach (var w in report.Warnings)
                         Debug.LogWarning("[Tarkov SDK] " + w);
                     Debug.LogWarning(summary + "\n  - " + string.Join("\n  - ", report.Warnings));
-                    EditorUtility.DisplayDialog("Tarkov SDK",
-                        $"Built '{def.MapId}' with {report.Warnings.Count} warning(s):\n\n- " + string.Join("\n- ", report.Warnings), "OK");
+                    if (!EditorUtility.DisplayDialog("Tarkov SDK",
+                            $"Built '{def.MapId}' with {report.Warnings.Count} warning(s):\n\n- " + string.Join("\n- ", report.Warnings), "OK", "Explain Them"))
+                        EditorApplication.delayCall += () => TarkovHelpWindow.Open("Errors");
                 }
                 return true;
             }

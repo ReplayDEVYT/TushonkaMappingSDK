@@ -46,7 +46,13 @@ namespace TarkovSDK.Editor
         // the preview clock in seconds, and the frame count (the game's lamps update every 20th frame)
         public static float Time => (float)_time;
         public static int Frame => _frame;
-        public static bool Running => Sims.Count > 0 || Sounds.Count > 0 || Scheduled.Count > 0;
+        public static bool Running => Sims.Count > 0 || Sounds.Count > 0 || Scheduled.Count > 0 || Particles.Count > 0 || Animations.Count > 0;
+
+        // particle systems stepped by the preview clock (Unity only plays them in edit mode while selected), effect
+        // objects made for the preview (HideAndDontSave, never saved), and per-tick animations (false when done)
+        private static readonly List<ParticleSystem> Particles = new List<ParticleSystem>();
+        private static readonly List<GameObject> Spawned = new List<GameObject>();
+        private static readonly List<Func<float, bool>> Animations = new List<Func<float, bool>>();
 
         static TarkovPreview()
         {
@@ -126,6 +132,12 @@ namespace TarkovSDK.Editor
                     Object.DestroyImmediate(source.gameObject);
             Sounds.Clear();
             SoundInfos.Clear();
+            Particles.Clear();
+            Animations.Clear();
+            foreach (var go in Spawned)
+                if (go != null)
+                    Object.DestroyImmediate(go);
+            Spawned.Clear();
             for (int i = RestoreOrder.Count - 1; i >= 0; i--)
             {
                 var key = RestoreOrder[i];
@@ -180,6 +192,19 @@ namespace TarkovSDK.Editor
             foreach (var sim in Sims.Values.ToList())
                 if (sim.Target != null)
                     Safe(() => sim.Update(dt));
+            for (int i = Particles.Count - 1; i >= 0; i--)
+                if (Particles[i] == null)
+                    Particles.RemoveAt(i);
+                else
+                    Particles[i].Simulate(dt, true, false, false);
+            for (int i = Animations.Count - 1; i >= 0; i--)
+            {
+                bool more = false;
+                var step = Animations[i];
+                Safe(() => more = step(dt));
+                if (!more)
+                    Animations.Remove(step);
+            }
             for (int i = Sounds.Count - 1; i >= 0; i--)
                 if (Sounds[i] == null || (!Sounds[i].isPlaying && !Sounds[i].loop))
                 {
@@ -287,6 +312,59 @@ namespace TarkovSDK.Editor
             if (had)
                 renderer.GetPropertyBlock(block);
             Record(renderer, () => renderer.SetPropertyBlock(had ? block : null));
+        }
+
+        // ------------------------------------------------------------ particles and effects
+
+        // ParticleSystem.Play(withChildren) from the start, then stepped each tick; Stop clears it
+        public static void PlayParticles(ParticleSystem ps)
+        {
+            if (ps == null)
+                return;
+            Record(ps, () =>
+            {
+                if (ps == null)
+                    return;
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                ps.Clear(true);
+            });
+            ps.Simulate(0f, true, true, false);
+            if (!Particles.Contains(ps))
+                Particles.Add(ps);
+            _lastRealTime = EditorApplication.timeSinceStartup;
+        }
+
+        public static void StopParticles(ParticleSystem ps)
+        {
+            if (ps == null)
+                return;
+            Particles.Remove(ps);
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ps.Clear(true);
+        }
+
+        public static bool IsPlaying(ParticleSystem ps) => ps != null && Particles.Contains(ps);
+
+        // an object only the preview has, removed after its lifetime and by Stop
+        public static GameObject Spawn(string name, Vector3 position, float lifetime)
+        {
+            var go = new GameObject(name) { hideFlags = HideFlags.HideAndDontSave };
+            go.transform.position = position;
+            Spawned.Add(go);
+            After(lifetime, () =>
+            {
+                Spawned.Remove(go);
+                if (go != null)
+                    Object.DestroyImmediate(go);
+            });
+            return go;
+        }
+
+        // called each tick with the frame's seconds until it returns false
+        public static void Animate(Func<float, bool> step)
+        {
+            Animations.Add(step);
+            _lastRealTime = EditorApplication.timeSinceStartup;
         }
 
         // ------------------------------------------------------------ sound
@@ -422,6 +500,16 @@ namespace TarkovSDK.Editor
             foreach (var force in Object.FindObjectsOfType<TarkovSDK.TarkovForceTransit>(true))
                 if (force.TriggerId == triggerId)
                     Debug.Log($"[Tarkov SDK] Preview: {force.name} would send the player on through {(force.Transit != null ? force.Transit.name : "its transit")}");
+            // shootable triggers' targets: explosions, and the objects they hide
+            foreach (var handler in Object.FindObjectsOfType<HandlerExplosion>())
+                if (handler._triggerId == triggerId)
+                    Get<ExplosionSim>(handler).OnTrigger();
+            foreach (var handler in Object.FindObjectsOfType<HandlerGOState>())
+                GOStateHandler.OnTrigger(handler, triggerId);
+            foreach (var evt in Object.FindObjectsOfType<TarkovSDK.TarkovWorldEvent>(true))
+                if (evt.Start != TarkovSDK.TarkovWorldEvent.StartMode.RaidTime && evt.TriggerId == triggerId && evt.Steps != null && evt.Steps.Count > 0)
+                    Get<WorldEventSim>(evt).Begin(false);
+            SpawnPreview.OnTrigger(triggerId);
             foreach (var handler in Object.FindObjectsOfType<HandlerLamp>())
             {
                 if (handler._triggerId != triggerId)

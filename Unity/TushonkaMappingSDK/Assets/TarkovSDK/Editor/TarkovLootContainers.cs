@@ -94,7 +94,7 @@ namespace TarkovSDK.Editor
         private UnityEditor.Editor _editor;
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Loot Containers...", priority = 117)]
+        [MenuItem("Tarkov SDK/Tools/Interactables/Loot Containers...", priority = 116)]
         public static void Open() => GetWindow<TarkovLootContainersWindow>("Loot Containers").minSize = new Vector2(380f, 420f);
 
         private void OnGUI()

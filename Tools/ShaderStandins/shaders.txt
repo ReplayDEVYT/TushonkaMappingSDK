@@ -38,3 +38,7 @@ Rain/LiquidDrop
 
 # fog volumes (GameObject > Tarkov SDK > Fog Volume): lit, fog-aware particles
 Global Fog/Particle Alpha Blended Lighted
+
+# trees (Tarkov SDK > Decompilation > Tree Builder, GameObject > Tarkov SDK > Environment > Tree): SpeedTree 7 plus
+# thermal values, in globalgamemanagers.assets so always loaded; decompiled by hand in Game/ on Unity's SpeedTree includes
+Nature/SpeedTreeEFT

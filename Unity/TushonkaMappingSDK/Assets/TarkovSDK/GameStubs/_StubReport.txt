@@ -97,6 +97,7 @@ Types:
   shallow BetterAudio
   full    BetterAudio/AudioSourceGroupType
   full    BezierSplineTools.BezierControlPointMode
+  full    BezierSplineTools.BezierCurve
   full    BezierSplineTools.BezierSpline
   full    BotLocationModifier
   full    BotTiltType
@@ -104,6 +105,7 @@ Types:
   full    BotZoneEntrance
   full    BotZoneEntranceInfo
   full    BotZoneNavMeshCutter
+  full    BrokenDoor
   full    CommonAssets.Scripts.Audio.EAudioFadeType
   full    CommonAssets.Scripts.Game.GameTriggers.Handlers.HandlerGameObjectState
   full    CommonAssets.Scripts.Game.LabyrinthEvent.ETrapType
@@ -124,13 +126,22 @@ Types:
   full    EBodyPartColliderType
   full    ECoverPointSpecial
   full    EFT.Airdrop.AirdropPoint
+  full    EFT.Animals.Bird
+  full    EFT.Animals.BirdBoidsSpawner
+  full    EFT.Animals.BirdsSpawner
+  full    EFT.Animations.AGSMachinery
+  full    EFT.Animations.UtesMachinery
+  full    EFT.Animations.WeaponMachinery
+  full    EFT.AssetsManager.AssetPoolObject
   full    EFT.AssetsManager.PoolSafeMonoBehaviour
+  full    EFT.AssetsManager.WeaponModPoolObject
   full    EFT.Ballistics.BallisticCollider
   full    EFT.Ballistics.MaterialType
   shallow EFT.BotOwner
   shallow EFT.BufferZone.BufferZoneContainer
   shallow EFT.DistanceBlendOptions
   full    EFT.DistanceVarity
+  full    EFT.EDamageType
   full    EFT.EInteractionType
   full    EFT.EPlayerSideMask
   full    EFT.ESkillId
@@ -175,12 +186,15 @@ Types:
   full    EFT.GameTriggers.HandlerEffect/RemoveAllEffects
   full    EFT.GameTriggers.HandlerEffect/RestoreFullHealthsApplier
   full    EFT.GameTriggers.HandlerEffect/SandingScreenApplier
+  full    EFT.GameTriggers.HandlerExplosion
   full    EFT.GameTriggers.HandlerFilterOnce
+  full    EFT.GameTriggers.HandlerGOState
   full    EFT.GameTriggers.HandlerInteractable
   full    EFT.GameTriggers.HandlerLamp
   full    EFT.GameTriggers.HandlerPlaySoundAdvanced
   full    EFT.GameTriggers.HandlerPlaySoundAdvanced/PlaySoundConfig
   full    EFT.GameTriggers.HandlerTriggerState
+  full    EFT.GameTriggers.TriggerBallistic
   full    EFT.GameTriggers.TriggerZone
   full    EFT.GameTriggers.TriggerZone/EBotPolitic
   full    EFT.GameTriggers.TriggerZone/ETriggerTag
@@ -216,6 +230,7 @@ Types:
   shallow EFT.Interactive.LootPoint
   full    EFT.Interactive.LootableContainer
   full    EFT.Interactive.LootableContainerParameters
+  full    EFT.Interactive.LootableContainersGroup
   full    EFT.Interactive.MaterialColor
   full    EFT.Interactive.MaterialData
   full    EFT.Interactive.MaterialEmission
@@ -230,10 +245,12 @@ Types:
   full    EFT.Interactive.SharedExfiltrationPoint
   full    EFT.Interactive.SniperFiringZone
   full    EFT.Interactive.SniperImitator
-  shallow EFT.Interactive.StationaryWeapon
+  full    EFT.Interactive.StationaryWeapon
+  full    EFT.Interactive.StationaryWeapon/EStationaryAnimationType
   full    EFT.Interactive.Switch
   full    EFT.Interactive.Switch/SwitchAndOperation
   full    EFT.Interactive.TransitPoint
+  full    EFT.Interactive.TreeInteractive
   full    EFT.Interactive.TriggerWithId
   full    EFT.Interactive.Trunk
   full    EFT.Interactive.Turnable
@@ -263,7 +280,7 @@ Types:
   full    EFT.ScenesPreset
   full    EFT.ScenesPreset/Guid
   full    EFT.SoundBank
-  shallow EFT.SpeedTree.TreeWind
+  full    EFT.SpeedTree.TreeWind
   full    EFT.SpeedTree.TreeWind/BaseTreeData
   full    EFT.SpeedTree.TreeWind/FactorTreeData
   full    EFT.SpeedTree.TreeWind/Settings
@@ -296,6 +313,8 @@ Types:
   full    EnvironmentManagerBase
   full    EnvironmentType
   shallow FirearmsEffects
+  full    FlickeringLights
+  full    FollowerCullingObject
   full    GameObjectStateSync
   full    GripPose
   full    GripPose/EGripType
@@ -317,6 +336,8 @@ Types:
   full    LevelPhysicsSettings
   full    LevelSettings
   full    LocationScene
+  full    MagVisualController
+  full    MgBelt
   full    MineDirectional
   full    MineDirectional/MineSettings
   full    MineDirectionalColliders
@@ -408,9 +429,10 @@ Types:
   full    TOD_WorldParameters
   full    TerrainBallistic
   shallow ThrowGrenadePlace
+  full    TreeInteractivePart
   full    TubeLight
   full    UnspawnPoint
-  shallow VolumetricLight
+  full    VolumetricLight
   full    WeatherObstacle
   full    WetRenderer
   full    WheelDrive

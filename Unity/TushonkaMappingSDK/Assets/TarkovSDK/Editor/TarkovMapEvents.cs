@@ -42,7 +42,7 @@ namespace TarkovSDK.Editor
             return force;
         }
 
-        [MenuItem(Menu + "Events/Gear Strip", priority = 66)]
+        [MenuItem(Menu + "Triggers/Gear Strip", priority = 87)]
         private static void MenuGearStrip(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateGearStrip(p).transform.parent.gameObject);
 
         // a root with the settings (EditorOnly) and the stash under it
@@ -62,7 +62,7 @@ namespace TarkovSDK.Editor
             return strip;
         }
 
-        [MenuItem(Menu + "Events/Notification", priority = 67)]
+        [MenuItem(Menu + "Triggers/Notification", priority = 83)]
         private static void MenuNotification(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateNotification(p).gameObject);
 
         public static TarkovNotification CreateNotification(Transform parent)
@@ -71,17 +71,17 @@ namespace TarkovSDK.Editor
             return go.AddComponent<TarkovNotification>();
         }
 
-        [MenuItem(Menu + "Events/Caption", priority = 68)]
+        [MenuItem(Menu + "Triggers/Caption", priority = 84)]
         private static void MenuCaption(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateCaption(p).gameObject);
 
         public static TarkovCaption CreateCaption(Transform parent) => EditorOnlyChild(parent, "SDK_Caption").AddComponent<TarkovCaption>();
 
-        [MenuItem(Menu + "Events/Health Change", priority = 69)]
+        [MenuItem(Menu + "Triggers/Health Change", priority = 85)]
         private static void MenuHealth(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateHealthChange(p).gameObject);
 
         public static TarkovHealthChange CreateHealthChange(Transform parent) => EditorOnlyChild(parent, "SDK_HealthChange").AddComponent<TarkovHealthChange>();
 
-        [MenuItem(Menu + "Events/Effect", priority = 70)]
+        [MenuItem(Menu + "Triggers/Effect", priority = 86)]
         private static void MenuEffect(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateEffect(p).gameObject);
 
         public static TarkovEffect CreateEffect(Transform parent) => EditorOnlyChild(parent, "SDK_Effect").AddComponent<TarkovEffect>();

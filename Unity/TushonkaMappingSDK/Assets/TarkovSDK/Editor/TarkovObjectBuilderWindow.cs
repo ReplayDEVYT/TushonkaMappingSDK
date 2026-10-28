@@ -267,7 +267,7 @@ namespace TarkovSDK.Editor
             _animOpenSound = (AudioClip)EditorGUILayout.ObjectField("Open Sound", _animOpenSound, typeof(AudioClip), false);
             _animCloseSound = (AudioClip)EditorGUILayout.ObjectField(new GUIContent("Close Sound", "Empty: the open sound."), _animCloseSound, typeof(AudioClip), false);
             _ownSwitch = EditorGUILayout.Toggle(new GUIContent("Own Switch", "A switch next to it opens and closes it. Off: connect a zone or switch in " +
-                                                                              "Tarkov SDK > Tools > Interactables > Triggers & Sounds (Open / Close an animated object)."), _ownSwitch);
+                                                                              "Tarkov SDK > Tools > Triggers > Triggers & Sounds (Open / Close an animated object)."), _ownSwitch);
             EditorGUILayout.LabelField("Players standing on a moving platform aren't carried by it.", EditorStyles.miniLabel);
         }
 

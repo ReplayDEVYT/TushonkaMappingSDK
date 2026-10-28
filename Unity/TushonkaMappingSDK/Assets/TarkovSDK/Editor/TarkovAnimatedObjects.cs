@@ -22,7 +22,7 @@ namespace TarkovSDK.Editor
         private const string Menu = "GameObject/Tarkov SDK/";
         public const string Parameter = "IsOpened";
 
-        [MenuItem(Menu + "Interactables/Animated Object", priority = 34)]
+        [MenuItem(Menu + "Interactables/Animated Object", priority = 36)]
         private static void MenuAnimatedObject(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p).Animator.gameObject);
 
         // withSwitch: its own switch opens and closes it; without, connect a zone or switch in Triggers & Sounds

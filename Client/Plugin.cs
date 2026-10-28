@@ -9,7 +9,7 @@ using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.7.0")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.8.0")]
     // loaded after SAIN when it is installed, so SainLocationPatch can find it; never required
     [BepInDependency("me.sol.sain", BepInDependency.DependencyFlags.SoftDependency)]
     // after Fika when it is installed, so FikaForceTransitEnterPatch can find its host transit controller; never required
@@ -97,9 +97,12 @@ namespace mizmii.CustomMapLoader
             Enable(new NullClipQueuedPatch());
             Enable(new BarbedWireSoundPatch());
             Enable(new RaidFeaturesStartPatch());
+            Enable(new MountedGunsSpawnLootPatch());
             Enable(new ForceTransitEnterPatch());
             if (FikaForceTransitEnterPatch.Available())
                 Enable(new FikaForceTransitEnterPatch());
+            if (FikaBtrRunOverPatch.Available())
+                Enable(new FikaBtrRunOverPatch());
             if (SainLocationPatch.Available())
                 Enable(new SainLocationPatch());
         }

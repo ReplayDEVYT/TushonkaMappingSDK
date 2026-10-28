@@ -154,7 +154,7 @@ namespace TarkovSDK.Editor
             if (TarkovLights.LampGroupIsEmpty(group))
                 EditorGUILayout.HelpBox("The group switches nothing yet. Put lights and glowing models under it (or in Fill Light From) and press Fill.", MessageType.Warning);
             if (!TarkovTriggerLinks.Handlers.OfType<HandlerLamp>().Any(h => h._controlledLampGroups != null && h._controlledLampGroups.Contains(group)))
-                EditorGUILayout.HelpBox($"Nothing switches it, so it stays {(group._initialLightState ? "on" : "off")}. Add a light switch, or connect a zone or switch to it in Tarkov SDK > Tools > Interactables > Triggers & Sounds.", MessageType.Info);
+                EditorGUILayout.HelpBox($"Nothing switches it, so it stays {(group._initialLightState ? "on" : "off")}. Add a light switch, or connect a zone or switch to it in Tarkov SDK > Tools > Triggers > Triggers & Sounds.", MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
                 var from = group._fillLightFrom != null ? group._fillLightFrom : group.gameObject;

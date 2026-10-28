@@ -8,7 +8,8 @@ namespace mizmii.CustomMapLoader.Features
 {
     // CustomMapLoader's own in-raid features (Tarkov has none of them), per map, as the SDK's Build Map exports them
     // into sdk_export.json "Features" and the server mod serves them (/custommaploader/features): forced transits,
-    // gear stripping, notifications, captions, health changes and effects. Read once at startup.
+    // gear stripping, notifications, captions, health changes, effects, triggered spawns and shelling, mounted guns
+    // and scripted world events. Read once at startup.
     internal static class FeatureConfig
     {
 #pragma warning disable CS0649 // filled from the server's JSON
@@ -20,6 +21,125 @@ namespace mizmii.CustomMapLoader.Features
             public List<CaptionLink> Captions;
             public List<HealthChange> HealthChanges;
             public List<EffectLink> Effects;
+            public List<MortarStrike> MortarStrikes;
+            public List<SpawnBotsLink> SpawnBots;
+            public List<SpawnLootLink> SpawnLoot;
+            public List<SpawnPrefabLink> SpawnPrefabs;
+            public List<MountedGun> MountedGuns;
+            public List<WorldEvent> WorldEvents;
+        }
+
+        // the game's Utes world prefab, placed with its root here (SdkMountedGuns)
+        internal sealed class MountedGun
+        {
+            public string Id;
+            public string Gun;
+            public Vec Position;
+            // euler degrees
+            public Vec Rotation;
+        }
+
+        internal sealed class WorldEvent
+        {
+            public string Name;
+            // RaidTime, Trigger, RaidTimeOrTrigger
+            public string Start;
+            // seconds from the raid's start
+            public float Earliest;
+            public float Latest;
+            public string TriggerId;
+            public float Chance = 1f;
+            public bool Repeat;
+            public float RepeatMin;
+            public float RepeatMax;
+            public List<WorldEventStep> Steps;
+        }
+
+        internal sealed class WorldEventStep
+        {
+            // seconds after the previous step
+            public float Wait;
+            // FireTrigger, Show, Hide, PlaySound, StopSound, Notification
+            public string Kind;
+            public string TriggerId;
+            // the object by scene name and hierarchy path
+            public string Scene;
+            public string Path;
+            public Notification Notification;
+        }
+
+        internal sealed class SpawnPoint
+        {
+            public Vec Position;
+            // euler degrees
+            public Vec Rotation;
+        }
+
+        internal sealed class Vec
+        {
+            public float x, y, z;
+            public UnityEngine.Vector3 Value => new UnityEngine.Vector3(x, y, z);
+        }
+
+        // a zone of the map's mortar shelling (globals ArtilleryShelling) started by a trigger
+        internal sealed class MortarStrike
+        {
+            public string TriggerId;
+            // the zone's ID as the game has it (a string)
+            public string ZoneId;
+            public float Delay = 15f;
+            public bool Once = true;
+        }
+
+        internal sealed class SpawnBotsLink
+        {
+            public string TriggerId;
+            public bool Once = true;
+            public float Chance = 1f;
+            // WildSpawnType / BotDifficulty names
+            public string Role;
+            public string Difficulty;
+            public int Count = 1;
+            public bool AsGroup = true;
+            public float Delay;
+            public int MaxAliveBots;
+            public List<SpawnPoint> Points;
+        }
+
+        internal sealed class SpawnLootLink
+        {
+            public string TriggerId;
+            public bool Once = true;
+            public float Chance = 1f;
+            // All, OnePerPoint
+            public string Pick;
+            public bool UseGravity = true;
+            public bool RandomRotation = true;
+            public float Delay;
+            public List<LootItem> Items;
+            public List<SpawnPoint> Points;
+        }
+
+        internal sealed class LootItem
+        {
+            public string Template;
+            public int Weight = 1;
+            public int StackCount = 1;
+        }
+
+        internal sealed class SpawnPrefabLink
+        {
+            public string TriggerId;
+            public bool Once = true;
+            public float Chance = 1f;
+            // Spawn, Show, Hide
+            public string Action;
+            // the object (or its template) by scene name and hierarchy path
+            public string Scene;
+            public string Path;
+            public float Delay;
+            public float Lifetime;
+            public List<SpawnPoint> Points;
         }
 
         internal sealed class CaptionLink

@@ -8,5 +8,51 @@ namespace EFT.Interactive
 {
     public class StationaryWeapon : global::EFT.Interactive.InteractableObject
     {
+        [global::UnityEngine.SerializeField]
+        public string _id;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.GameObject[] _gameObjectsWithRenderers;
+        [global::UnityEngine.Serialization.FormerlySerializedAs("BeltPivotChamber")]
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Transform _beltPivotChamber;
+        [global::UnityEngine.Serialization.FormerlySerializedAs("BetlPivotMagazine")]
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Transform _beltPivotMagazine;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Transform _beltEmptyPivotChamber;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Vector2 _initialOrientation;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Vector2 _pitchLimit;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Vector2 _yawLimit;
+        [global::UnityEngine.SerializeField]
+        public global::MagVisualController _magController;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Transform _debugViews;
+        [global::UnityEngine.SerializeField]
+        public global::UnityEngine.Transform _collidersToCut;
+        public string Template;
+        public global::EFT.Interactive.StationaryWeapon.EStationaryAnimationType Animation;
+        public global::UnityEngine.Transform OperatorTransform;
+        public global::UnityEngine.Transform Hinge;
+        public global::UnityEngine.Transform TripodView;
+        public global::UnityEngine.Transform TripodAnchor;
+        public global::UnityEngine.Transform WeaponTransform;
+        public float PitchToleranceUp;
+        public float PitchToleranceDown;
+        public float YawTolerance;
+        public global::EFT.Animations.WeaponMachinery Machinery;
+        public global::MgBelt Belt;
+        public global::MgBelt BeltEmpty;
+        [global::UnityEngine.SerializeField]
+        public global::FollowerCullingObject _cullingObject;
+
+        public enum EStationaryAnimationType
+        {
+            UtesSit = 0,
+            UtesStand = 1,
+            AGS_17 = 2,
+        }
     }
 }

@@ -214,6 +214,8 @@ public class CustomMapLoader(
         var exportPath = Path.Combine(dir, "sdk_export.json");
         List<SdkLootSpawn> lootSpawns = [];
         List<SdkContainer> containers = [];
+        List<SdkContainerGroup> groups = [];
+        List<SdkMountedGun> guns = [];
         var extraLocales = new Dictionary<string, string>();
         // container types whose loot this map sets (custom containers, changed retail ones)
         var lootOverrides = new Dictionary<MongoId, SdkContainerType>();
@@ -232,6 +234,8 @@ public class CustomMapLoader(
                 containers.Add(container);
                 _containerTypes.Add(new MongoId(container.Template));
             }
+            groups = export.ContainerGroups ?? [];
+            guns = export.MountedGuns ?? [];
             locationBase.SpawnPointParams = export.SpawnPointParams ?? [];
             locationBase.Exits = export.Exits ?? [];
             if (export.Transits is { Count: > 0 })
@@ -240,6 +244,8 @@ public class CustomMapLoader(
             locationBase.UnixDateTime = Math.Max(locationBase.UnixDateTime, export.UnixDateTime);
             if (export.Btr != null)
                 RegisterBtr(mapId, export.Btr, extraLocales);
+            if (export.Mortar != null)
+                RegisterMortar(mapId, export.Mortar);
             foreach (var type in export.ContainerTypes ?? [])
                 if (RegisterContainerType(mapId, type, extraLocales))
                     lootOverrides[new MongoId(type.Template)] = type;
@@ -259,7 +265,7 @@ public class CustomMapLoader(
             // every retail map's container pools, keyed by container type, with this map's own on top; only read, never mutated
             StaticLoot = new LazyLoad<Dictionary<MongoId, StaticLootDetails>>(() => MapStaticLoot(lootOverrides), cacheValue: true),
             // not cached: each raid rolls which containers spawn
-            StaticContainers = new LazyLoad<StaticContainerDetails>(() => BuildStaticContainers(mapId, containers), cacheValue: false),
+            StaticContainers = new LazyLoad<StaticContainerDetails>(() => BuildStaticContainers(mapId, containers, groups, guns), cacheValue: false),
             // not cached: SPT's loot generator mutates the loose loot it reads each raid
             LooseLoot = new LazyLoad<LooseLoot>(() => BuildLooseLoot(lootSpawns), cacheValue: false),
             AllExtracts = [],
@@ -273,15 +279,20 @@ public class CustomMapLoader(
 
         logger.Success($"[MappingSDK] Registered map '{mapId}' ({locationBase.IdField}): " +
                        $"{locationBase.SpawnPointParams?.Count() ?? 0} spawn point(s), {locationBase.Exits?.Count() ?? 0} exit(s), " +
-                       $"{lootSpawns.Count} loot spawn(s), {containers.Count} container(s)");
+                       $"{lootSpawns.Count} loot spawn(s), {containers.Count} container(s)" +
+                       (groups.Count > 0 ? $" in {groups.Count} group(s) and alone" : "") + (guns.Count > 0 ? $", {guns.Count} mounted gun(s)" : ""));
     }
 
     // The scene's lootable containers in retail's staticContainers layout: the root item is the
     // container type and the Id is the LootableContainer's. SPT spawns every container on a map
-    // without container randomisation, so the spawn chance is rolled here, once per raid.
-    private StaticContainerDetails BuildStaticContainers(string mapId, List<SdkContainer> containers)
+    // without container randomisation, so the spawn chance is rolled here, once per raid. A container
+    // group's members spawn Min..Max of them, drawn by their chance as SPT's container groups are
+    // (ProbabilityObjectArray.Draw); ones that always spawn (a gear strip's stash) stay out of the draw.
+    private StaticContainerDetails BuildStaticContainers(string mapId, List<SdkContainer> containers, List<SdkContainerGroup> groups, List<SdkMountedGun> guns)
     {
         var list = new List<StaticContainerData>();
+        var groupsById = groups.Where(g => !string.IsNullOrEmpty(g.Id)).GroupBy(g => g.Id).ToDictionary(g => g.Key, g => g.First());
+        var grouped = new Dictionary<string, List<SdkContainer>>();
         foreach (var container in containers)
         {
             // SPT's loot generator throws on a container type that isn't an item (its grid has no size), failing
@@ -291,37 +302,119 @@ public class CustomMapLoader(
                 logger.Warning($"[MappingSDK] {mapId}: container '{container.Id}' uses type {container.Template}, which isn't a container item; it's left out of the raid");
                 continue;
             }
+            if (!container.AlwaysSpawn && !string.IsNullOrEmpty(container.Group) && groupsById.ContainsKey(container.Group))
+            {
+                if (!grouped.TryGetValue(container.Group, out var members))
+                    grouped[container.Group] = members = [];
+                members.Add(container);
+                continue;
+            }
             if (!container.AlwaysSpawn && Random.Shared.NextDouble() >= container.Probability)
                 continue;
-            var root = new MongoId();
-            list.Add(new StaticContainerData
+            list.Add(Spawned(container));
+        }
+        foreach (var (id, members) in grouped)
+        {
+            var group = groupsById[id];
+            int min = Math.Clamp(group.Min, 0, members.Count);
+            int max = Math.Clamp(Math.Max(group.Min, group.Max), 0, members.Count);
+            int count = Random.Shared.Next(min, max + 1);
+            var pool = members.ToList();
+            for (int i = 0; i < count && pool.Count > 0; i++)
             {
-                Probability = 1,
-                Template = new SpawnpointTemplate
+                // a container's chance is its weight; one at 0 % still gets a sliver, so a group can always fill
+                double total = pool.Sum(c => Math.Max(c.Probability, 0.001));
+                double roll = Random.Shared.NextDouble() * total;
+                int pick = 0;
+                for (; pick < pool.Count - 1; pick++)
                 {
-                    Id = container.Id,
-                    IsContainer = true,
-                    UseGravity = false,
-                    RandomRotation = false,
-                    Position = new Vector3(0, 0, 0),
-                    Rotation = new Vector3(0, 0, 0),
-                    IsGroupPosition = false,
-                    GroupPositions = [],
-                    IsAlwaysSpawn = true,
-                    Root = root.ToString(),
-                    Items =
-                    [
-                        new SptLootItem
-                        {
-                            Id = root,
-                            Template = new MongoId(container.Template),
-                            Upd = new Upd { StackObjectsCount = 1 },
-                        },
-                    ],
-                },
+                    roll -= Math.Max(pool[pick].Probability, 0.001);
+                    if (roll < 0)
+                        break;
+                }
+                list.Add(Spawned(pool[pick]));
+                pool.RemoveAt(pick);
+            }
+        }
+        return new StaticContainerDetails { StaticWeapons = StaticWeapons(mapId, guns), StaticContainers = list, StaticForced = [] };
+    }
+
+    private static StaticContainerData Spawned(SdkContainer container)
+    {
+        var root = new MongoId();
+        return new StaticContainerData
+        {
+            Probability = 1,
+            Template = new SpawnpointTemplate
+            {
+                Id = container.Id,
+                IsContainer = true,
+                UseGravity = false,
+                RandomRotation = false,
+                Position = new Vector3(0, 0, 0),
+                Rotation = new Vector3(0, 0, 0),
+                IsGroupPosition = false,
+                GroupPositions = [],
+                IsAlwaysSpawn = true,
+                Root = root.ToString(),
+                Items =
+                [
+                    new SptLootItem
+                    {
+                        Id = root,
+                        Template = new MongoId(container.Template),
+                        Upd = new Upd { StackObjectsCount = 1 },
+                    },
+                ],
+            },
+        };
+    }
+
+    // Mounted guns: a StationaryWeapon only works with its weapon in the raid's loot, matched by Id
+    // (GameWorld.SpawnLoot). Each gets a copy of a retail map's static weapon row (the weapon with its
+    // belt or drum), with new item ids; SPT's loot generator adds every static weapon to the raid.
+    private static readonly Dictionary<string, (string Location, string Id)> GunSources = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Utes"] = ("woods", "WOODS_UTES01"),
+        ["AGS"] = ("rezervbase", "AGS_01"),
+    };
+
+    private readonly Dictionary<string, SpawnpointTemplate?> _gunRows = new(StringComparer.OrdinalIgnoreCase);
+
+    private List<SpawnpointTemplate> StaticWeapons(string mapId, List<SdkMountedGun> guns)
+    {
+        var result = new List<SpawnpointTemplate>();
+        foreach (var gun in guns)
+        {
+            if (string.IsNullOrEmpty(gun.Id) || !GunSources.TryGetValue(gun.Weapon ?? "", out var source))
+            {
+                logger.Warning($"[MappingSDK] {mapId}: mounted gun '{gun.Id}' has an unknown weapon '{gun.Weapon}'; it's left out of the raid");
+                continue;
+            }
+            SpawnpointTemplate? row;
+            lock (_gunRows)
+                if (!_gunRows.TryGetValue(source.Location, out row))
+                    _gunRows[source.Location] = row = locationTable.GetLocation(source.Location)?.StaticContainers?.Value?.StaticWeapons?
+                        .FirstOrDefault(w => w.Id == source.Id);
+            if (row?.Items == null || string.IsNullOrEmpty(row.Root))
+            {
+                logger.Warning($"[MappingSDK] {mapId}: mounted gun '{gun.Id}': {source.Location} has no static weapon {source.Id} to copy; it's left out of the raid");
+                continue;
+            }
+            var copy = cloner.Clone(row)!;
+            var ids = copy.Items!.ToDictionary(i => i.Id.ToString(), _ => new MongoId());
+            result.Add(copy with
+            {
+                Id = gun.Id,
+                Root = ids[row.Root].ToString(),
+                Items = copy.Items!.Select(i => i with
+                {
+                    Id = ids[i.Id.ToString()],
+                    ParentId = i.ParentId != null && ids.TryGetValue(i.ParentId, out var parent) ? parent.ToString() : i.ParentId,
+                }).ToList(),
             });
         }
-        return new StaticContainerDetails { StaticWeapons = [], StaticContainers = list, StaticForced = [] };
+        return result;
     }
 
     // Container pools from every retail map (factory first), so any retail container type gets its
@@ -702,6 +795,26 @@ public class CustomMapLoader(
         }
     }
 
+    // Mortar shelling: BaseLocalGame creates the game's shelling controllers when globals ArtilleryShelling.ArtilleryMapsConfigs
+    // has the map, and they read everything else from that entry (zones, batteries, timing). The SDK writes it in the
+    // globals' own shape; the shell, its sounds and explosion are the game's global assets.
+    private void RegisterMortar(string mapId, ArtilleryMapSettings mortar)
+    {
+        var shelling = globalTable.Configuration.ArtilleryShelling;
+        if (shelling?.ArtilleryMapsConfigs == null)
+        {
+            logger.Warning($"[MappingSDK] {mapId}: SPT's globals have no artillery shelling settings, so the map has no mortar shelling");
+            return;
+        }
+        // ArtilleryShellingControllerClient.Init reads the zones unchecked, and every shot needs a battery
+        if (mortar.ShellingZones?.Any() != true || mortar.Brigades?.Any() != true)
+        {
+            logger.Warning($"[MappingSDK] {mapId}: mortar shelling without zones or batteries is left out");
+            return;
+        }
+        shelling.ArtilleryMapsConfigs[mapId] = mortar;
+    }
+
     private sealed record SdkBtr
     {
         [JsonPropertyName("ChanceSpawn")] public double ChanceSpawn { get; init; } = 100;
@@ -760,8 +873,18 @@ public class CustomMapLoader(
         [JsonPropertyName("Btr")]
         public SdkBtr? Btr { get; init; }
 
+        // globals ArtilleryShelling.ArtilleryMapsConfigs[map], as the SDK writes it
+        [JsonPropertyName("Mortar")]
+        public ArtilleryMapSettings? Mortar { get; init; }
+
         [JsonPropertyName("ContainerTypes")]
         public List<SdkContainerType>? ContainerTypes { get; init; }
+
+        [JsonPropertyName("ContainerGroups")]
+        public List<SdkContainerGroup>? ContainerGroups { get; init; }
+
+        [JsonPropertyName("MountedGuns")]
+        public List<SdkMountedGun>? MountedGuns { get; init; }
 
         // passed to the client as it is (MapFeatures.cs)
         [JsonPropertyName("Features")]
@@ -792,6 +915,22 @@ public class CustomMapLoader(
         [JsonPropertyName("Template")] public string Template { get; init; } = "";
         [JsonPropertyName("Probability")] public double Probability { get; init; } = 1;
         [JsonPropertyName("AlwaysSpawn")] public bool AlwaysSpawn { get; init; } = true;
+        // the container group's Id, or empty
+        [JsonPropertyName("Group")] public string? Group { get; init; }
+    }
+
+    private sealed record SdkContainerGroup
+    {
+        [JsonPropertyName("Id")] public string Id { get; init; } = "";
+        [JsonPropertyName("Min")] public int Min { get; init; }
+        [JsonPropertyName("Max")] public int Max { get; init; } = 1;
+    }
+
+    private sealed record SdkMountedGun
+    {
+        [JsonPropertyName("Id")] public string Id { get; init; } = "";
+        // Utes, AGS
+        [JsonPropertyName("Weapon")] public string? Weapon { get; init; }
     }
 
     private sealed record SdkLootSpawn

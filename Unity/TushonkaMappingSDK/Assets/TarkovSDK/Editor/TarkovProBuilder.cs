@@ -132,7 +132,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ vertex paint material
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/New Vertex Paint Material (On Selected)", priority = 124)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/New Vertex Paint Material (On Selected)", priority = 128)]
         private static void NewVertexPaintMenu() => EditorApplication.delayCall += () =>
         {
             var material = NewVertexPaintMaterial(SceneManager.GetActiveScene());
