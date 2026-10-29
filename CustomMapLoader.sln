@@ -2,7 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.10.12201.205 stable
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomMapLoader", "Server\CustomMapLoader.csproj", "{FF8EF17C-E045-4830-9F29-4360DAA875EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomMapLoader.Server", "Server\CustomMapLoader.csproj", "{FF8EF17C-E045-4830-9F29-4360DAA875EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomMapLoader.Client", "Client\CustomMapLoader.csproj", "{7FDA161B-BCE7-4AA1-95B9-A3938207A2E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StubGenerator", "Tools\StubGenerator\StubGenerator.csproj", "{3C6E1B52-8D47-4F0A-9E21-6A5B7C8D9E01}"
 EndProject
@@ -16,6 +18,10 @@ Global
 		{FF8EF17C-E045-4830-9F29-4360DAA875EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF8EF17C-E045-4830-9F29-4360DAA875EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF8EF17C-E045-4830-9F29-4360DAA875EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FDA161B-BCE7-4AA1-95B9-A3938207A2E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FDA161B-BCE7-4AA1-95B9-A3938207A2E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FDA161B-BCE7-4AA1-95B9-A3938207A2E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FDA161B-BCE7-4AA1-95B9-A3938207A2E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3C6E1B52-8D47-4F0A-9E21-6A5B7C8D9E01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3C6E1B52-8D47-4F0A-9E21-6A5B7C8D9E01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C6E1B52-8D47-4F0A-9E21-6A5B7C8D9E01}.Release|Any CPU.ActiveCfg = Release|Any CPU

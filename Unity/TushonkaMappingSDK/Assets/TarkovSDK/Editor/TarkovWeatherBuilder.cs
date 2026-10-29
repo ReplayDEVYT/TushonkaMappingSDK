@@ -178,8 +178,7 @@ namespace TarkovSDK.Editor
                 if (normals.Count != vertices.Count)
                     mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
-                CreateAsset(mesh, $"{GeneratedFolder}/Meshes/{key}.asset");
-                return _meshes[key] = mesh;
+                return _meshes[key] = Persist(mesh, $"{GeneratedFolder}/Meshes/{key}.asset");
             }
 
             private Material Material(string key)
@@ -208,8 +207,7 @@ namespace TarkovSDK.Editor
                 foreach (var keyword in info["keywords"] ?? new JArray())
                     material.EnableKeyword(keyword.Value<string>());
                 material.renderQueue = info.Value<int?>("renderQueue") ?? -1;
-                CreateAsset(material, $"{GeneratedFolder}/Materials/{Sanitize(material.name)}_{key.GetHashCode() & 0xffff:x4}.mat");
-                return _materials[key] = material;
+                return _materials[key] = Persist(material, $"{GeneratedFolder}/Materials/{Sanitize(material.name)}_{key.GetHashCode() & 0xffff:x4}.mat");
             }
 
             // the SDK's stand-in when one exists, else a generated placeholder with the same name;
@@ -264,8 +262,7 @@ namespace TarkovSDK.Editor
                 if (format == UnityEngine.Experimental.Rendering.GraphicsFormat.None)
                     format = UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm;
                 var texture = new RenderTexture(r.Value<int?>("width") ?? 256, r.Value<int?>("height") ?? 256, 0, format) { name = name };
-                CreateAsset(texture, path);
-                return texture;
+                return Persist(texture, path);
             }
 
             private ScriptableObject Asset(string key)
@@ -279,14 +276,37 @@ namespace TarkovSDK.Editor
                     _skipped.Add(info.Value<string>("type"));
                     return _assets[key] = null;
                 }
-                asset = ScriptableObject.CreateInstance(type);
-                asset.name = info.Value<string>("name") ?? type.Name;
+                var name = info.Value<string>("name") ?? type.Name;
+                var path = $"{GeneratedFolder}/Assets/{Sanitize(name)}.asset";
+                // the asset already there is filled in place: a new one gets a new GUID, and every scene
+                // built with the weather before (other maps, a map's other scenes) loses its reference
+                // (in the raid: no cloud layer, so no clouds and an error every frame)
+                var existing = AssetDatabase.LoadAssetAtPath(path, type) as ScriptableObject;
+                asset = existing != null ? existing : ScriptableObject.CreateInstance(type);
+                asset.name = name;
                 _assets[key] = asset; // before filling: assets may reference each other
-                // filled before it is saved: values written into an existing asset through a
-                // SerializedObject stay in memory unless the asset is marked dirty
                 Fill(asset, (JObject)info["fields"]);
-                CreateAsset(asset, $"{GeneratedFolder}/Assets/{Sanitize(asset.name)}.asset");
+                if (existing != null)
+                    EditorUtility.SetDirty(existing); // values written through a SerializedObject stay in memory otherwise
+                else
+                    CreateAsset(asset, path);
                 return asset;
+            }
+
+            // fresh's values into the asset already at path (keeping its GUID, so scenes built before keep
+            // their references), else fresh saved there; returns the saved one
+            private static T Persist<T>(T fresh, string path) where T : UnityEngine.Object
+            {
+                var existing = AssetDatabase.LoadAssetAtPath<T>(path);
+                if (existing == null)
+                {
+                    CreateAsset(fresh, path);
+                    return fresh;
+                }
+                EditorUtility.CopySerialized(fresh, existing);
+                EditorUtility.SetDirty(existing);
+                UnityEngine.Object.DestroyImmediate(fresh);
+                return existing;
             }
 
             private static void CreateAsset(UnityEngine.Object asset, string path)

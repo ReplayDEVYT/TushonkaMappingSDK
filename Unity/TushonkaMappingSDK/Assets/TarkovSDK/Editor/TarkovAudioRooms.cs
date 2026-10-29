@@ -62,6 +62,8 @@ namespace TarkovSDK.Editor
 
         public static Result Generate(Scene scene)
         {
+            // one system for the whole map, its rooms over every scene of it
+            scene = TarkovSpatialAudio.AudioScene(scene);
             var system = TarkovSpatialAudio.Find(scene) ?? TarkovSpatialAudio.Create(scene);
             var roomsRoot = TarkovSpatialAudio.Rooms(system);
             var portalsRoot = TarkovSpatialAudio.Portals(system);
@@ -70,9 +72,9 @@ namespace TarkovSDK.Editor
             int mask = TarkovRainCover.SolidMask;
             int wallMask = mask | LayerMask.GetMask("Interactive");
             int glassMask = LayerMask.GetMask("TransparentCollider");
-            if (!TarkovRainCover.SolidBounds(scene, mask, out var bounds, TarkovIndoorTriggers.Counts))
+            if (!TarkovRainCover.MapSolidBounds(scene, mask, out var bounds, TarkovIndoorTriggers.Counts))
             {
-                EditorUtility.DisplayDialog("Spatial Audio", "The scene has no solid mesh colliders to scan.", "OK");
+                EditorUtility.DisplayDialog("Spatial Audio", "The map has no solid mesh colliders to scan.", "OK");
                 return null;
             }
 
@@ -156,7 +158,9 @@ namespace TarkovSDK.Editor
                     return cell != null ? regions[cell.Room].Room : outdoor;
                 }
 
-                foreach (var door in Object.FindObjectsOfType<Door>(true).Where(d => d.gameObject.scene == scene))
+                // the map's doors and windows, in any of its scenes (the portals live with the one system)
+                var mapScenes = TarkovMapScenes.MapScenes(scene);
+                foreach (var door in Object.FindObjectsOfType<Door>(true).Where(d => mapScenes.Contains(d.gameObject.scene)))
                 {
                     if (!Plane(door.transform, door.GetComponentsInChildren<Renderer>(true), out var center, out var normal, out var size))
                         continue;
@@ -170,7 +174,7 @@ namespace TarkovSDK.Editor
                     portal.DoorID = door.Id ?? "";
                     result.Doors++;
                 }
-                foreach (var window in Object.FindObjectsOfType<WindowBreaker>(true).Where(w => w.gameObject.scene == scene))
+                foreach (var window in Object.FindObjectsOfType<WindowBreaker>(true).Where(w => mapScenes.Contains(w.gameObject.scene)))
                 {
                     var renderer = window.GetComponent<Renderer>();
                     if (renderer == null || !Plane(window.transform, new[] { renderer }, out var center, out var normal, out var size))

@@ -33,6 +33,8 @@ namespace TarkovSDK.Editor
         [MenuItem("Tarkov SDK/Generation/Essential/Patrol Routes", priority = 103)]
         public static void GenerateMenu()
         {
+            // a map's other scenes carry zones and navmesh too
+            TarkovMapScenes.OpenMapScenes(SceneManager.GetActiveScene());
             var triangulation = NavMesh.CalculateTriangulation();
             if (triangulation.indices.Length == 0)
             {

@@ -60,6 +60,13 @@ namespace TarkovSDK.Editor
         public static GameObject Find(Scene scene) =>
             scene.GetRootGameObjects().FirstOrDefault(g => g.GetComponent<AmbientAudioSystem>() != null);
 
+        // the scene of the map's ambient system (a map has one), else the map's first scene
+        public static Scene MapScene(Scene scene)
+        {
+            var system = TarkovMapScenes.MapScenes(scene).Select(Find).FirstOrDefault(g => g != null);
+            return system != null ? system.scene : TarkovMapScenes.FirstScene(scene);
+        }
+
         public static string MixerEffectsJson => Path.Combine(TarkovWeatherBuilder.ExtractedFolder, "mixer_effects.json");
 
         // ------------------------------------------------------------ build

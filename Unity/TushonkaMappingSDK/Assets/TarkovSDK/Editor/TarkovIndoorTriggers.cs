@@ -62,6 +62,7 @@ namespace TarkovSDK.Editor
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();
+            TarkovMapScenes.OpenMapScenes(scene);
             var root = Generate(scene);
             if (root != null)
             {
@@ -73,15 +74,16 @@ namespace TarkovSDK.Editor
         public static GameObject Find() =>
             Object.FindObjectsOfType<TriggerGroup>(true).Select(g => g.gameObject).FirstOrDefault(g => g.name == RootName);
 
+        // over the whole map (every loaded scene of it), under the EnvironmentManager in its first scene
         public static GameObject Generate(Scene scene)
         {
             Counted.Clear();
             int mask = TarkovRainCover.SolidMask;
             // closed doors count as walls
             int wallMask = mask | LayerMask.GetMask("Interactive");
-            if (!TarkovRainCover.SolidBounds(scene, mask, out var bounds, Counts))
+            if (!TarkovRainCover.MapSolidBounds(scene, mask, out var bounds, Counts))
             {
-                EditorUtility.DisplayDialog("Indoor Triggers", "The scene has no solid mesh colliders to scan.", "OK");
+                EditorUtility.DisplayDialog("Indoor Triggers", "The map has no solid mesh colliders to scan.", "OK");
                 return null;
             }
 

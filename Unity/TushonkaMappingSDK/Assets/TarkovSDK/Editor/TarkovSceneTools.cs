@@ -28,7 +28,18 @@ namespace TarkovSDK.Editor
         {
             // legacy scene bake with the "Humanoid" agent (type 0), the agent bots path with;
             // the NavMeshData asset is referenced by the scene and ships in the scene bundle
+            // a map of several scenes gets one navmesh over all of them, stored in its first scene (Unity loads them)
+            var def = TarkovMapScenes.DefinitionOf(EditorSceneManager.GetActiveScene());
+            var paths = def != null ? TarkovMapScenes.Paths(def) : null;
 #pragma warning disable 618
+            if (paths != null && paths.Count > 1)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                    return;
+                UnityEditor.AI.NavMeshBuilder.BuildNavMeshForMultipleScenes(paths.ToArray());
+                Debug.Log($"[Tarkov SDK] NavMesh baked over all {paths.Count} scenes of '{def.MapId}', stored in the first. Only Navigation Static geometry is included.");
+                return;
+            }
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
 #pragma warning restore 618
             Debug.Log("[Tarkov SDK] NavMesh baked for the active scene. Only Navigation Static geometry is included.");
@@ -513,13 +524,18 @@ namespace TarkovSDK.Editor
             return go.AddComponent<EFT.EnvironmentEffect.IndoorTrigger>();
         }
 
-        // the TriggerGroup EnvironmentManager reads, created (with the manager) when missing
+        // the TriggerGroup EnvironmentManager reads, created (with the manager) when missing: the active scene's
+        // map's, in its first scene when it has one there (the game only reads that one; Build Map gathers it there)
         internal static EFT.EnvironmentEffect.TriggerGroup IndoorTriggerGroup()
         {
-            var manager = Object.FindObjectOfType<EFT.EnvironmentEffect.EnvironmentManager>(true);
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var managers = System.Linq.Enumerable.ToList(TarkovMapScenes.MapComponents<EFT.EnvironmentEffect.EnvironmentManager>(active));
+            var first = TarkovMapScenes.FirstScene(active);
+            var manager = managers.Find(m => m.gameObject.scene == first) ?? (managers.Count > 0 ? managers[0] : null);
             if (manager == null)
             {
                 manager = new GameObject("EnvironmentManager").AddComponent<EFT.EnvironmentEffect.EnvironmentManager>();
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(manager.gameObject, first);
                 Undo.RegisterCreatedObjectUndo(manager.gameObject, "Create EnvironmentManager");
             }
             var group = manager.GetComponentInChildren<EFT.EnvironmentEffect.TriggerGroup>(true);

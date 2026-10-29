@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using EFT.EnvironmentEffect;
 using UnityEditor;
@@ -26,11 +27,12 @@ namespace TarkovSDK.Editor
         public static void GenerateMenu()
         {
             var scene = SceneManager.GetActiveScene();
+            TarkovMapScenes.OpenMapScenes(scene);
             var root = Generate(scene);
             if (root != null)
             {
                 Selection.activeGameObject = root;
-                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.MarkSceneDirty(root.scene);
             }
         }
 
@@ -44,6 +46,24 @@ namespace TarkovSDK.Editor
 
         // layers of the solid geometry the scans hit
         internal static int SolidMask => LayerMask.GetMask("Default", "Terrain", "HighPolyCollider", "LowPolyCollider");
+
+        // the map's rain cover, in any of its loaded scenes
+        public static GameObject FindInMap(Scene scene) =>
+            TarkovMapScenes.MapScenes(scene).Select(Find).FirstOrDefault(c => c != null);
+
+        // SolidBounds over the loaded scenes of the scene's map (TarkovMapScenes.MapScenes)
+        internal static bool MapSolidBounds(Scene scene, int mask, out Bounds bounds, System.Func<Collider, bool> include = null)
+        {
+            bounds = new Bounds();
+            bool any = false;
+            foreach (var s in TarkovMapScenes.MapScenes(scene))
+                if (SolidBounds(s, mask, out var b, include))
+                {
+                    if (!any) { bounds = b; any = true; }
+                    else bounds.Encapsulate(b);
+                }
+            return any;
+        }
 
         // bounds of every solid collider in the scene (that include accepts): the area to scan
         internal static bool SolidBounds(Scene scene, int mask, out Bounds bounds, System.Func<Collider, bool> include = null)
@@ -61,10 +81,11 @@ namespace TarkovSDK.Editor
             return any;
         }
 
+        // over the whole map (every loaded scene of it), saved in its first scene
         public static GameObject Generate(Scene scene)
         {
             int mask = SolidMask;
-            if (!SolidBounds(scene, mask, out var bounds))
+            if (!MapSolidBounds(scene, mask, out var bounds))
             {
                 EditorUtility.DisplayDialog("Rain Cover", "The scene has no solid colliders to scan.", "OK");
                 return null;
@@ -111,9 +132,14 @@ namespace TarkovSDK.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            var old = Find(scene);
-            if (old != null)
-                Undo.DestroyObjectImmediate(old);
+            // one per map: covers made in other scenes before replace with it too
+            foreach (var s in TarkovMapScenes.MapScenes(scene))
+            {
+                var old = Find(s);
+                if (old != null)
+                    Undo.DestroyObjectImmediate(old);
+            }
+            scene = TarkovMapScenes.FirstScene(scene);
             if (covered == 0)
             {
                 Debug.Log("[Tarkov SDK] Rain cover: nothing on the map is covered; the whole map counts as under rain.");

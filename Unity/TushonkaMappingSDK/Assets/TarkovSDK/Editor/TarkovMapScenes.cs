@@ -41,6 +41,8 @@ namespace TarkovSDK.Editor
             new Part { Label = "time of day", Find = TimeOfDay },
             new Part { Label = "AIStationaryController", Find = s => First<AIStationaryController>(s)?.gameObject },
             new Part { Label = "ambient audio system", Find = TarkovAmbientAudioSystem.Find },
+            // the game initialises one; its rooms and bake cover the whole map
+            new Part { Label = "spatial audio system", Find = s => TarkovSpatialAudio.Find(s)?.transform.root.gameObject },
         };
 
         // the full weather system's root, or the simple rig's ("Weather", made by TarkovLightingRig.Create)
@@ -176,6 +178,69 @@ namespace TarkovSDK.Editor
 
         public static List<string> Paths(TarkovMapDefinition def) =>
             def.Scenes.Where(s => s != null).Select(AssetDatabase.GetAssetPath).Where(p => !string.IsNullOrEmpty(p)).ToList();
+
+        // ------------------------------------------------------------ the map a scene belongs to
+
+        private static List<TarkovMapDefinition> _definitions;
+
+        // the Map Definition listing the scene, or null. The definitions are a project search, so they're kept
+        // until the project changes (windows ask on every repaint)
+        public static TarkovMapDefinition DefinitionOf(Scene scene)
+        {
+            if (string.IsNullOrEmpty(scene.path))
+                return null;
+            if (_definitions == null)
+            {
+                _definitions = AssetDatabase.FindAssets("t:TarkovMapDefinition")
+                    .Select(g => AssetDatabase.LoadAssetAtPath<TarkovMapDefinition>(AssetDatabase.GUIDToAssetPath(g))).Where(d => d != null).ToList();
+                EditorApplication.projectChanged -= ForgetDefinitions;
+                EditorApplication.projectChanged += ForgetDefinitions;
+            }
+            // a definition's Scenes list changes without a project change (the inspector), so it's read each time
+            return _definitions.FirstOrDefault(d => d != null && Paths(d).Contains(scene.path));
+        }
+
+        private static void ForgetDefinitions() => _definitions = null;
+
+        // the loaded scenes of the scene's map, in the Map Definition's order (the first scene first); just the
+        // scene when no definition lists it. The map-wide generators (rain cover, indoor triggers, audio rooms,
+        // patrols) scan these together and put what they make in the first one.
+        public static List<Scene> MapScenes(Scene scene)
+        {
+            var def = DefinitionOf(scene);
+            if (def == null)
+                return new List<Scene> { scene };
+            var scenes = Paths(def).Select(SceneManager.GetSceneByPath).Where(s => s.IsValid() && s.isLoaded).ToList();
+            return scenes.Count > 0 ? scenes : new List<Scene> { scene };
+        }
+
+        public static Scene FirstScene(Scene scene) => MapScenes(scene)[0];
+
+        public static IEnumerable<GameObject> MapRoots(Scene scene) => MapScenes(scene).SelectMany(s => s.GetRootGameObjects());
+
+        public static IEnumerable<T> MapComponents<T>(Scene scene) where T : Component =>
+            MapRoots(scene).SelectMany(r => r.GetComponentsInChildren<T>(true));
+
+        // opens the scene's map's closed scenes (additive, the active scene stays), so a map-wide scan sees all of
+        // it; returns the map's scenes. A generator run with half the map closed made rooms, rain cover or patrols
+        // for the open half only.
+        public static List<Scene> OpenMapScenes(Scene scene)
+        {
+            var def = DefinitionOf(scene);
+            if (def != null)
+            {
+                var opened = new List<string>();
+                foreach (var path in Paths(def))
+                    if (!SceneManager.GetSceneByPath(path).isLoaded)
+                    {
+                        EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                        opened.Add(Path.GetFileNameWithoutExtension(path));
+                    }
+                if (opened.Count > 0)
+                    Debug.Log($"[Tarkov SDK] Opened the rest of '{def.MapId}' ({string.Join(", ", opened)}): the scan covers the whole map.");
+            }
+            return MapScenes(scene);
+        }
 
         // open scenes that look like part of the map (a LocationScene, or in the first scene's folder) but aren't in it
         public static List<Scene> NotInMap(TarkovMapDefinition def)

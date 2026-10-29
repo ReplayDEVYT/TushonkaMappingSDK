@@ -77,7 +77,8 @@ namespace TarkovSDK.Editor
 
         private void OnGUI()
         {
-            var scene = SceneManager.GetActiveScene();
+            // the map has one: the scene holding it, else its first scene (where a new one goes), whichever is active
+            var scene = TarkovAmbientAudioSystem.MapScene(SceneManager.GetActiveScene());
             var system = TarkovAmbientAudioSystem.Find(scene);
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUILayout.LabelField("Scene: " + scene.name, EditorStyles.boldLabel);
@@ -166,7 +167,7 @@ namespace TarkovSDK.Editor
             }
 
             EditorGUILayout.Space();
-            if (TarkovSpatialAudio.Find(scene) != null)
+            if (TarkovSpatialAudio.FindInMap(scene) != null)
                 EditorGUILayout.HelpBox("With spatial audio, the indoor ambience is the rooms' room tones: Tarkov SDK > Generation > Audio > Spatial Audio..., Indoor ambience.", MessageType.None);
             else
             {
@@ -301,12 +302,13 @@ namespace TarkovSDK.Editor
                 ConfigureImport(path);
                 var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
                 // with spatial audio, the indoor ambience is the rooms' tones
-                var spatial = TarkovSpatialAudio.Find(scene);
+                var spatial = TarkovSpatialAudio.FindInMap(scene);
                 if (label == "Indoor" || label == "Bunker")
                 {
                     if (spatial != null)
                     {
                         TarkovRoomTones.SetTone(spatial, label == "Bunker", clip, volume);
+                        EditorSceneManager.MarkSceneDirty(spatial.gameObject.scene);
                         filled++;
                         continue;
                     }

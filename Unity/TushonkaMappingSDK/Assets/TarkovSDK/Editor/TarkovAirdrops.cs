@@ -35,6 +35,16 @@ namespace TarkovSDK.Editor
             return root;
         }
 
+        // the scene holding the map's airdrop points, else its first scene
+        public static Scene MapRootScene(Scene scene)
+        {
+            var scenes = TarkovMapScenes.MapScenes(scene);
+            foreach (var s in scenes)
+                if (s.GetRootGameObjects().Any(g => g.name == RootName))
+                    return s;
+            return scenes[0];
+        }
+
         public static AirdropPoint CreatePoint(Transform parent, Vector3 position)
         {
             var go = TarkovFacilitySystems.Child(parent, "AirdropPoint", Vector3.zero);
@@ -45,12 +55,13 @@ namespace TarkovSDK.Editor
         // a point every 'spacing' metres where the sky is open, the ground flat, and there's room for the crate
         public static int Generate(Scene scene, float spacing)
         {
-            if (!TarkovRainCover.SolidBounds(scene, TarkovRainCover.SolidMask, out var bounds))
+            // over the whole map; the points go in its first scene
+            if (!TarkovRainCover.MapSolidBounds(scene, TarkovRainCover.SolidMask, out var bounds))
             {
-                Debug.LogWarning("[Tarkov SDK] Airdrop points: the scene has no solid geometry to drop on.");
+                Debug.LogWarning("[Tarkov SDK] Airdrop points: the map has no solid geometry to drop on.");
                 return 0;
             }
-            var root = Root(scene).transform;
+            var root = Root(MapRootScene(scene)).transform;
             var old = root.Find(GeneratedName);
             if (old != null)
                 Undo.DestroyObjectImmediate(old.gameObject);

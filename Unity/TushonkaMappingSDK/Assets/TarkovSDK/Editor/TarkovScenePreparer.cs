@@ -203,6 +203,12 @@ namespace TarkovSDK.Editor
                             report.Warnings.Add($"{scene.name}: the sky's sun light ('Light' under '{components.name}') was missing and has been recreated; " +
                                                 "it is part of the weather system, don't delete it");
                         }
+                if (full)
+                    foreach (var clouds in TarkovWeatherBuilder.Find(scene).GetComponentsInChildren<EFT.Rendering.Clouds.CloudController>(true))
+                        if (clouds._settings == null || clouds._settings.LayerA == null || clouds._settings.LayerA.CloudTexture == null)
+                            // a weather system built before 1.9.2 lost its assets when another one was built
+                            report.Warnings.Add($"{scene.name}: the weather's clouds ('{clouds.name}') have no cloud layer or texture, so the raid has no clouds; " +
+                                                "rebuild the full weather system (Tarkov SDK > Generation > Time > Time of Day / Weather...)");
                 var ambientSystem = TarkovAmbientAudioSystem.Find(scene);
                 if (ambientSystem != null)
                 {
@@ -214,7 +220,7 @@ namespace TarkovSDK.Editor
                     if (scene.GetRootGameObjects().Any(g => g.name == TarkovAmbienceWindow.RootName))
                         report.Warnings.Add($"{scene.name}: has both {TarkovAmbienceWindow.RootName} beds and the ambient audio system; the beds play on top of it");
                 }
-                if (full && TarkovRainCover.Find(scene) == null)
+                if (full && TarkovRainCover.FindInMap(scene) == null)
                     report.Warnings.Add($"{scene.name}: no rain cover, so rain falls on the screen indoors too " +
                                         "(Tarkov SDK > Generation > Geometry > Rain Cover)");
                 if (full && TarkovWeatherBuilder.Find(scene).activeSelf)
@@ -267,9 +273,13 @@ namespace TarkovSDK.Editor
             var bake = TarkovSpatialAudio.Prepare(scene, report);
             if (bake != null)
                 report.AudioFiles.Add(bake);
-            report.AudioFiles.AddRange(TarkovAcoustics.Files(scene));
-            if (TarkovAcoustics.FindMap(scene) != null && TarkovAcoustics.Files(scene).Count == 0)
-                report.Warnings.Add($"{scene.name}: room acoustics are set up but not baked (Tarkov SDK > Generation > Audio > Spatial Audio..., Bake Acoustics); the raid has no Meta reverb");
+            // Meta's files are the whole map's (terrains carry their geometry in their own scene): taken once
+            if (TarkovSpatialAudio.AudioScene(scene) == scene)
+            {
+                report.AudioFiles.AddRange(TarkovAcoustics.Files(scene).Where(f => !report.AudioFiles.Contains(f)));
+                if (TarkovAcoustics.FindMap(scene) != null && TarkovAcoustics.Files(scene).Count == 0)
+                    report.Warnings.Add($"{scene.name}: room acoustics are set up but not baked (Tarkov SDK > Generation > Audio > Spatial Audio..., Bake Acoustics); the raid has no Meta reverb");
+            }
             var unspatialized = TarkovAudioSources.Broken(scene);
             if (unspatialized.Count > 0)
                 report.Warnings.Add($"{scene.name}: {unspatialized.Count} audio source(s) not set up for Meta XR Audio (e.g. '{TarkovAudioSources.Path(unspatialized[0].transform)}': " +

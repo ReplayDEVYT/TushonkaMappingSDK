@@ -464,11 +464,23 @@ namespace TarkovSDK.Editor
             public List<string> Scenes = new List<string>();
         }
 
-        // the static objects the bake depends on, in the open scenes
-        public static string StaticHash()
+        // the open scenes of the map (all open scenes without a definition)
+        private static List<Scene> BakedScenes(TarkovMapDefinition def)
+        {
+            if (def == null)
+                return OpenScenes().ToList();
+            var paths = TarkovMapScenes.Paths(def);
+            return OpenScenes().Where(s => paths.Contains(s.path)).ToList();
+        }
+
+        // the static objects the bake depends on, in the map's open scenes (another open scene isn't the map's)
+        public static string StaticHash(TarkovMapDefinition def)
         {
             var lines = new List<string>();
-            foreach (var renderer in All<Renderer>())
+            var scenes = BakedScenes(def);
+            IEnumerable<T> InMap<T>() where T : Component =>
+                scenes.SelectMany(s => s.GetRootGameObjects()).SelectMany(r => r.GetComponentsInChildren<T>(true));
+            foreach (var renderer in InMap<Renderer>())
             {
                 var flags = GameObjectUtility.GetStaticEditorFlags(renderer.gameObject);
                 if ((flags & (StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic)) == 0)
@@ -480,7 +492,7 @@ namespace TarkovSDK.Editor
                 var mesh = renderer.GetComponent<MeshFilter>()?.sharedMesh;
                 lines.Add($"{renderer.gameObject.scene.name}/{TarkovAudioSources.Path(t)}|{(int)flags}|{p.x:F2},{p.y:F2},{p.z:F2}|{r.x:F1},{r.y:F1},{r.z:F1}|{s.x:F2},{s.y:F2},{s.z:F2}|{mesh?.name}");
             }
-            foreach (var terrain in All<Terrain>())
+            foreach (var terrain in InMap<Terrain>())
                 lines.Add($"terrain {terrain.gameObject.scene.name}/{terrain.name}|{terrain.transform.position}|{terrain.terrainData?.name}");
             lines.Sort(StringComparer.Ordinal);
             ulong h = 14695981039346656037UL;
@@ -497,6 +509,10 @@ namespace TarkovSDK.Editor
 
         public static string Bake(TarkovMapDefinition def)
         {
+            // Unity bakes every loaded scene together into one data set the map's scenes then share
+            var others = def == null ? new List<Scene>() : OpenScenes().Except(BakedScenes(def)).ToList();
+            if (others.Count > 0)
+                return "Close the scenes that aren't part of the map first (" + string.Join(", ", others.Select(s => string.IsNullOrEmpty(s.name) ? "Untitled" : s.name)) + "): Unity bakes every open scene together.";
             var first = MapScenes(def).Select(SceneManager.GetSceneByPath).FirstOrDefault(s => s.isLoaded);
             if (first.IsValid())
                 SceneManager.SetActiveScene(first);
@@ -522,11 +538,11 @@ namespace TarkovSDK.Editor
             }
             var path = StampPath(def);
             if (path != null)
-                File.WriteAllText(path, JsonUtility.ToJson(new Stamp { Hash = StaticHash(), Baked = DateTime.Now.ToString("u"), Scenes = MapScenes(def) }, true));
+                File.WriteAllText(path, JsonUtility.ToJson(new Stamp { Hash = StaticHash(def), Baked = DateTime.Now.ToString("u"), Scenes = MapScenes(def) }, true));
             AssetDatabase.ImportAsset(path);
-            foreach (var scene in OpenScenes())
+            foreach (var scene in BakedScenes(def))
                 EditorSceneManager.MarkSceneDirty(scene);
-            Debug.Log("[Tarkov SDK] Occlusion baked for " + string.Join(", ", OpenScenes().Select(s => s.name)) +
+            Debug.Log("[Tarkov SDK] Occlusion baked for " + string.Join(", ", BakedScenes(def).Select(s => s.name)) +
                       (def != null && BaseFlag(def) == false ? ". Turn it on in base.json (Culling Helper) for the raid to use it." : "."));
         }
 
@@ -545,7 +561,10 @@ namespace TarkovSDK.Editor
             if (!baked)
                 return ("Not baked." + (on == true ? " base.json has it on: bake, or turn it off." : ""), on == true ? MessageType.Warning : MessageType.None);
             var stamp = ReadStamp(def);
-            if (stamp != null && stamp.Hash != StaticHash())
+            // the hash covers the whole map; with part of it closed it can't be compared
+            if (stamp != null && def != null && BakedScenes(def).Count < TarkovMapScenes.Paths(def).Count)
+                return ("Baked" + (stamp.Baked != null ? " " + stamp.Baked : "") + ". Open all the map's scenes to check it's up to date." + flag, MessageType.Info);
+            if (stamp != null && stamp.Hash != StaticHash(def))
                 return ("Baked, but static objects have changed since: bake again, or objects can vanish in the raid." + flag, MessageType.Warning);
             return ("Baked" + (stamp != null ? " " + stamp.Baked : "") + "." + flag, on == false ? MessageType.Warning : MessageType.Info);
         }
@@ -600,7 +619,7 @@ namespace TarkovSDK.Editor
             if (baked && on == false)
                 yield return "The map has baked occlusion data, but OcculsionCullingEnabled is off in base.json, so the raid doesn't use it (Culling Helper > Turn On In base.json)";
             var stamp = baked ? ReadStamp(def) : null;
-            if (stamp != null && stamp.Hash != StaticHash())
+            if (stamp != null && stamp.Hash != StaticHash(def))
                 yield return "Static objects changed since the occlusion bake; where the old data says something is hidden it vanishes in the raid. Bake again (Tools > Geometry > Culling Helper)";
         }
     }

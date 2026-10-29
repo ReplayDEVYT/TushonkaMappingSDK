@@ -73,7 +73,7 @@ namespace TarkovSDK.Editor
                     UseFull(scene);
             if (full != null)
             {
-                var cover = TarkovRainCover.Find(scene);
+                var cover = TarkovRainCover.FindInMap(scene);
                 EditorGUILayout.LabelField(cover != null
                     ? "Rain cover: generated. Regenerate after changing roofs or buildings."
                     : "Rain cover: none, so the whole map counts as outdoors (rain on the screen everywhere).", EditorStyles.wordWrappedMiniLabel);

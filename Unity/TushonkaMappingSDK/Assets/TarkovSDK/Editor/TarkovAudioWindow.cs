@@ -28,7 +28,8 @@ namespace TarkovSDK.Editor
 
         private void OnGUI()
         {
-            var scene = SceneManager.GetActiveScene();
+            // the map's one system, whichever of its scenes is active
+            var scene = TarkovSpatialAudio.AudioScene(SceneManager.GetActiveScene());
             var system = TarkovSpatialAudio.Find(scene);
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUILayout.LabelField("Spatial audio", EditorStyles.boldLabel);
@@ -94,7 +95,7 @@ namespace TarkovSDK.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Ambience", EditorStyles.boldLabel);
-            var ambient = TarkovAmbientAudioSystem.Find(scene);
+            var ambient = TarkovMapScenes.MapScenes(scene).Select(TarkovAmbientAudioSystem.Find).FirstOrDefault(a => a != null);
             if (ambient == null)
                 EditorGUILayout.HelpBox("No game ambient audio system: add it in Tarkov SDK > Generation > Ambience > Ambient Sounds... (Game System) for wind, rain, day and night " +
                                         "loops and the rooms' reverb and echo.", MessageType.Info);
@@ -105,7 +106,7 @@ namespace TarkovSDK.Editor
                     EditorApplication.delayCall += () =>
                     {
                         TarkovAmbientAudioSystem.AddEnvironmentBlend(ambient);
-                        EditorSceneManager.MarkSceneDirty(scene);
+                        EditorSceneManager.MarkSceneDirty(ambient.scene);
                     };
             }
             else
@@ -184,7 +185,7 @@ namespace TarkovSDK.Editor
             EditorGUILayout.LabelField("Audio sources", EditorStyles.boldLabel);
             if (_brokenSources == null || EditorApplication.timeSinceStartup > _brokenSourcesTime + 5)
             {
-                _brokenSources = TarkovAudioSources.Broken(scene);
+                _brokenSources = TarkovMapScenes.MapScenes(scene).SelectMany(TarkovAudioSources.Broken).ToList();
                 _brokenSourcesTime = EditorApplication.timeSinceStartup;
                 // bunker rooms follow the indoor triggers' Is Bunker as it's ticked
                 EditorApplication.delayCall += () =>
@@ -207,8 +208,12 @@ namespace TarkovSDK.Editor
                 if (GUILayout.Button("Fix Audio Sources"))
                     EditorApplication.delayCall += () =>
                     {
-                        int count = TarkovAudioSources.Fix(scene);
-                        EditorSceneManager.MarkSceneDirty(scene);
+                        int count = 0;
+                        foreach (var s in TarkovMapScenes.MapScenes(scene))
+                        {
+                            count += TarkovAudioSources.Fix(s);
+                            EditorSceneManager.MarkSceneDirty(s);
+                        }
                         Debug.Log($"[Tarkov SDK] {count} audio source(s) set up for Meta XR Audio.");
                         _brokenSources = null;
                         Repaint();
@@ -331,8 +336,11 @@ namespace TarkovSDK.Editor
             });
         }
 
+        // rooms over the whole map (its closed scenes are opened), in its one spatial audio system
         internal static void Generate(Scene scene)
         {
+            TarkovMapScenes.OpenMapScenes(scene);
+            scene = TarkovSpatialAudio.AudioScene(scene);
             var tones = TarkovRoomTones.Capture(TarkovSpatialAudio.Find(scene));
             var result = TarkovAudioRooms.Generate(scene);
             if (result == null)
@@ -346,6 +354,7 @@ namespace TarkovSDK.Editor
 
         private static void BakeRoutes(Scene scene)
         {
+            scene = TarkovSpatialAudio.AudioScene(scene);
             var report = new TarkovScenePreparer.Report();
             var path = TarkovSpatialAudio.Prepare(scene, report, forceRoutes: true);
             foreach (var w in report.Warnings)

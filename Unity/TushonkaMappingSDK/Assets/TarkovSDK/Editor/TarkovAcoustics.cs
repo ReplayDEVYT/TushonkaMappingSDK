@@ -82,11 +82,12 @@ namespace TarkovSDK.Editor
             }
         }
 
+        // over the scene's whole map (TarkovMapScenes.MapScenes): its terrains carry their own geometry in their scene
         public static Component FindMap(Scene scene) =>
-            !Available ? null : scene.GetRootGameObjects().Select(g => g.GetComponentInChildren(MapType, true)).FirstOrDefault(c => c != null);
+            !Available ? null : TarkovMapScenes.MapRoots(scene).Select(g => g.GetComponentInChildren(MapType, true)).FirstOrDefault(c => c != null);
 
         public static Component[] Geometries(Scene scene) =>
-            !Available ? new Component[0] : scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren(GeometryType, true)).ToArray();
+            !Available ? new Component[0] : TarkovMapScenes.MapRoots(scene).SelectMany(g => g.GetComponentsInChildren(GeometryType, true)).ToArray();
 
         // ------------------------------------------------------------ what is baked
 
@@ -125,7 +126,8 @@ namespace TarkovSDK.Editor
                 return selection;
             var skip = new HashSet<GameObject>(new[] { system.gameObject, TarkovAmbientAudioSystem.Find(scene) }.Where(g => g != null));
             var names = new HashSet<string>();
-            foreach (var root in scene.GetRootGameObjects())
+            // every scene of the map: the one spatial audio system hears all of it
+            foreach (var root in TarkovMapScenes.MapRoots(scene))
             {
                 if (skip.Contains(root) || root.CompareTag("EditorOnly") || root.name.StartsWith("SDK_") || root.GetComponentInChildren<AmbientAudioSystem>(true) != null)
                     continue;

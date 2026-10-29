@@ -47,6 +47,18 @@ namespace TarkovSDK.Editor
         public static SpatialAudioSystem Find(Scene scene) =>
             scene.GetRootGameObjects().Select(g => g.GetComponentInChildren<SpatialAudioSystem>(true)).FirstOrDefault(s => s != null);
 
+        // the map's one system (a map has one, as retail's sound scenes): the first scene's, else any of its scenes'
+        public static SpatialAudioSystem FindInMap(Scene scene) =>
+            TarkovMapScenes.MapScenes(scene).Select(Find).FirstOrDefault(s => s != null);
+
+        // the scene the map's spatial audio lives in (its bake and settings are named after it): the system's, else
+        // the map's first scene, where a new one goes
+        public static Scene AudioScene(Scene scene)
+        {
+            var system = FindInMap(scene);
+            return system != null ? system.gameObject.scene : TarkovMapScenes.FirstScene(scene);
+        }
+
         public static SpatialAudioSystem FindAny() => Object.FindObjectsOfType<SpatialAudioSystem>(true).FirstOrDefault();
 
         public static Transform Rooms(SpatialAudioSystem system) => Folder(system.transform, RoomsName);

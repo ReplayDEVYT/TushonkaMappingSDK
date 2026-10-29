@@ -32,7 +32,7 @@ namespace TarkovSDK.Editor
         {
             if (system == null)
                 return 0;
-            var triggers = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<EFT.EnvironmentEffect.IndoorTrigger>(true))
+            var triggers = TarkovMapScenes.MapComponents<EFT.EnvironmentEffect.IndoorTrigger>(scene)
                                 .Where(t => t.IsBunker).ToList();
             int changed = 0;
             foreach (var room in Indoor(system))
@@ -252,7 +252,7 @@ namespace TarkovSDK.Editor
         // "[Indoor] Indoor" (Map > Ambient Sounds...): with spatial audio it plays in every room on top of the
         // room tones, so it should become the room tone
         public static AudioSource IndoorBed(Scene scene) =>
-            scene.GetRootGameObjects()
+            TarkovMapScenes.MapRoots(scene)
                  .Where(g => g.name == TarkovAmbienceWindow.RootName || g.GetComponent<AmbientAudioSystem>() != null)
                  .SelectMany(g => g.GetComponentsInChildren<AudioSource>(true))
                  .FirstOrDefault(s => s.name.Contains("[Indoor]") && !s.name.Contains("[Rain"));

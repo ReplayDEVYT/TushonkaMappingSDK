@@ -50,7 +50,7 @@ namespace TarkovSDK.Editor
         private Dictionary<string, List<TarkovBtrSim.Event>> _checks;
 
         [MenuItem("Tarkov SDK/Tools/World Events/BTR Path Editor...", priority = 119)]
-        private static void Menu() => Open(TarkovBtr.Find(SceneManager.GetActiveScene()));
+        private static void Menu() => Open(TarkovBtr.FindInMap(SceneManager.GetActiveScene()));
 
         public static void Open(MapPathConfig config)
         {
@@ -100,7 +100,7 @@ namespace TarkovSDK.Editor
         private void OnGUI()
         {
             if (_config == null)
-                _config = TarkovBtr.Find(SceneManager.GetActiveScene());
+                _config = TarkovBtr.FindInMap(SceneManager.GetActiveScene());
             if (_config == null)
             {
                 EditorGUILayout.HelpBox("The active scene has no BTR route.", MessageType.Info);

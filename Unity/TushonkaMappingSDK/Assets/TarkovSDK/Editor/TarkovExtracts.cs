@@ -475,8 +475,9 @@ namespace TarkovSDK.Editor
 
         private void OnGUI()
         {
+            // every scene of the map: its exits are listed together
             var scene = SceneManager.GetActiveScene();
-            var roots = scene.GetRootGameObjects();
+            var roots = TarkovMapScenes.MapRoots(scene).ToArray();
             var exfils = roots.SelectMany(r => r.GetComponentsInChildren<ExfiltrationPoint>(true)).ToList();
             var transits = roots.SelectMany(r => r.GetComponentsInChildren<TransitPoint>(true)).ToList();
             _scroll = EditorGUILayout.BeginScrollView(_scroll);

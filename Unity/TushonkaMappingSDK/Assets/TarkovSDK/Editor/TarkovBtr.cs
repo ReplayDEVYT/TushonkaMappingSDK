@@ -34,7 +34,7 @@ namespace TarkovSDK.Editor
         [MenuItem("GameObject/Tarkov SDK/World Events/BTR Route", priority = 78)]
         private static void MenuRoute(MenuCommand cmd)
         {
-            var existing = Find(SceneManager.GetActiveScene());
+            var existing = FindInMap(SceneManager.GetActiveScene());
             if (existing != null)
             {
                 Selection.activeGameObject = existing.gameObject;
@@ -47,10 +47,10 @@ namespace TarkovSDK.Editor
         [MenuItem("Tarkov SDK/Generation/Misc/BTR Roads And Turns", priority = 112)]
         private static void RoadsMenu() => EditorApplication.delayCall += () =>
         {
-            var config = Find(SceneManager.GetActiveScene());
+            var config = FindInMap(SceneManager.GetActiveScene());
             if (config == null)
             {
-                EditorUtility.DisplayDialog("BTR", "The active scene has no BTR route. Add one with GameObject > Tarkov SDK > World Events > BTR Route.", "OK");
+                EditorUtility.DisplayDialog("BTR", "The map has no BTR route. Add one with GameObject > Tarkov SDK > World Events > BTR Route.", "OK");
                 return;
             }
             MapPathConfigEditor.Report(GenerateRoads(config, replace: true));
@@ -58,6 +58,10 @@ namespace TarkovSDK.Editor
 
         public static MapPathConfig Find(Scene scene) =>
             scene.GetRootGameObjects().Select(g => g.GetComponentInChildren<MapPathConfig>(true)).FirstOrDefault(c => c != null);
+
+        // the map's route, in whichever of its scenes it is
+        public static MapPathConfig FindInMap(Scene scene) =>
+            TarkovMapScenes.MapScenes(scene).Select(Find).FirstOrDefault(c => c != null);
 
         public static TarkovBtrSettings Settings(MapPathConfig config, bool create)
         {

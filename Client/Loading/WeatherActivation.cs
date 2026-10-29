@@ -90,7 +90,8 @@ namespace mizmii.CustomMapLoader.Loading
                 // the fog remap data stays as on Customs; WeatherFogDensityPatch makes the world fog
                 // follow the weather and MboitFogTimePatch covers the frames before the raid clock exists
 
-                // a cloud layer without its texture throws every frame (maps built before the SDK saved it)
+                // a cloud layer without its texture throws every frame (maps built before the SDK saved it);
+                // CloudsNotRunningPatch keeps the WeatherController from calling the disabled clouds
                 foreach (var clouds in root.GetComponentsInChildren<EFT.Rendering.Clouds.CloudController>(true))
                 {
                     var layer = HarmonyLib.Traverse.Create(clouds).Field("_settings").GetValue() as EFT.Rendering.Clouds.CloudLayer;
