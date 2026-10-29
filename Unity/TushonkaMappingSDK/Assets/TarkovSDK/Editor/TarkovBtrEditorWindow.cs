@@ -415,6 +415,8 @@ namespace TarkovSDK.Editor
                 StopSim();
             _speed = EditorGUILayout.Slider(new GUIContent("Speed", "Times real time."), _speed, 0.25f, 20f);
             _pause = EditorGUILayout.Slider(new GUIContent("Waits At Stops (s)", "In the preview only; the raid waits as long as the BTR's Waits At Stops."), _pause, 0f, 10f);
+            TarkovGameModelPreview.Enabled = EditorGUILayout.ToggleLeft(new GUIContent("Show The BTR's Model",
+                "Draws the game's BTR (from the game install) at each stop and where the preview drives it."), TarkovGameModelPreview.Enabled);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -669,6 +671,7 @@ namespace TarkovSDK.Editor
                 Handles.color = new Color(1f, 1f, 1f, 0.6f);
                 Handles.DrawAAPolyLine(2f, sim.Trail.Select(p => p + Vector3.up * 0.4f).Append(sim.Position + Vector3.up * 0.4f).ToArray());
             }
+            TarkovGameScenePreviews.ShowBtr(sim.Position, sim.Rotation);
             var color = sim.SlideAngle > 0f ? SlideColor : sim.Reversing ? TurnColor : RouteColor;
             // the BTR's hull, 2.9 x 2.8 x 7.5 m, and its nose
             var matrix = Matrix4x4.TRS(sim.Position + Vector3.up * 1.4f, sim.Rotation, Vector3.one);

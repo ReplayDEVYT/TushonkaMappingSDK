@@ -36,16 +36,16 @@ namespace TarkovSDK.Editor
         private const string AreaSourceMaterialPath = "Assets/TarkovSDK/Materials/AreaLightSource.mat";
         private static readonly Color Warm = new Color(1f, 0.86f, 0.68f);
 
-        [MenuItem(Menu + "Lamp", priority = 50)]
+        [MenuItem(Menu + "Lamp", priority = 51)]
         private static void MenuLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Point).gameObject);
 
-        [MenuItem(Menu + "Spot Lamp", priority = 51)]
+        [MenuItem(Menu + "Spot Lamp", priority = 52)]
         private static void MenuSpotLamp(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLamp(p, LightType.Spot).gameObject);
 
-        [MenuItem(Menu + "Area Light", priority = 52)]
+        [MenuItem(Menu + "Area Light", priority = 53)]
         private static void MenuAreaLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAreaLight(p, LampOf(cmd)).gameObject);
 
-        [MenuItem(Menu + "Lens Flare", priority = 54)]
+        [MenuItem(Menu + "Lens Flare", priority = 55)]
         private static void MenuFlare(MenuCommand cmd)
         {
             TarkovSceneTools.Place(cmd, p => CreateFlare(p, LampOf(cmd)).gameObject);
@@ -54,11 +54,11 @@ namespace TarkovSDK.Editor
                 EditorApplication.delayCall += AddFlareSettingsMenu;
         }
 
-        [MenuItem(Menu + "Advanced Light", priority = 53)]
+        [MenuItem(Menu + "Advanced Light", priority = 54)]
         private static void MenuAdvancedLight(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateAdvancedLight(p, LampOf(cmd)).gameObject);
 
         // right-clicking an object that holds lights makes it the group, as retail's INTERACTIVE_Light
-        [MenuItem(Menu + "Controlled Lamp Group", priority = 55)]
+        [MenuItem(Menu + "Controlled Lamp Group", priority = 56)]
         private static void MenuLampGroup(MenuCommand cmd)
         {
             var target = cmd.context as GameObject;
@@ -145,11 +145,19 @@ namespace TarkovSDK.Editor
             light.lightmapBakeType = LightmapBakeType.Realtime;
 
             var culling = lightObject.AddComponent<CullingLightObject>();
+            ConfigureCulling(culling, light);
+            return light;
+        }
+
+        // the CullingLightObject values the SDK's lights get: off beyond distance (fading out over its last 20%),
+        // shadows from 10 to 16 m
+        public static void ConfigureCulling(CullingLightObject culling, Light light, float distance = 50f)
+        {
             culling._light = light;
-            culling._transform = lightObject.transform;
-            culling.CullDistance = 50f;
-            culling._fadeStartDistance = 40f;
-            culling._fadeEndDistance = 50f;
+            culling._transform = light.transform;
+            culling.CullDistance = distance;
+            culling._fadeStartDistance = distance * 0.8f;
+            culling._fadeEndDistance = distance;
             culling._fadeCurve = new AnimationCurve();
             culling._useLightIntensityFromEditor = true;
             culling._maxLightIntensity = light.intensity;
@@ -157,7 +165,6 @@ namespace TarkovSDK.Editor
             culling._shadowsFadeStartDistance = 10f;
             culling._shadowsFadeEndDistance = 16f;
             culling._initialShadowsMode = light.shadows;
-            return light;
         }
 
         // ------------------------------------------------------------ controlled lamp group

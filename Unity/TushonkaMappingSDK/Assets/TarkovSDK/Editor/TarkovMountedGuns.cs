@@ -17,7 +17,12 @@ namespace TarkovSDK.Editor
     //    0.917 m below its root and its tripod's feet 0.588 m, so the tripod stands 0.33 m up: retail Customs' Utes sit
     //    on sandbags and pallets (CUSTOM_UTES01_crouch), and the SDK's has a crate platform under it. The Scene view draws
     //    the prefab from the game install (TarkovGameModelPreview).
-    //    The AGS-30 has no world prefab outside retail scenes.
+    //  - Mounted Gun (AGS-30): the AGS-30 has no world prefab in its bundle, only in retail scenes (Customs'
+    //    custom_DesignMain CUSTOM_AGS01_crouch, Reserve's AGS_group, Lighthouse, Ground Zero, Streets:
+    //    weapon_zid_ags30_30x29_world, its StationaryWeapon + AGSMachinery on a Script child, the belt an MgBelt on
+    //    CharacterJoints). The Asset Importer's reader brings that object in from the game install, once, as
+    //    Assets/TarkovGameAssets/Prefabs/Mounted Guns/AGS-30.prefab (every reference stays inside it), and it's placed as
+    //    an ordinary scene StationaryWeapon, exported InScene like a ripped retail gun (the server's AGS_01 item).
     //  - StationaryWeapons already in the scene (from a ripped retail map): kept, given ids, their item exported too.
     // Bots don't man them (that needs AIStationaryController links the SDK doesn't make).
     public static class TarkovMountedGuns
@@ -32,6 +37,91 @@ namespace TarkovSDK.Editor
 
         [MenuItem("GameObject/Tarkov SDK/Interactables/Mounted Gun (Utes)", priority = 37)]
         private static void MenuUtes(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p).transform.parent.gameObject);
+
+        // creates assets the first time, so outside the menu's own call
+        [MenuItem("GameObject/Tarkov SDK/Interactables/Mounted Gun (AGS-30)", priority = 38)]
+        private static void MenuAgs(MenuCommand cmd) => EditorApplication.delayCall += () => TarkovSceneTools.Place(cmd, CreateAgs);
+
+        public const string AgsPrefabPath = TarkovGameAssets.Root + "/Prefabs/Mounted Guns/AGS-30.prefab";
+        private static readonly string[] AgsScenes = { "custom_DesignMain", "Reserve_Base_DesignMain", "Lighthouse_DesignMain", "Sandbox_Design_Main", "City_Design_Main" };
+
+        // the game's AGS-30, imported from the first retail scene that has one (once; reused after)
+        public static GameObject AgsPrefab(out string error)
+        {
+            error = null;
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AgsPrefabPath);
+            if (prefab != null)
+                return prefab;
+            if (!TarkovGameData.Available)
+            {
+                error = $"The AGS-30 comes from the game install, and there's none at {TarkovGameData.Folder}. Set Spt Root on your Map Definition, " +
+                        "or pick the game's EscapeFromTarkov_Data with Change... in Tarkov SDK > Tools > Asset Importer.";
+                return null;
+            }
+            var files = TarkovGameData.Files;
+            var scenes = TarkovGameData.Scenes;
+            try
+            {
+                foreach (var name in AgsScenes)
+                {
+                    int index = scenes.FindIndex(s => s.EndsWith("/" + name + ".unity", StringComparison.OrdinalIgnoreCase));
+                    if (index < 0)
+                        continue;
+                    EditorUtility.DisplayProgressBar("Mounted Gun (AGS-30)", $"Reading the AGS-30 from {name}", 0.4f);
+                    var tree = GameSceneCache.Get(files, index);
+                    var script = tree?.Nodes.Values.FirstOrDefault(n => n.Scripts.Contains("EFT.Animations.AGSMachinery") && n.Scripts.Contains("EFT.Interactive.StationaryWeapon"));
+                    var world = script != null ? tree.Get(script.Parent) : null;
+                    if (world == null)
+                        continue;
+                    TarkovGeneratedAssets.EnsureFolder(System.IO.Path.GetDirectoryName(AgsPrefabPath).Replace('\\', '/'));
+                    var store = new GameAssetStore(files);
+                    var made = TarkovGameObjects.ImportPrefab(files, tree, world, AgsPrefabPath, store);
+                    AssetDatabase.SaveAssets();
+                    if (store.Notes.Count > 0)
+                        Debug.Log($"[Tarkov SDK] AGS-30 from {name}: " + string.Join("; ", store.Notes.Distinct()));
+                    if (made != null)
+                    {
+                        Debug.Log($"[Tarkov SDK] The game's AGS-30 imported from {name} into {AgsPrefabPath}");
+                        return made;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                error = "The AGS-30 didn't import: " + e.Message;
+                return null;
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+            error = "The game's AGS-30 wasn't found in its retail scenes.";
+            return null;
+        }
+
+        // the game's AGS-30 on the ground at the spot, facing its forward
+        public static GameObject CreateAgs(Transform parent)
+        {
+            var prefab = AgsPrefab(out var error);
+            if (prefab == null)
+            {
+                EditorUtility.DisplayDialog("Mounted Gun (AGS-30)", error, "OK");
+                return null;
+            }
+            var root = new GameObject("MountedGun_AGS");
+            if (parent != null)
+                root.transform.SetParent(parent, false);
+            var gun = (GameObject)PrefabUtility.InstantiatePrefab(prefab, root.scene);
+            gun.transform.SetParent(root.transform, false);
+            // its tripod's feet on the ground
+            var renderers = gun.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                float bottom = renderers.Min(r => r.bounds.min.y);
+                gun.transform.localPosition = new Vector3(0f, root.transform.position.y - bottom, 0f);
+            }
+            return root;
+        }
 
         // the gun's spot: a crate platform for the tripod, and the marker at the gunner's feet
         public static TarkovMountedGun Create(Transform parent)

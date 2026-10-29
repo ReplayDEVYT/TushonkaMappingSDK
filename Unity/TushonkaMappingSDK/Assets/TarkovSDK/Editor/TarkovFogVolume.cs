@@ -18,7 +18,7 @@ namespace TarkovSDK.Editor
         private const string TexturePath = "Assets/TarkovSDK/Materials/FogPuff.png";
         private const string ShaderName = "Tarkov/Global Fog/Particle Alpha Blended Lighted";
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Fog Volume", priority = 67)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Fog Volume", priority = 68)]
         private static void MenuFogVolume(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateFogVolume(p).gameObject);
 
         public static ParticleSystem CreateFogVolume(Transform parent)

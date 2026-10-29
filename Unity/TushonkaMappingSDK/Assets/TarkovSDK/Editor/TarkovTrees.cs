@@ -50,10 +50,10 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ the SDK's own trees
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Pine)", priority = 69)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Pine)", priority = 70)]
         private static void MenuPine(MenuCommand cmd) => Place(cmd, "SDK_Pine");
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Broadleaf)", priority = 70)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Broadleaf)", priority = 71)]
         private static void MenuBroadleaf(MenuCommand cmd) => Place(cmd, "SDK_Broadleaf");
 
         private static void Place(MenuCommand cmd, string name) => EditorApplication.delayCall += () =>
@@ -847,7 +847,7 @@ namespace TarkovSDK.Editor
         private readonly TarkovTrees.Options _options = new TarkovTrees.Options();
         private List<string> _notes;
 
-        [MenuItem("Tarkov SDK/Decompilation/Tree Builder...", priority = 152)]
+        [MenuItem("Tarkov SDK/Decompilation/Tree Builder...", priority = 153)]
         private static void Open()
         {
             var window = GetWindow<TarkovTreeBuilderWindow>("Tree Builder");

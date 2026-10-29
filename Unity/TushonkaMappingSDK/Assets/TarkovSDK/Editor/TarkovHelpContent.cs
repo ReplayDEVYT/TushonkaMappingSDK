@@ -52,7 +52,7 @@ namespace TarkovSDK.Editor
                       "The CustomMapLoader client plugin and server mod must be installed, the same version as the SDK."),
                     S("The menus",
                       "Tarkov SDK in the menu bar: Build Selected Map; Generation (things made for the whole map: navmesh, indoor triggers, patrols, audio, weather, rain cover, airdrops, BTR roads); " +
-                      "Tools (windows: extracts, loot containers, triggers, world events (BTR Path Editor, mortar shelling, scripted events), geometry (wire tool), lighting); Map Settings (new map, map pack, Server Data Editor); " +
+                      "Tools (windows: extracts, loot containers, triggers, world events (BTR Path Editor, mortar shelling, scripted events), geometry (wire tool, player scale, culling helper, city builder), lighting, and the Asset Importer); Map Settings (new map, map pack, Server Data Editor); " +
                       "Decompilation (AssetRipper import, Clean Up Ripped Scene, ripped material fixes, Prefab Library, Tree Builder); Quick Fixes; Install Packages; Help.\n" +
                       "GameObject > Tarkov SDK (also the Hierarchy's right-click menu) places objects: spawns, exfils, AI, interactables, hazards, lights, sound, environment (terrain, trees, fog, wires), quests, " +
                       "world events (airdrops, BTR, mortar, scripted events) and triggers (shootable triggers and what a trigger id does)."),
@@ -76,6 +76,24 @@ namespace TarkovSDK.Editor
                       "Build Map moves them from the other scenes and keeps ids (doors, lamps, windows, spawn points, exfil names, quest zones) unique across all of them. " +
                       "Unity doesn't save references between scenes, so a switch and the door it opens belong in the same scene; trigger ids work across scenes. " +
                       "Bake the navmesh, rain cover, indoor triggers and spatial audio with all the scenes open."),
+                    S("The player's size",
+                      "Tarkov SDK > Tools > Geometry > Player Scale... has the game's sizes: 1.8 m tall, a 1.6 m collision capsule standing (1.2 m crouched, 0.3 m prone, 0.73 m wide), " +
+                      "steps up to 0.2 m, slopes up to 50 degrees, vaults over 0.25 to 1.1 m (up to 0.41 m deep), climbs onto 1.31 m, falls 3 m without damage. Retail doors are 2.1 to 2.2 m tall. " +
+                      "A figure follows the mouse in the Scene view or is placed (EditorOnly); Measure takes two clicks and says whether the player can step, vault, climb or drop between them; " +
+                      "Measure The Open Scenes puts the map's size next to the retail maps'."),
+                    S("Culling (drawing less)",
+                      "Tarkov SDK > Tools > Geometry > Culling Helper... does what retail maps do so the raid doesn't draw what can't be seen. Occlusion culling (Factory, Labs, Shoreline, Interchange): " +
+                      "Mark Static Objects, Bake with all map scenes open, then Turn On In base.json (OcculsionCullingEnabled) and restart the server; bake last, since what moves after the bake can vanish. " +
+                      "Lights: a CullingLightObject on every light, off beyond a distance. Small objects: an LOD group that culls below 2% of the screen, as on Customs."),
+                    S("A city (City Builder)",
+                      "Tarkov SDK > Tools > Geometry > City Builder...: New City, New Kit, then fill the kit with materials (roads, sidewalks, kerbs, block and park ground, markings) and prefabs " +
+                      "(buildings, lamps, street props, cars, trees, park props), yours or Tarkov's: in the Asset Importer pick objects or materials and press Add To City Kit. " +
+                      "Set each prefab's Front (which way its door side or bonnet points). Generate lays out blocks and streets from the seed and builds the ground (colliders, asphalt and concrete surfaces), " +
+                      "buildings along the streets, lamps, props, parked cars and trees. Generate replaces what it built before (not undoable); bake the navmesh after. " +
+                      "By hand: the Roads tab draws roads by clicking points (a smooth curve with sidewalks, kerbs, lane lines, lying on the ground) and places junctions (R turns them; on slopes Fit To Ground tilts one to the ground); " +
+                      "a road that ends on a junction's arm joins it. Drag a selected road's points, Ctrl-click it to add one; the curve editor (Roads tab) gives each point a mode (Smooth, Aligned, Free, Corner; right-click a point) with blue handles to drag, and a height profile to raise or lower the road at each point. " +
+                      "Intersections: Place Junctions on a road's middle cuts it into a crossroads, drawing a road into another's middle makes a T, Intersect Crossing Roads does every crossing. Line This Road fills its sides with the kit's buildings, lamps, trees, props and cars. " +
+                      "The Place tab is a brush of the kit's prefabs: with Snap To Roads buildings stand behind the nearest road's sidewalk facing it, cars park at the kerb."),
                     S("After a build",
                       "Restart the SPT server: it reads base.json, locale.json and sdk_export.json only at startup. The game itself can stay closed or be restarted; the bundles are read when a raid loads."),
                     S("Where the logs are",
@@ -177,7 +195,9 @@ namespace TarkovSDK.Editor
                       "The rest aren't in that raid. A gear strip's stash always spawns."),
                     S("Mounted guns",
                       "Interactables > Mounted Gun (Utes): the game's own NSV Utes is placed in the raid where the marker stands (the gunner's spot, facing where it fires; it turns 20 degrees either way), with a crate platform under its tripod, " +
-                      "as retail Customs' sandbagged guns. The Scene view draws the game's own gun there, read from your game install (Show The Gun in the marker's inspector). Mounted guns from a ripped retail scene (Utes or AGS) work too. Bots don't man them."),
+                      "as retail Customs' sandbagged guns. The Scene view draws the game's own gun there, read from your game install (Show The Gun in the marker's inspector). Mounted guns from a ripped retail scene (Utes or AGS) work too. Bots don't man them.\n" +
+                      "Interactables > Mounted Gun (AGS-30): the game's AGS-30 on its tripod, feet on the ground, firing along the object's forward. The first one is read from your game install's " +
+                      "retail maps into Assets/TarkovGameAssets/Prefabs/Mounted Guns (it exists only there); it's the game's own gun, so it works in the raid as a ripped one does."),
                     S("Breachable doors",
                       "Interactables > Breachable Door, or Tools > Interactables > Make Selected Doors Breachable: kicking the door in (Breach) splinters it as retail's wooden doors do: chips and dust burst from the lock, " +
                       "splinters drop, and broken wood shows round the lock. Any shut or locked door with Can Be Breached can be kicked open; this adds the splintering (the game's BrokenDoor)."),
@@ -227,16 +247,24 @@ namespace TarkovSDK.Editor
                 Name = "Decompilation",
                 Sections = new[]
                 {
+                    S("Asset Importer (objects from the retail maps)",
+                      "For single objects from Tarkov's maps (a door, a crate, a lamp, a tree), use Tarkov SDK > Tools > Asset Importer... instead of a rip: it reads them straight from the game install " +
+                      "(the Map Definition's Spt Root, or Change...). Pick a map and press Read (once; it's remembered), pick a kind (doors, containers, switches, lamps, windows, mounted guns, explosives, fires, particles, trees, " +
+                      "props, buildings, materials, sounds, data; the Effects tab has the game's explosions and impacts, each effect whole), and Import the objects you pick, or drag one into the Scene view. Each becomes a prefab in the map's Prefabs/<Category>/ (the Prefab Library shows it) with its meshes, " +
+                      "materials, textures, colliders, lights, LOD groups, particle systems and game components with their values; the assets go in Assets/TarkovGameAssets/. Components the SDK has no class for are left out " +
+                      "(the Console lists them). Materials come in as .mat files (drop one on an object to put it on); sounds play with a double-click and come in as .wav files (drop one in the Scene view for a sound source). " +
+                      "Data: a map's Lighting is applied to the open scenes' LevelSettings, time of day and ambient light (values only, Undo reverts it); its PRISM preset is made from the map camera's post-processing and can go on LevelSettings' Prism Preset Prefab. " +
+                      "The rest of this tab is for ripping entire maps."),
                     new Section
                     {
                         Title = "Using assets from the game",
-                        Text = "Rip the maps you want with AssetRipper, then use Tarkov SDK > Decompilation > Import AssetRipper Export. You don't need the whole game: the list below says which levelN files " +
+                        Text = "To rip entire maps and their assets, rip them with AssetRipper, then use Tarkov SDK > Decompilation > Import AssetRipper Export. You don't need the whole game: the list below says which levelN files " +
                                "in EscapeFromTarkov_Data make up each retail map (Customs is bigmap); open only those in AssetRipper (File > Open File; it loads what they depend on by itself) " +
                                "and Export > Export All Files as a Unity project. Don't copy the export into Assets yourself: its decompiled scripts clash with the SDK's game stubs and the project stops compiling (and then no SDK menu works).",
                         Link = "https://gist.github.com/DrakiaXYZ/0c392b4ad6781f287e3f281bdc79e70e",
                     },
                     S("Import AssetRipper Export",
-                      "Read Export indexes the rip. Search and pick prefabs, models, materials, textures or scenes; Bring what they use adds every mesh, material, texture, sound, animation and prefab they reference. " +
+                      "Read Export indexes the rip. Search and pick prefabs, models, materials, textures or scenes (500 a page; Pick All Matching takes every page); Bring what they use adds every mesh, material, texture, sound, animation and prefab they reference. " +
                       "On import, components are moved onto the SDK's stubs (same fields, so their values stay), materials onto the SDK's shader stand-ins, and game shaders without a stand-in come in renamed Tarkov/<name> " +
                       "so the raid swaps the real one in. Scripts the SDK has no stub for are listed in the Console and removed from the prefabs."),
                     S("Clean Up Ripped Scene",
@@ -245,10 +273,10 @@ namespace TarkovSDK.Editor
                       "scene singletons the map has twice, a retail spatial audio system. Save the scene afterwards."),
                     S("Prefab Library",
                       "Decompilation > Prefab Library...: Extract From Open Scenes turns every distinct door, container, switch, lamp, window, mounted gun, explosive, fire, tree and prop of a ripped scene into a prefab " +
-                      "(one per distinct object), in the map's folder under Prefabs/<Category>/. Make Prefabs From Selected does it for the selected objects. Browse them by category, search, and drag one into the Scene view " +
+                      "(one per distinct object), in the map's folder under Prefabs/<Category>/. Make Prefabs From Selected does it for the selected objects. Browse them by category, search, a page at a time (only what's on screen loads), and drag one into the Scene view " +
                       "(double-click places it at the view's centre). Ids are cleared, so Build Map gives each placed copy its own."),
                     S("Fix folders already in the project",
-                      "Select a folder in the Project window: Decompilation > Fix Ripped Materials In Selected Folder (stand-ins and Tarkov/ renames), Remove Missing Scripts In Selected Folder."),
+                      "Select a folder in the Project window: Decompilation > Fix Ripped Materials In Selected Folder (stand-ins and Tarkov/ renames), Remove Missing Scripts In Selected Folder (it also deletes the empty TextMeshPro fonts older imports brought in, which make TMP throw NullReferenceException in ReadFontAssetDefinition). Components left off at import (no class in the SDK) come back with their game values from the import window's Restore Components, once the project has the class (stub-roots.txt + regenerate, or your own script of the same name); it needs the export still on disk. Decompilation > Adjust Prefabs... repairs a folder of ripped prefabs (layers, ballistics, interactable settings, lamps, windows, ids, collision) and rebuilds doors, containers and lamps that lost their game components; Preview first."),
                     S("Trees",
                       "GameObject > Tarkov SDK > Environment > Tree (Pine / Broadleaf) places the SDK's own trees. Decompilation > Tree Builder turns any tree into a game-ready one: a tree imported from another map keeps its SpeedTree meshes, " +
                       "materials and wind; any other model gets its bark and leaves on the game's tree shader (Nature/SpeedTreeEFT), and every tree gets LODs, a trunk that blocks players and bullets (wood), and the canopy triggers that rustle " +
@@ -304,6 +332,12 @@ namespace TarkovSDK.Editor
             M("Build", "Asset bundle build failed", D, "Unity couldn't build the bundles.", "Look at the Console's first red error above it: usually a script error, a missing asset or a full disk."),
             M("Build", "is not an SPT install (no EscapeFromTarkov.exe)", D, "Deploy To Game points at a folder without the game.", "Set Spt Root on the Map Definition to your SPT folder (the one with EscapeFromTarkov.exe)."),
             M("Build", "No navmesh found in any map scene", W, "Bots walk only on the navmesh, and the client builds their cover and patrols from it.", "Tarkov SDK > Generation > Essential > Bake NavMesh."),
+            M("Build", "but the map has no baked occlusion data", W, "base.json turns on the raid camera's occlusion culling, but there's nothing baked to cull with.",
+                "Bake it (Tarkov SDK > Tools > Geometry > Culling Helper: Mark Static Objects, Bake), or turn it off there."),
+            M("Build", "but OcculsionCullingEnabled is off in base.json", W, "The map's scenes have baked occlusion culling, but the raid camera only uses it when base.json says so.",
+                "Culling Helper > Turn On In base.json, then restart the SPT server. Or Clear the bake if you don't want it."),
+            M("Build", "Static objects changed since the occlusion bake", W, "The bake says what hides what; an object moved, added or removed since then can vanish in the raid where the old bake says it's hidden, or show through a wall that's gone.",
+                "Bake again with all map scenes open (Culling Helper > Bake)."),
             M("Build", "The map has no SpawnPointMarker", E, "The player has nowhere to spawn, so the raid can't start.", "Add GameObject > Tarkov SDK > Spawns > Spawn Point (PMC)."),
 
             // fire, explosives, shootable triggers

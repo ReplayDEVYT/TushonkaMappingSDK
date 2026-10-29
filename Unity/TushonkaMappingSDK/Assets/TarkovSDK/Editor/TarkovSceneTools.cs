@@ -251,7 +251,7 @@ namespace TarkovSDK.Editor
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 66)]
+        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 67)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -266,7 +266,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 65)]
+        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 66)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -376,6 +376,8 @@ namespace TarkovSDK.Editor
         {
             var parent = (cmd.context as GameObject)?.transform;
             var go = create(parent);
+            if (go == null)
+                return;
             if (parent == null && SceneView.lastActiveSceneView != null)
                 go.transform.position = SceneView.lastActiveSceneView.pivot;
             Undo.RegisterCreatedObjectUndo(go, "Create " + go.name);

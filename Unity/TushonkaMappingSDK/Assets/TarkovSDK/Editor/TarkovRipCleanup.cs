@@ -247,7 +247,7 @@ namespace TarkovSDK.Editor
             using (new EditorGUI.DisabledScope(!_findings.Any(f => f.Fixable && f.Enabled && f.Items.Count > 0)))
                 if (GUILayout.Button("Clean", GUILayout.Height(28f)))
                     EditorApplication.delayCall += Clean;
-            if (_result != null)
+            if (!string.IsNullOrEmpty(_result))
                 EditorGUILayout.HelpBox(_result, MessageType.Info);
             EditorGUILayout.EndScrollView();
         }

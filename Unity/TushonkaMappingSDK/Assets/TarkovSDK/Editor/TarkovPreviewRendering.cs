@@ -43,6 +43,7 @@ namespace TarkovSDK.Editor
         // why the model isn't shown, when it isn't
         public static string UtesError { get; private set; }
 
+        // also the switch for the other game models (TarkovGameScenePreviews)
         public static bool Enabled
         {
             get => EditorPrefs.GetBool(EnabledKey, true);
@@ -75,7 +76,7 @@ namespace TarkovSDK.Editor
             _loading = false;
         }
 
-        private static string GameData() => EditorPrefs.GetString("TarkovSDK.GameData", "C:/spt41/EscapeFromTarkov_Data");
+        private static string GameData() => TarkovGameData.Folder;
 
         private static void Load()
         {
@@ -177,6 +178,282 @@ namespace TarkovSDK.Editor
                         for (int i = 0; i < part.Mesh.subMeshCount; i++)
                             Graphics.DrawMesh(part.Mesh, matrix * part.Local, part.Materials[Mathf.Min(i, part.Materials.Length - 1)], 0, camera, i);
             }
+        }
+    }
+
+    // The game's own models over the SDK's markers in Scene views (TarkovGameModelPreview.Enabled switches them with the
+    // gun's): loot spawns show their first item (its bundle from SPT's items.json Prefab path), airdrop points the
+    // airdrop crate (scontainer_crate.bundle's default view), BTR stops and the BTR Path Editor's playing BTR the BTR
+    // (Resources btrtemplates/client/btrview/btrviewtemplate in resources.assets, read by TarkovGameFiles). Birds keep
+    // the SDK's own: the game ships no bird model. Bundles are loaded with the bundles their meshes and textures are in
+    // (Windows.json), not the game's shaders, so their materials go onto the p0 stand-in, as the gun's do.
+    [InitializeOnLoad]
+    public static class TarkovGameScenePreviews
+    {
+        private const string CrateBundle = "assets/content/location_objects/lootable/prefab/scontainer_crate.bundle";
+        private const string BtrResource = "btrtemplates/client/btrview/btrviewtemplate";
+
+        private static readonly Dictionary<string, GameModel> Models = new Dictionary<string, GameModel>();
+        private static readonly HashSet<string> Loading = new HashSet<string>();
+        private static GamePreviewCache _cache;
+        private static Newtonsoft.Json.Linq.JObject _bundles;
+        private static Dictionary<string, string> _itemPrefabs;
+        private static List<TarkovLootSpawn> _loot;
+        private static List<TarkovSpawnLoot> _spawnLoot;
+        private static List<EFT.Airdrop.AirdropPoint> _airdrops;
+        private static List<EFT.Vehicle.PathDestination> _stops;
+
+        // the BTR Path Editor's playing BTR, set each time it draws
+        private static (Vector3 Position, Quaternion Rotation, double Time) _btr;
+
+        public static void ShowBtr(Vector3 position, Quaternion rotation) => _btr = (position, rotation, EditorApplication.timeSinceStartup);
+
+        static TarkovGameScenePreviews()
+        {
+            Camera.onPreCull += Draw;
+            EditorApplication.hierarchyChanged += () => _loot = null;
+            AssemblyReloadEvents.beforeAssemblyReload += Cleanup;
+            Cleanup();
+        }
+
+        private static void Cleanup()
+        {
+            _cache?.Clear();
+            _cache = null;
+            // bundles stay loaded (unloading them would destroy the meshes); a reload finds them by name
+            GamePreviewCache.FreeAll();
+            Models.Clear();
+            Loading.Clear();
+            _bundles = null;
+            _itemPrefabs = null;
+        }
+
+        private static string BundleFolder => Path.Combine(TarkovGameData.Folder, "StreamingAssets/Windows");
+
+        // a model, made outside the camera's render the first time it's asked for
+        private static GameModel Model(string key, System.Func<GameModel> build)
+        {
+            if (Models.TryGetValue(key, out var model))
+                return model;
+            if (Loading.Add(key))
+                EditorApplication.delayCall += () =>
+                {
+                    GameModel made;
+                    bool log = Debug.unityLogger.logEnabled;
+                    // the bundles' scripts the SDK has no stub for would each warn as missing
+                    Debug.unityLogger.logEnabled = false;
+                    try
+                    {
+                        made = build() ?? new GameModel { Error = "not found" };
+                    }
+                    catch (System.Exception e)
+                    {
+                        made = new GameModel { Error = e.Message };
+                    }
+                    finally
+                    {
+                        Debug.unityLogger.logEnabled = log;
+                    }
+                    Models[key] = made;
+                    Loading.Remove(key);
+                    SceneView.RepaintAll();
+                };
+            return null;
+        }
+
+        // a bundle and the bundles its meshes and textures are in (not the game's shaders, sounds, animations or effects)
+        private static AssetBundle LoadBundle(string bundle)
+        {
+            if (_bundles == null)
+            {
+                var json = Path.Combine(BundleFolder, "Windows.json");
+                _bundles = File.Exists(json) ? Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(json)) : new Newtonsoft.Json.Linq.JObject();
+            }
+            var wanted = new List<string>();
+            void Add(string name)
+            {
+                if (wanted.Contains(name) || name == "shaders" || name == "cubemaps" || name.Contains("/audio/") || name.Contains("animations") || name.Contains("/systems/"))
+                    return;
+                wanted.Add(name);
+                foreach (var dep in _bundles[name]?["Dependencies"] ?? new Newtonsoft.Json.Linq.JArray())
+                    Add((string)dep);
+            }
+            Add(bundle);
+            var loaded = AssetBundle.GetAllLoadedAssetBundles().ToDictionary(b => b.name, b => b);
+            AssetBundle main = null;
+            foreach (var name in wanted.AsEnumerable().Reverse())
+            {
+                if (!loaded.TryGetValue(name, out var b))
+                {
+                    var path = Path.Combine(BundleFolder, name);
+                    b = File.Exists(path) ? AssetBundle.LoadFromFile(path) : null;
+                }
+                if (name == bundle)
+                    main = b;
+            }
+            return main;
+        }
+
+        // a bundle prefab's look: LOD0, on the p0 stand-in
+        private static GameModel FromPrefab(GameObject root)
+        {
+            if (root == null)
+                return null;
+            var model = new GameModel();
+            var shader = Shader.Find("Tarkov/p0/Bumped Specular") ?? Shader.Find("Standard");
+            var hidden = new HashSet<Renderer>();
+            foreach (var group in root.GetComponentsInChildren<LODGroup>(true))
+                foreach (var lod in group.GetLODs().Skip(1))
+                    foreach (var r in lod.renderers)
+                        if (r != null)
+                            hidden.Add(r);
+            var copies = new Dictionary<Material, Material>();
+            bool any = false;
+            var bounds = new Bounds();
+            foreach (var renderer in root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var filter = renderer.GetComponent<MeshFilter>();
+                var mesh = filter != null ? filter.sharedMesh : null;
+                if (mesh == null || hidden.Contains(renderer) || !renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    renderer.shadowCastingMode == ShadowCastingMode.ShadowsOnly || renderer.name.Contains("SHADOW"))
+                    continue;
+                var materials = renderer.sharedMaterials.Select(m =>
+                {
+                    if (m == null)
+                        return TarkovSceneTools.DefaultSurfaceMaterial();
+                    if (!copies.TryGetValue(m, out var copy))
+                        copies[m] = copy = new Material(m) { name = TarkovGameAssets.PreviewPrefix + m.name, hideFlags = HideFlags.HideAndDontSave, shader = shader };
+                    return copy;
+                }).ToArray();
+                var matrix = root.transform.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+                model.Parts.Add(new GameModel.Part { Mesh = mesh, Matrix = matrix, Materials = materials });
+                var b = new Bounds(matrix.MultiplyPoint3x4(mesh.bounds.center), Vector3.zero);
+                if (any)
+                    bounds.Encapsulate(b);
+                else
+                    bounds = b;
+                any = true;
+            }
+            model.Bounds = bounds;
+            return model;
+        }
+
+        private static GameModel Crate() => Model("crate", () =>
+        {
+            var bundle = LoadBundle(CrateBundle);
+            var view = bundle != null ? bundle.LoadAllAssets<GameObject>().FirstOrDefault(g => g.name == "default_airdrop_view") : null;
+            return FromPrefab(view);
+        });
+
+        private static GameModel Btr() => Model("btr", () =>
+        {
+            var files = TarkovGameData.Files;
+            if (!files.ResourcePaths(out var ggm).TryGetValue(BtrResource, out var pptr) || !files.Resolve(ggm, pptr, out var file, out var info))
+                return null;
+            var tree = GameSceneTree.ReadFrom(files, file, info.PathId);
+            if (tree == null)
+                return null;
+            if (_cache == null)
+                _cache = new GamePreviewCache(1024, true);
+            var model = _cache.Model(files, tree, tree.Roots[0]);
+            // parts the template keeps out of sight far below
+            model.Parts.RemoveAll(p => p.Matrix.GetColumn(3).y < -50f);
+            return model;
+        });
+
+        private static GameModel Item(string template)
+        {
+            if (string.IsNullOrEmpty(template))
+                return null;
+            // the item database is read once, outside the camera's render
+            if (_itemPrefabs == null)
+            {
+                if (Loading.Add("items"))
+                    EditorApplication.delayCall += () =>
+                    {
+                        var prefabs = new Dictionary<string, string>();
+                        var root = TarkovLootSpawnEditor.ItemDatabase.SptRoot() ?? "C:/spt41";
+                        var path = Path.Combine(root, "SPT_Runtime", "SPT_Data", "database", "templates", "items.json");
+                        try
+                        {
+                            if (File.Exists(path))
+                                foreach (var p in Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path)).Properties())
+                                {
+                                    var prefab = (string)p.Value["_props"]?["Prefab"]?["path"];
+                                    if (!string.IsNullOrEmpty(prefab))
+                                        prefabs[p.Name] = prefab;
+                                }
+                        }
+                        catch (System.Exception e)
+                        {
+                            Debug.LogWarning("[Tarkov SDK] Loot previews: the item database didn't read: " + e.Message);
+                        }
+                        _itemPrefabs = prefabs;
+                        Loading.Remove("items");
+                        SceneView.RepaintAll();
+                    };
+                return null;
+            }
+            if (!_itemPrefabs.TryGetValue(template, out var bundle))
+                return null;
+            return Model("bundle:" + bundle, () =>
+            {
+                var loaded = LoadBundle(bundle);
+                if (loaded == null)
+                    return null;
+                var roots = loaded.LoadAllAssets<GameObject>().Where(g => g.transform.parent == null).ToList();
+                return FromPrefab(roots.OrderByDescending(g => g.GetComponentsInChildren<MeshRenderer>(true).Length).FirstOrDefault());
+            });
+        }
+
+        private static void Draw(Camera camera)
+        {
+            if (camera.cameraType != CameraType.SceneView || !TarkovGameModelPreview.Enabled || !TarkovGameData.Available)
+                return;
+            if (_loot == null)
+            {
+                _loot = Object.FindObjectsOfType<TarkovLootSpawn>().ToList();
+                _spawnLoot = Object.FindObjectsOfType<TarkovSpawnLoot>().ToList();
+                _airdrops = Object.FindObjectsOfType<EFT.Airdrop.AirdropPoint>().ToList();
+                _stops = Object.FindObjectsOfType<EFT.Vehicle.PathDestination>().ToList();
+            }
+            foreach (var spawn in _loot)
+                if (spawn != null && spawn.isActiveAndEnabled)
+                    DrawItem(spawn.Items.FirstOrDefault(i => !string.IsNullOrEmpty(i.Template))?.Template, spawn.transform, camera);
+            foreach (var spawn in _spawnLoot)
+            {
+                if (spawn == null || !spawn.isActiveAndEnabled)
+                    continue;
+                var items = spawn.Items.Where(i => !string.IsNullOrEmpty(i.Template)).ToList();
+                if (items.Count == 0)
+                    continue;
+                if (spawn.AtThisObject || spawn.transform.childCount == 0)
+                    DrawItem(items[0].Template, spawn.transform, camera);
+                else
+                    for (int i = 0; i < spawn.transform.childCount; i++)
+                        DrawItem(items[spawn.Pick == TarkovSpawnLoot.PickMode.All ? i % items.Count : 0].Template, spawn.transform.GetChild(i), camera);
+            }
+            if (_airdrops.Count > 0 && Crate() is GameModel crate)
+                foreach (var point in _airdrops)
+                    if (point != null && point.isActiveAndEnabled)
+                        crate.Draw(Matrix4x4.TRS(point.transform.position, Quaternion.Euler(0f, point.transform.eulerAngles.y, 0f), Vector3.one), camera);
+            bool playing = EditorApplication.timeSinceStartup - _btr.Time < 1.0;
+            if ((_stops.Count > 0 || playing) && Btr() is GameModel btr)
+            {
+                if (playing)
+                    btr.Draw(Matrix4x4.TRS(_btr.Position, _btr.Rotation, Vector3.one), camera);
+                else
+                    foreach (var stop in _stops)
+                        if (stop != null && stop.isActiveAndEnabled)
+                            btr.Draw(Matrix4x4.TRS(stop.transform.position, stop.transform.rotation, Vector3.one), camera);
+            }
+        }
+
+        private static void DrawItem(string template, Transform at, Camera camera)
+        {
+            var model = Item(template);
+            if (model != null)
+                model.Draw(Matrix4x4.TRS(at.position, at.rotation, Vector3.one), camera);
         }
     }
 

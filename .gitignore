@@ -29,3 +29,10 @@ __pycache__/
 Unity/*/*.dwlt
 Unity/*/.vsconfig
 CLAUDE.md
+
+# AssetRipper import backup (Restore Components)
+Unity/TushonkaMappingSDK/RipBackup/
+
+# Asset Importer output: the game's own assets, never committed
+Unity/TushonkaMappingSDK/Assets/TarkovGameAssets/
+Unity/TushonkaMappingSDK/Assets/TarkovGameAssets.meta

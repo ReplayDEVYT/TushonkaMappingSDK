@@ -18,10 +18,10 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/Hazards/";
 
-        [MenuItem(Menu + "Fire", priority = 47)]
+        [MenuItem(Menu + "Fire", priority = 48)]
         private static void MenuFire(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateFire(p, 1f).gameObject);
 
-        [MenuItem(Menu + "Fire Barrel", priority = 48)]
+        [MenuItem(Menu + "Fire Barrel", priority = 49)]
         private static void MenuBarrel(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateFireBarrel(p));
 
         // ------------------------------------------------------------ fire

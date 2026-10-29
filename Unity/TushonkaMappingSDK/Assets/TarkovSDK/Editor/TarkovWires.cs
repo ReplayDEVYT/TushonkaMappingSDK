@@ -43,7 +43,7 @@ namespace TarkovSDK.Editor
             };
         }
 
-        [MenuItem(Menu + "Wire", priority = 71)]
+        [MenuItem(Menu + "Wire", priority = 72)]
         private static void MenuWire(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var wire = Create(p, new[] { new Vector3(0f, 7f, 0f), new Vector3(25f, 7f, 0f) }, null);

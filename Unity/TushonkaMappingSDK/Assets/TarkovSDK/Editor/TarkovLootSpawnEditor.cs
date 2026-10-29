@@ -19,6 +19,9 @@ namespace TarkovSDK.Editor
         {
             DrawDefaultInspector();
             var spawn = (TarkovLootSpawn)target;
+            TarkovGameModelPreview.Enabled = EditorGUILayout.ToggleLeft(new GUIContent("Show The Item's Model",
+                "Draws the first item's model from the game's bundles in the Scene view (not saved, not built). Also the mounted guns', airdrop crates' and the BTR's."),
+                TarkovGameModelPreview.Enabled);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Add Items", EditorStyles.boldLabel);

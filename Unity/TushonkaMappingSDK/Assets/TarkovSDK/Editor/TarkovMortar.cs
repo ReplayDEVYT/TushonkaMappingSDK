@@ -29,7 +29,7 @@ namespace TarkovSDK.Editor
         // retail AlarmStages (every map): distance from the nearest picked point (m) and what the detector shows
         private static readonly Vector2[] AlarmStages = { new Vector2(12f, 0.75f), new Vector2(20f, 1.5f), new Vector2(30f, 5f), new Vector2(40f, 10000f) };
 
-        [MenuItem(Menu + "Mortar Zone", priority = 78)]
+        [MenuItem(Menu + "Mortar Zone", priority = 79)]
         private static void MenuZone(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var root = EnsureRoot(SceneManager.GetActiveScene());
@@ -41,7 +41,7 @@ namespace TarkovSDK.Editor
             return zone.gameObject;
         });
 
-        [MenuItem(Menu + "Mortar Battery", priority = 79)]
+        [MenuItem(Menu + "Mortar Battery", priority = 80)]
         private static void MenuBattery(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var root = EnsureRoot(SceneManager.GetActiveScene());

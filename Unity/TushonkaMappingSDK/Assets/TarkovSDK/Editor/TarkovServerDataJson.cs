@@ -34,7 +34,7 @@ namespace TarkovSDK.Editor
                 if (GUILayout.Button(new GUIContent("Open Saved File", "Opens base.json as last saved in your default editor.")))
                     EditorUtility.OpenWithDefaultApp(BasePath);
             }
-            if (_jsonError != null)
+            if (!string.IsNullOrEmpty(_jsonError))
                 EditorGUILayout.HelpBox(_jsonError, MessageType.Error);
 
             if (_jsonStyle == null)

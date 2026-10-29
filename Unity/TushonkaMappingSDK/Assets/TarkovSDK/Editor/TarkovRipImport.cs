@@ -23,8 +23,9 @@ namespace TarkovSDK.Editor
     //    (or, with that off, they go on Unity's Standard, which the game also has)
     //  - assets keep their GUIDs (their .meta files are copied), so everything that points at them still does; what the
     //    project already has (the same GUID) isn't copied again
-    // The tools under it fix folders already in the project: Fix Ripped Materials, Remove Missing Scripts.
-    public class TarkovRipImport : EditorWindow
+    // The tools under it fix folders already in the project: Fix Ripped Materials, Remove Missing Scripts; the window's
+    // Restore Components (TarkovRipRestore.cs) brings back components whose class the project has gained since.
+    public partial class TarkovRipImport : EditorWindow
     {
         private const string Menu = "Tarkov SDK/Decompilation/";
         private const string ScriptFileId = "11500000";
@@ -49,6 +50,12 @@ namespace TarkovSDK.Editor
         private bool _withDependencies = true;
         private bool _renameShaders = true;
         private bool _removeMissing = true;
+        // the filtered, sorted list (an export can hold a hundred thousand files), remade only when the filter changes
+        private List<string> _shown = new List<string>();
+        private string _shownKey;
+        private int _page;
+        private const int PageSize = 500;
+        private const float RowHeight = 18f;
 
         [MenuItem(Menu + "Import AssetRipper Export...", priority = 146)]
         private static void Open()
@@ -61,6 +68,9 @@ namespace TarkovSDK.Editor
 
         private void OnGUI()
         {
+            EditorGUILayout.HelpBox("For small prefabs from the retail maps (a door, a crate, a lamp), use Tarkov SDK > Tools > Asset Importer instead: it reads them " +
+                                    "straight from the game install, with their components set up. The Decompilation tools are for ripping entire maps and their assets.",
+                MessageType.Info);
             EditorGUILayout.LabelField("Import from an AssetRipper export", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Rip the game with AssetRipper (Export > Export All Files, Unity project), then pick the folder it wrote. Prefabs, models, " +
                                        "materials and textures come in without the game's scripts: components are moved onto the SDK's own game stubs and " +
@@ -99,27 +109,56 @@ namespace TarkovSDK.Editor
                     Repaint();
                 };
             if (_index == null)
+            {
+                DrawRestore();
                 return;
+            }
 
             EditorGUILayout.Space();
-            _kind = GUILayout.Toolbar(_kind, Kinds);
-            _search = EditorGUILayout.TextField("Search", _search);
-            var shown = _index.Files.Keys.Where(p => Matches(p, Kinds[_kind]) && (_search.Length == 0 || p.IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0))
-                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).Take(400).ToList();
+            int kind = GUILayout.Toolbar(_kind, Kinds);
+            var search = EditorGUILayout.TextField("Search", _search);
+            if (kind != _kind || search != _search)
+                _page = 0;
+            _kind = kind;
+            _search = search;
+            string key = $"{_index.Root}|{_index.Files.Count}|{_kind}|{_search}";
+            if (key != _shownKey)
+            {
+                _shownKey = key;
+                _shown = _index.Files.Keys.Where(p => Matches(p, Kinds[_kind]) && (_search.Length == 0 || p.IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0))
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+            }
+            int pages = Mathf.Max(1, (_shown.Count + PageSize - 1) / PageSize);
+            _page = Mathf.Clamp(_page, 0, pages - 1);
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField($"{_selected.Count} picked", GUILayout.Width(90f));
-                if (GUILayout.Button("Pick All Shown"))
-                    foreach (var p in shown)
+                if (GUILayout.Button($"Pick All Matching ({_shown.Count})"))
+                    foreach (var p in _shown)
                         _selected.Add(p);
                 if (GUILayout.Button("Clear"))
                     _selected.Clear();
             }
-            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.MinHeight(160f));
-            foreach (var path in shown)
+            using (new EditorGUILayout.HorizontalScope())
             {
+                using (new EditorGUI.DisabledScope(_page == 0))
+                    if (GUILayout.Button("<", EditorStyles.miniButtonLeft, GUILayout.Width(28f)))
+                        _page--;
+                GUILayout.Label($"Page {_page + 1} of {pages} ({_shown.Count} files)", EditorStyles.centeredGreyMiniLabel, GUILayout.ExpandWidth(true));
+                using (new EditorGUI.DisabledScope(_page >= pages - 1))
+                    if (GUILayout.Button(">", EditorStyles.miniButtonRight, GUILayout.Width(28f)))
+                        _page++;
+            }
+            // only the rows the scroll view shows are drawn
+            int start = _page * PageSize, count = Mathf.Min(PageSize, _shown.Count - start);
+            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.MinHeight(160f));
+            var area = GUILayoutUtility.GetRect(10f, count * RowHeight, GUILayout.ExpandWidth(true));
+            int first = Mathf.Max(0, (int)(_scroll.y / RowHeight)), last = Mathf.Min(count - 1, first + (int)(position.height / RowHeight) + 1);
+            for (int i = first; i <= last; i++)
+            {
+                var path = _shown[start + i];
                 bool on = _selected.Contains(path);
-                bool next = EditorGUILayout.ToggleLeft(path, on);
+                bool next = EditorGUI.ToggleLeft(new Rect(area.x, area.y + i * RowHeight, area.width, RowHeight), path, on);
                 if (next != on)
                 {
                     if (next)
@@ -128,8 +167,6 @@ namespace TarkovSDK.Editor
                         _selected.Remove(path);
                 }
             }
-            if (shown.Count == 400)
-                EditorGUILayout.LabelField("(the first 400; search to narrow it down)", EditorStyles.miniLabel);
             EditorGUILayout.EndScrollView();
 
             _withDependencies = EditorGUILayout.ToggleLeft(new GUIContent("Bring what they use", "The meshes, materials, textures, sounds, animations and prefabs the picked assets reference."), _withDependencies);
@@ -145,6 +182,7 @@ namespace TarkovSDK.Editor
                     if (EditorUtility.DisplayDialog("AssetRipper Import", $"Import all {_index.Files.Count} assets into {_destination}? A whole map takes a long time and a lot of disk.", "Import", "Cancel"))
                         Import(_index, _index.Files.Keys.ToList(), _destination, false, _renameShaders, _removeMissing);
                 };
+            DrawRestore();
         }
 
         private static bool Matches(string path, string kind)
@@ -163,7 +201,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ the export
 
-        public sealed class Index
+        public sealed partial class Index
         {
             public string Root;
             // path under the export's Assets -> guid
@@ -333,7 +371,7 @@ namespace TarkovSDK.Editor
                 if (withDependencies)
                     Follow(index, files);
 
-                int copied = 0, already = 0, scripts = 0, unknownScripts = 0, standIns = 0, renamed = 0, standard = 0;
+                int copied = 0, already = 0, empty = 0, scripts = 0, unknownScripts = 0, standIns = 0, renamed = 0, standard = 0;
                 var unknownClasses = new HashSet<string>();
                 var prefabs = new List<string>();
                 var list = files.ToList();
@@ -371,6 +409,7 @@ namespace TarkovSDK.Editor
                     else if (YamlExtensions.Contains(ext) && IsText(source))
                     {
                         var text = File.ReadAllText(source);
+                        int unknownBefore = unknownScripts;
                         if (text.Contains("m_Script:"))
                             text = ScriptRef.Replace(text, m =>
                             {
@@ -387,6 +426,11 @@ namespace TarkovSDK.Editor
                                 }
                                 return m.Value;
                             });
+                        if (ext == ".asset" && IsEmptyTmpAsset(text))
+                        {
+                            empty++;
+                            continue;
+                        }
                         if (ext == ".mat")
                             text = ShaderRef.Replace(text, m =>
                             {
@@ -405,7 +449,12 @@ namespace TarkovSDK.Editor
                             });
                         File.WriteAllText(target, text);
                         if (ext == ".prefab")
+                        {
                             prefabs.Add(target);
+                            // what Remove Missing Scripts is about to take off, for Restore Components without the export
+                            if (unknownScripts > unknownBefore)
+                                BackUp(guid, text);
+                        }
                     }
                     else
                     {
@@ -414,6 +463,7 @@ namespace TarkovSDK.Editor
                     File.Copy(source + ".meta", target + ".meta", true);
                     copied++;
                 }
+                SaveBackupScripts(index);
                 EditorUtility.DisplayProgressBar("AssetRipper Import", "Importing into Unity", 1f);
                 AssetDatabase.Refresh();
 
@@ -425,7 +475,7 @@ namespace TarkovSDK.Editor
                             EditorUtility.DisplayProgressBar("AssetRipper Import", "Removing missing scripts", i / (float)Math.Max(1, prefabs.Count));
                         stripped += RemoveMissingScripts(prefabs[i]);
                     }
-                Debug.Log($"[Tarkov SDK] AssetRipper import into {destination}: {copied} asset(s) copied, {already} already in the project; {scripts} script reference(s) moved onto " +
+                Debug.Log($"[Tarkov SDK] AssetRipper import into {destination}: {copied} asset(s) copied, {already} already in the project{(empty > 0 ? $", {empty} empty TextMeshPro font or sprite asset(s) AssetRipper couldn't read left out" : "")}; {scripts} script reference(s) moved onto " +
                           $"the SDK's scripts, {unknownScripts} to classes the SDK doesn't have{(stripped > 0 ? $" ({stripped} removed from prefabs)" : "")}; materials: {standIns} onto SDK stand-ins, " +
                           $"{renamed} game shader(s) kept as Tarkov/ stand-ins, {standard} onto Standard." +
                           (unknownClasses.Count > 0 ? "\nClasses the SDK has no script for: " + string.Join(", ", unknownClasses.OrderBy(c => c).Take(60)) : ""));
@@ -434,6 +484,31 @@ namespace TarkovSDK.Editor
             {
                 EditorUtility.ClearProgressBar();
             }
+        }
+
+        // TextMeshPro's font, sprite, style sheet and gradient assets (the package's script GUIDs)
+        private static readonly string[] TmpAssetScripts =
+        {
+            "71c1514a6bd24e1e882cebbe1904ce04", "84a92b25f83d49b9bc132d206b370281", "ab2114bdc8544297b417dfefe9f1e410", "54d21f6ece3b46479f0c328f8c6007e0",
+        };
+
+        // AssetRipper writes a ScriptableObject it couldn't read as its header alone (thousands in a full rip). Those are
+        // left alone, since something may point at them, except TextMeshPro's: with its script pointed at the package's
+        // class, TMP takes an empty font for a real one and throws on every import and redraw
+        // (TMP_FontAsset.ReadFontAssetDefinition: material.HasProperty). Nothing in it is worth keeping; a reference to it
+        // reads as null, and TMP draws a text without a font in its default one. `text` has its scripts mapped already.
+        internal static bool IsEmptyTmpAsset(string text)
+        {
+            if (Regex.Matches(text, @"^--- !u!", RegexOptions.Multiline).Count != 1 || !text.Contains("--- !u!114 "))
+                return false;
+            var script = ScriptRef.Match(text);
+            if (!script.Success || !TmpAssetScripts.Contains(script.Groups[2].Value.ToLowerInvariant()))
+                return false;
+            int at = text.IndexOf("m_EditorClassIdentifier:", StringComparison.Ordinal);
+            if (at < 0)
+                return false;
+            int end = text.IndexOf('\n', at);
+            return end < 0 || text.Substring(end + 1).Trim().Length == 0;
         }
 
         // the picked assets and everything they reference, recursively
@@ -553,6 +628,14 @@ namespace TarkovSDK.Editor
             var folder = SelectedFolder();
             if (folder == null)
                 return;
+            // empty TextMeshPro fonts, sprite assets and style sheets (see IsEmptyTmpAsset), from imports made before they were left out
+            var shells = Directory.GetFiles(folder, "*.asset", SearchOption.AllDirectories)
+                .Where(f => new FileInfo(f).Length < 4096 && IsText(f) && IsEmptyTmpAsset(File.ReadAllText(f))).Select(f => f.Replace('\\', '/')).ToList();
+            foreach (var shell in shells)
+                AssetDatabase.DeleteAsset(shell);
+            if (shells.Count > 0)
+                Debug.Log($"[Tarkov SDK] {folder}: {shells.Count} empty TextMeshPro font or sprite asset(s) deleted (AssetRipper couldn't read them, and TextMeshPro threw on them): " +
+                          string.Join(", ", shells.Take(10).Select(Path.GetFileNameWithoutExtension)) + (shells.Count > 10 ? " ..." : ""));
             var prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { folder }).Select(AssetDatabase.GUIDToAssetPath).ToList();
             int removed = 0;
             try

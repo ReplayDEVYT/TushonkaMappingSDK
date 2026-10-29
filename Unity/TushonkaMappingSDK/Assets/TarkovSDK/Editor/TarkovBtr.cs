@@ -31,7 +31,7 @@ namespace TarkovSDK.Editor
         public const string RootName = "BTR_MapPathsConfiguration";
         public const string StopsName = "Stops", RoadsName = "Roads", SettingsName = "SDK_BtrSettings";
 
-        [MenuItem("GameObject/Tarkov SDK/World Events/BTR Route", priority = 77)]
+        [MenuItem("GameObject/Tarkov SDK/World Events/BTR Route", priority = 78)]
         private static void MenuRoute(MenuCommand cmd)
         {
             var existing = Find(SceneManager.GetActiveScene());

@@ -15,10 +15,10 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/Lights/";
 
-        [MenuItem(Menu + "Volumetric Light Shaft", priority = 56)]
+        [MenuItem(Menu + "Volumetric Light Shaft", priority = 57)]
         private static void MenuShaft(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateShaft(p).gameObject);
 
-        [MenuItem("Tarkov SDK/Tools/Lighting/Add Volumetric Light To Selected Lights", priority = 132)]
+        [MenuItem("Tarkov SDK/Tools/Lighting/Add Volumetric Light To Selected Lights", priority = 135)]
         private static void MenuAdd()
         {
             var lights = Selection.gameObjects.SelectMany(g => g.GetComponentsInChildren<Light>(true)).Distinct().ToList();

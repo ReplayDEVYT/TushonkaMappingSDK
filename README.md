@@ -8,7 +8,7 @@ SPT_Runtime/user/mods/CustomMapLoader/maps/<id>/base.json, locale.json, sdk_expo
 ```
 
 **Author:** mizmii
-**Version:** 1.8.0
+**Version:** 1.9.0
 **SPT Version:** 4.1.6 (client Unity 2022.3.43f1)
 **License:** Unlicense
 
@@ -79,10 +79,11 @@ Keep at least one entry in `AirdropParameters`, even with airdrops off: the clie
 | **Tools > Interactables** | Loot Containers, Make Selected Doors Breachable. |
 | **Tools > Triggers** | Triggers & Sounds. |
 | **Tools > World Events** | BTR Path Editor, Mortar Shelling, Scripted Events. |
-| **Tools > Geometry** | Convert Selected Model For Tarkov, Make Selected Static Geometry, Add Low + High Poly Colliders, Add BallisticCollider, Refresh Default Surface Material, Terrain Surfaces, New Vertex Paint Material (On Selected), Wire Tool, Bird Path Tool. |
+| **Tools > Geometry** | Convert Selected Model For Tarkov, Make Selected Static Geometry, Add Low + High Poly Colliders, Add BallisticCollider, Refresh Default Surface Material, Terrain Surfaces, New Vertex Paint Material (On Selected), Wire Tool, Bird Path Tool, Player Scale, Culling Helper, City Builder. |
 | **Tools > Lighting** | Lighting Editor, Add Volumetric Light To Selected Lights. |
+| **Tools** | **Asset Importer** (at the bottom): objects from the retail maps, read from your game install. |
 | **Map Settings** | New Map, New Map Pack; **Data > Server Data Editor**. |
-| **Decompilation** | Import AssetRipper Export, Clean Up Ripped Scene, Fix Ripped Materials In Selected Folder, Remove Missing Scripts In Selected Folder, Prefab Library, Make Prefabs From Selected, Tree Builder. |
+| **Decompilation** | Import AssetRipper Export, Clean Up Ripped Scene, Fix Ripped Materials In Selected Folder, Remove Missing Scripts In Selected Folder, Adjust Prefabs, Prefab Library, Make Prefabs From Selected, Tree Builder. |
 | **Quick Fixes** | Fix Broken Interactables, Fix Night Lighting (Bright or Shiny at Night), Fix Shiny Materials (Missing Reflection Cubemaps), Convert SMap Materials To Bumped Specular, Fix Audio Sources (Meta XR), Apply Tarkov Tags, Layers and Physics, Set Up ProBuilder For Tarkov. |
 | **Install Packages** | Meta XR Audio SDK (71.0.0), ProBuilder (5.2.4), Polybrush (1.2.1), Terrain Tools (5.0.6). |
 | **Help** | How-tos by topic, troubleshooting, and every message Build Map logs with what it means and how to fix it. |
@@ -92,7 +93,7 @@ Keep at least one entry in `AirdropParameters`, even with airdrops off: the clie
 | Submenu | What's in it |
 | --- | --- |
 | **Spawns**, **Exfils**, **AI** | Spawn points and loot spawns; every kind of extract, transits and Forced Transit; bot zones, patrols, nav blockers. |
-| **Interactables** | Door, Breachable Door, Keycard Door, Switch, Lootable Container, Container Group, Automatic Sliding Door, Breakable Window, Physics Prop, Animated Object, Mounted Gun (Utes). |
+| **Interactables** | Door, Breachable Door, Keycard Door, Switch, Lootable Container, Container Group, Automatic Sliding Door, Breakable Window, Physics Prop, Animated Object, Mounted Gun (Utes), Mounted Gun (AGS-30). |
 | **Hazards** | Traps (barbed wire, spike trap, flame trap, trap door, trap switch), Sniper Zone, Flare Zone, Minefield, Claymore, Fire, Fire Barrel, Explosive Barrel. |
 | **Lights**, **Sound** | Lamps, area lights, flares, lamp groups, Volumetric Light Shaft; ambient points, random sounds, sound zones, the PA. |
 | **Environment**, **Quests** | Indoor triggers, fog, terrain, trees, Wire, Birds (Flight Paths), Bird Flock; quest zones. |
@@ -258,6 +259,8 @@ The baked files ship next to the map's bundles, in `BepInEx/plugins/CustomMapLoa
 - **GameObject > Tarkov SDK > Interactables > Breachable Door** adds a door that splinters when kicked in, as retail's wooden doors do (195 across the retail maps); **Tarkov SDK > Tools > Interactables > Make Selected Doors Breachable** does it to doors you already have. Any shut or locked door with **Can Be Breached** offers **Breach**, and a successful kick swings it open; this adds the game's `BrokenDoor` beside the leaf: a burst of wood chips and dust from the lock, splinters that drop, and broken wood round the lock from then on (`On` objects; `Off` objects are hidden, for a broken model of your own). Players who join later see it broken.
 - **GameObject > Tarkov SDK > Interactables > Container Group** puts the selected lootable containers into a group (the game's `LootableContainersGroup`): each raid, between its **Min** and **Max** of them spawn, picked by their **Spawn Chance**, as retail's container groups ("3 of these 8 crates", "one of these two safes"). The rest aren't in that raid. The server mod picks them; a gear strip's stash always spawns.
 - **GameObject > Tarkov SDK > Interactables > Mounted Gun (Utes)** marks where the game's own NSV "Utes" heavy machine gun stands: the marker is where the gunner sits (on the ground), facing where it fires (it turns 20 degrees either way), with a crate platform under the tripod, as retail Customs' guns stand on sandbags. The Scene view draws the game's own Utes there, read from your game install's bundles (nothing is copied into the project; **Show The Gun** in the marker's inspector turns it off). In the raid the client places the game's prefab there and the server adds the gun to the loot, as Woods' static weapons. Mounted guns in a ripped retail scene (Utes or AGS-30) work as they are. Bots don't man them.
+
+**GameObject > Tarkov SDK > Interactables > Mounted Gun (AGS-30)** places the game's AGS-30 grenade launcher on its tripod, its feet on the ground, firing along the object's forward. The game keeps the AGS-30 only inside its retail maps, so the first time, the SDK reads it from your game install (Customs' AGS, or another retail map's) into `Assets/TarkovGameAssets/Prefabs/Mounted Guns/AGS-30.prefab`, as the Asset Importer does; later ones reuse it. It's the game's own mounted gun with all its parts, so it works in the raid as a ripped one does: Build Map gives it an id and the server adds the AGS-30 to the loot. Put sandbags or a pallet under it yourself, or bring Reserve's from the Asset Importer.
 - **GameObject > Tarkov SDK > Interactables > Keycard Door** adds a Labs-style keycard door: a `KeycardDoor` that starts locked, and a **card reader** beside it on the wall. Players look at the reader and use their keycard on it (the card-swipe animation); a wrong card makes the reader flash red. **Key Id** is the keycard's item id (it starts as the yellow Labs keycard); **Additional Keys** lists other cards that open it, **Open On Unlock** opens it straight away, **Lock On Shut** locks it again whenever it closes. **Denied Beep**, **Granted Beep** and **Unlock Sound** are the reader's sounds, and the reader's `Lock` handle takes the swipe sound (**Down Sound**). Replace the reader's placeholder with your model; its `proxy` box is what players look at, and the sphere in front of it is where they stand. A keycard door must keep at least one reader in **Proxies**: the game throws without one, and **Build Map** reports it.
 - **Tarkov SDK > Tools > Geometry > Add Low + High Poly Colliders To Selected** splits collision the way retail maps do: movement on LowPolyCollider (box or mesh), bullets and AI sight on HighPolyCollider with a BallisticCollider guessed from the material name.
 
@@ -304,7 +307,7 @@ Preview a zone with **Player Enters** / **Player Leaves** in its inspector, and 
 
 ### Raid events: forced transits, gear stripping, notifications, captions, health and effects
 
-These are CustomMapLoader's own; Tarkov has none of them. The client plugin runs them from what **Build Map** exports, so they need the client and server mods of the same version as the SDK (1.8.0). Their settings are on `SDK_...` objects, which never ship in the map bundle. Each can run from a trigger id, which Triggers & Sounds connects (and lists).
+These are CustomMapLoader's own; Tarkov has none of them. The client plugin runs them from what **Build Map** exports, so they need the client and server mods of the same version as the SDK (1.9.0). Their settings are on `SDK_...` objects, which never ship in the map bundle. Each can run from a trigger id, which Triggers & Sounds connects (and lists).
 
 - **Forced Transit** (**GameObject > Tarkov SDK > Exfils > Forced Transit**, or **Force a transit** in Triggers & Sounds on an existing transit): a transit with an `SDK_ForceTransit` child. **On Enter** sends a player on as soon as they walk into the transit's zone; a **Trigger Id** sends the player who fires it from anywhere. It's an ordinary transit otherwise (destination, required items, active time): it takes the player to the transit's location like the game's own transit, only without the menu, the confirmation and the group countdown. A player without the transit's required items gets the game's "access not granted" message, unless **Ignore Requirements** is on. **Hidden (Trigger Only)** makes it a transit only its trigger uses: it's exported inactive, so the game turns its zone off and it never shows in the raid's transit list or timers, and the player who fires the trigger is sent to its destination from anywhere. It needs a trigger id; its zone size and transit time don't matter.
 - **Gear Strip** (**GameObject > Tarkov SDK > Triggers > Gear Strip**): takes the player's gear **On Raid Start** and/or when its **Trigger Id** fires (**Strip the player's gear** in Triggers & Sounds). **Move To Container** puts it in its stash, a lootable container made with it (an empty **Gear Stash** container type, 10 x 16, so a full kit fits); the stash always spawns, and the player can take the gear back from it. **Lose** removes it for good. Tick what's taken: each equipment slot, what's in the pockets, the secure container's contents (off by default) and the special slots. If what the player holds is taken (or is inside something taken), they put it away first. If something doesn't fit in the stash, it stays on the player and the raid shows an error. **Once** strips each player only the first time. **Notify** shows the player a notification when gear is taken (its message, icon, sound and duration, as for a Notification below; on by default).
@@ -356,12 +359,13 @@ Fire and explosives, from retail's bonfires and Interchange's gas cylinders:
 
 ### Airdrops and the BTR
 
-- **GameObject > Tarkov SDK > World Events > Airdrop Point**: a spot where a supply crate can land. **Tarkov SDK > Generation > Misc > Airdrop Points** scatters them every 20 m on open, flat ground: no roof, not indoors, not water, with room for the crate. Retail maps have hundreds. A red flare calls a crate to the nearest point. Plane drops are set in the **Server Data Editor**'s **Airdrops** tab: chance per try, max crates, and when the tries happen. **Min Players** counts living human players only; retail's 6 means no plane drops in a solo SPT raid, so keep it at 1. The plane flies within the map's physics bounds (`LevelPhysicsSettings`); Build Map adds `SDK_PhysicsSetup` around the map's geometry for that. A `LevelPhysicsSettings` you place yourself is kept as it is.
+- **GameObject > Tarkov SDK > World Events > Airdrop Point**: a spot where a supply crate can land. **Tarkov SDK > Generation > Misc > Airdrop Points** scatters them every 20 m on open, flat ground: no roof, not indoors, not water, with room for the crate. Retail maps have hundreds. The Scene view draws the game's airdrop crate at each point, read from your game install. A red flare calls a crate to the nearest point. Plane drops are set in the **Server Data Editor**'s **Airdrops** tab: chance per try, max crates, and when the tries happen. **Min Players** counts living human players only; retail's 6 means no plane drops in a solo SPT raid, so keep it at 1. The plane flies within the map's physics bounds (`LevelPhysicsSettings`); Build Map adds `SDK_PhysicsSetup` around the map's geometry for that. A `LevelPhysicsSettings` you place yourself is kept as it is.
 - **GameObject > Tarkov SDK > World Events > BTR Route**: the BTR, as on Woods and Streets. Bake the navmesh first. A new route comes in at `p1`, drives laps of `p2` > `p3` > `p4` and leaves to `p5`. **Tarkov SDK > Tools > World Events > BTR Path Editor** (or **Open BTR Path Editor** in the route's inspector) edits all of it; the inspector keeps the basics:
   - **Stops & Routes**: the BTR's chance, when it arrives, speed, how long it waits at stops and its paint; the **stops** (where it pauses, and where the taxi can take a player; name them for the taxi menu), added at the Scene view's centre or with **Place Stops By Clicking**; and the **routes**: the stops in order, where it comes from and leaves to (any stop, usually an off-road one), laps or once through. One active route is picked each raid. The taxi offers only the stops in **Stops In Order**, so keep **Comes From** and **Leaves To** out of that list; list each stop once. A looping route needs at least three stops: with two it drives the same road back and forth and turns round at every stop.
   - **Roads**: the BTR drives a road between any two stops of its route, because the taxi can send it anywhere on it. **Drive-through roads** (on by default) first turn every route stop to face the way the BTR drives through it (the blue arrows), then make each road leave and enter its stops along those arrows, with a straight run of 8 m at each end, along the navmesh between them, kept 2.5 m off the navmesh's edges. A BTR that arrives facing its next road drives straight on. Off, a road is the plain shortest navmesh path, and the BTR turns round wherever its next road starts behind it. **Generate Missing** makes the roads a route needs; **Regenerate All** remakes them (after moving stops). The navmesh follows paths a person can walk, so check that every road stays on drivable ground.
   - **Editing a road**: press **Edit** on it, then click its points (white) in the Scene view and drag them and their handles (yellow). **Insert Point** adds one half way to the next, **Delete Point** removes one (the ends stay at their stops), **Smooth** recomputes the handles from the points, **Snap To Ground** puts the points on the surface, **Keep Off Walls** moves them clear of the navmesh's edges, and **Rebuild** makes the road again from its stops. Roads you edit are marked and kept when the others are regenerated (unless **Also replace roads edited by hand** is on).
   - **Three-point turns** (as on Woods), made with the roads: when the next road starts behind the BTR, it drives forward and to one side, backs up, and drives back to the stop facing the other way. It needs open ground: the BTR's outline, with half a metre to spare, is swept along the turn and tested against the map's geometry, trying either side and a few sizes (Woods' turn, about 22 m ahead and 11 m to one side, and smaller and larger ones). When none stays clear, the least bad one is used and the log names the stop. Select a stop to see its turns (orange) and **Remake Turns**. The BTR leaves its starting stop (**Comes From**) without a turn, so road generation turns that stop to face its road.
+  - The Scene view draws the game's BTR, read from your game install, at each stop and wherever the preview drives it (**Show The BTR's Model** in the editor turns it off, with the other game models).
   - **Preview**: the BTR drives a route in the Scene view as the game drives it (a port of its own driving code): its heading, its speed in turns and at stops, the turns (orange hull) and sideways slides (red hull: the game keeps the BTR's heading when the road turns 90 degrees or more under it), with a list of what happened where (**Show** frames it). **Check Routes** drives every active route at once and marks the turns, slides and dead ends; Build Map runs the same check and warns about them.
 
   In the raid, the driver offers a ride to the route's other stops once the BTR has reached its first stop; **cover fire** is offered after paying for a ride, as on Woods and Streets. Tarkov itself breaks the taxi on **Once through** routes (no retail map uses them); CustomMapLoader's client fixes that. The BTR kills a player it runs over (a 100 damage hit to the head); with Fika installed, the host's own player never took that hit (Fika only applies landmine, sniper and AI hits to it), and CustomMapLoader's client fixes that on custom maps. A once-through route whose **Leaves To** is its **Comes From** never leaves its last stop (the game keys a route's parts by stop); Build Map warns.
@@ -408,7 +412,7 @@ The **Server Data Editor** (Map Definition > Edit Server Data) has tabs for:
 - **Loot**: every loot spawn, with the expected loose loot per raid.
 - **JSON**: the whole `base.json` as text, including the other tabs' unsaved changes, for values no tab covers. **Apply** checks the JSON and passes the edits to the other tabs; leaving the tab or pressing **Save** applies them too, and broken JSON is never saved.
 
-**GameObject > Tarkov SDK > Spawns > Loot Spawn** places a loose loot spot. Search items by name in its inspector (it reads the SPT install's item database), weight them, and set a chance or **Always Spawn**. Loot spawns are editor-only; **Build Map** exports them and the server builds the map's loose loot from them.
+**GameObject > Tarkov SDK > Spawns > Loot Spawn** places a loose loot spot. Search items by name in its inspector (it reads the SPT install's item database), weight them, and set a chance or **Always Spawn**. Loot spawns are editor-only; **Build Map** exports them and the server builds the map's loose loot from them. The Scene view draws the model of each spawn's first item, read from the game's bundles (**Show The Item's Model** in its inspector turns the game models off). Spawn Loot triggers show theirs too.
 
 **Tarkov SDK > Tools > Interactables > Loot Containers** makes **container types**:
 
@@ -482,6 +486,88 @@ The New Map example has crows over the middle and a gull flock in the east. To m
 
 Wires sway in the wind: the SDK's wire material is on the game's own swaying wire shader, **p0/Bumped Specular Wires Wind**, which moves each point by the weather's wind, still at the poles and most at mid-span (longer spans swing more; **Sway** scales it). Wires made before this sway once rebuilt: select the line, or build the map. A wire material of your own sways only on that shader.
 
+### Player scale
+
+**Tarkov SDK > Tools > Geometry > Player Scale...** helps build at the player's size. The sizes are the game's own, read from its player and its settings:
+
+| | |
+| --- | --- |
+| Height | 1.8 m to the top of the head |
+| Collision | 1.6 m standing, 1.2 m at full crouch, 0.3 m prone; 0.73 m wide |
+| Step up | 0.2 m without vaulting |
+| Slopes | walkable up to 50° |
+| Vault | over obstacles 0.25 to 1.1 m high and up to 0.41 m deep |
+| Climb | onto ledges up to 1.31 m |
+| Falls | no damage up to 3 m |
+
+Retail doors are about 2.1 to 2.2 m tall with their frames.
+
+- **Figure at the mouse** stands a see-through figure where the mouse points in the Scene view, in the picked **Pose** (standing, crouching, prone), with its collision capsule.
+- **Place A Scale Figure** puts a figure where the Scene view looks and keeps it in the scene (on an EditorOnly object, so it isn't built into the map). Selected, it shows bars for what the player can step up, vault and climb. Its pose can be changed in its inspector.
+- **Measure** takes two clicks in the Scene view and says how far apart they are, and what the player can do between them: step up, vault, climb, drop safely or take fall damage, and how steep it is as a slope.
+- **Measure The Open Scenes** gives the size of the open scenes (their solid colliders) next to the retail maps' sizes, where players spawn: from Labyrinth (93 x 107 m) and Factory (119 x 137 m) to Woods (1230 x 1222 m) and Shoreline (1399 x 917 m).
+
+### Culling
+
+**Tarkov SDK > Tools > Geometry > Culling Helper...** sets up what keeps the raid from drawing what the player can't see, the way retail maps do. It works on the open scenes.
+
+- **Occlusion culling (baked)** hides what is behind walls and buildings. Factory, Labs, Shoreline and Interchange use it; the outdoor maps don't. It pays off most indoors and in dense towns.
+  1. **Mark Static Objects** marks solid, opaque objects at least **Occluders From** metres big (and terrains) as Occluder Static, and every object that doesn't move as Occludee Static. Doors, containers, physics props, lamps, animated objects and glass are left out, since they move or can be seen through.
+  2. **Bake** bakes the map's scenes together with Unity's occlusion bake. With a Map Definition, all its scenes must be open: **Open All Map Scenes** opens them. **Smallest Occluder** and **Smallest Hole** are Unity's bake settings; keep the hole smaller than the smallest window or door the player can see through. **Visualize** opens Unity's Occlusion Culling window, which shows what a camera would cull. **Clear** removes the bake.
+  3. **Turn On In base.json** sets `OcculsionCullingEnabled` (the game's spelling). The raid camera uses the bake only with it on. Restart the SPT server after.
+
+  Bake last, once the static objects are where they will stay: anything moved after the bake can vanish in the raid where the old bake says it is hidden. The helper and Build Map warn when static objects have changed since the bake, when base.json has it on with no bake, and when there is a bake that base.json doesn't use.
+- **Lights by distance**: every retail light switches off beyond a distance (a CullingLightObject: from 15 m for small lights to 200 m for street lamps). **Add Culling To ... Lights** gives one to every point and spot light that has none, switching off beyond **Distance** and fading out over its last 20%. The SDK's own lamps already have one.
+- **Small objects by screen size**: retail props stop drawing when they get small on screen, through their LOD group's last level (2% of the screen's height on Customs and Shoreline). Objects without an LOD group are drawn as far as the camera sees. **Add Culling LOD Groups** gives each object up to **Objects Up To** metres big a one-level LOD group culled below **Cull Below**. **Make LOD Groups Cull** does it for LOD groups whose last level never culls.
+
+### City builder
+
+**Tarkov SDK > Tools > Geometry > City Builder...** builds towns from a **City Kit** of materials and prefabs, in three tabs: **Generate** lays out a whole grid of blocks and streets and fills it, **Roads** draws roads and junctions by hand, and **Place** places the kit's prefabs by hand. They work together: draw a main road by hand through a generated town, or line a hand-drawn road and then move buildings about.
+
+#### Generate
+
+1. **New City** makes a **City** object where the Scene view looks. The city is built under it, centred on it and flat on its plane, so put it on flat ground (or lower the terrain under it). Its settings are on an EditorOnly `SDK_City` child, so they aren't built into the map. The window picks up the city you select.
+2. **New Kit** makes a City Kit in the map's folder, with the SDK's plain ground materials in it. Fill it:
+   - **Ground**: the materials of the roads, sidewalks, kerbs, the ground between buildings (**Block ground**), parks and road markings, and of the placeholder buildings. **Tarkov** next to a slot picks a material imported from the game. **Texture Metres** is how much ground one repeat of a texture covers.
+   - **Prefabs**: buildings, street lamps, street props (benches, bins, signs), parked cars, trees and park props. **Add Selected Prefabs** adds the prefabs selected in the Project window; **Add Tarkov Prefab** picks one imported from the game. Each prefab has a **Front** (which way its door side, or a car's bonnet, points in the prefab: buildings face the street with it, cars drive with it, lamps lean over the road with it), a **Weight** (how often it's picked against the others in its list) and a **Height** (to raise a building whose foundations reach below its pivot). Its size is shown next to it, measured from its meshes.
+   - The quickest way to fill a kit from Tarkov is the **Asset Importer**: pick objects (or materials) and press **Add To City Kit**, then choose the list. They are imported and added to the kit the City Builder last showed (or a new one). Streets of Tarkov has most of the city pieces: search its Buildings and Props for houses, shops, lamps, benches and cars, and its Materials for asphalt, pavement and kerbs.
+3. Set the layout: the city's **Size**, the block sizes (**Block Min** to **Block Max**, stretched to fill the size exactly), **Road Width**, an avenue every **Avenue Every** roads, **Edge Roads** round the outside, **Merge Chance** (blocks joined over the road between them, which makes T junctions) and **Park Chance**. The Scene view outlines the blocks as you change them (yellow; parks green). **Seed** picks another layout with the same settings.
+4. **Generate** builds the city under the City object:
+   - **Ground**: the roads, sidewalks and kerbs (each block a slab **Curb Height** above the road; the player steps up to 0.2 m), the block and park ground, and the markings. The kerbs are kerbstones of their own: a strip **Curb Width** wide (0.2 m) with a bevelled road edge, its top at the kerb height and the sidewalk 2 cm lower, mitred where they meet at corners, with the kit's kerb material (a dashed centre line, a double one on avenues, zebra crossings at the junctions). They are static meshes on the Terrain layer with colliders and BallisticColliders: asphalt for the roads, concrete for sidewalks and kerbs, the block and park ground by their material's name (grass, gravel, dirt, tile ...). The meshes are saved next to the scene in `<scene>_City`, so save the scene first.
+   - **Buildings** stand side by side along each block's streets, fronts to the street, **Building Gap** apart. None overlap, none reach over the sidewalk, and a building too big for the block isn't used. **Building Chance** leaves the rest as empty lots. A kit without buildings gets plain placeholder boxes of **Placeholder Floors** storeys, with collision.
+   - **Street Lamps** stand at the kerb every **Lamp Spacing** metres, with street trees between them (**Tree Spacing**), **Props Per 100m** near the buildings and **Parked Car Chance** cars along the kerbs, driving on the right and clear of the junctions. Parks get trees **Park Tree Spacing** apart and **Park Props Per 1000m2**.
+   - **New Seed + Generate** does it with another seed.
+
+Generate replaces everything the city built before, and can't be undone. To keep a building you like, move it out of the city's groups first. **Clear** removes it all. After generating, bake the navmesh again. The city is a start, not a finished map: move, swap and add by hand from there.
+
+#### Roads (by hand)
+
+The **Kit** at the top gives new roads and junctions their materials, and Line This Road its prefabs (**Edit the kit** opens it there).
+
+- **Draw A Road**, then click points in the Scene view: the road follows a smooth curve through them, with sidewalks, kerbs and a centre line, set by **New roads** (width, left and right sidewalks, kerb height and **Curb Width** (the kerbstones, as in Generate), lane lines, **Avenue** for a double line). With **Follow Ground** the road lies on the ground under it (terrain, the generated city, anything solid), smoothed; without, it follows its points' heights. **Esc** or **Enter** ends it.
+- **Place Junctions**, then click: a square of road with a sidewalk on each corner, turned with **R** (or Shift + mouse wheel). Its four arms are N (the object's forward), E, S and W. Clicked near the free end of a road, it lines up with the road and joins it. Roads join a junction by ending on one of its arms: while drawing, a free arm near the mouse shows green, and a click there joins it and ends the road (a road started on an arm leaves from it). Joining opens the arm (road with a zebra crossing); arms nothing joins stay sidewalk. One arm is a dead end, two at a right angle a corner, three a T junction, four a crossroads. A road joined to a junction takes its width, sidewalks and kerb, and meets its road and sidewalks exactly. A junction is flat, so on a slope it is tilted to the ground under it when placed with **Follow Ground** on (a selected junction's **Fit To Ground** does it again after moving it); the roads joined to it lean to meet it and level out over 8 m.
+- Selected, a road shows its curve and points: drag a point to move it over the ground, **Ctrl-click** on the road to add a point there, delete a point object (or right-click it > **Delete Point**) to remove it. **Extend The Selected Road** adds points after its last one. A junction moves and turns with its object, and the roads joined to it follow. The road or junction's settings show in the tab (and in its `SDK_Road` / `SDK_Junction` object's inspector); changing anything rebuilds it, also after Undo. Their meshes are saved next to the scene in `<scene>_City`, with colliders and surfaces like the generated ground.
+- **Curve editor** (under the selected road in the tab): the road's curve is shaped point by point.
+  - Each point has a mode. **Smooth** (the default) bends smoothly through it by itself. **Aligned** has two handles kept in line, so the bend stays smooth while you set how sharp it is on each side. **Free** handles move on their own, for a kink. **Corner** runs straight to the neighbouring points, for a sharp corner. Right-click a point in the Scene view to pick its mode, or use the list; **All Smooth**, **All Aligned** and **All Corner** set every point.
+  - Drag a point's blue handles in the Scene view to shape the bend: further out is a wider, gentler curve. Dragging a Smooth point's handle makes it Aligned, starting from the curve it had.
+  - The height profile shows the road's height along its length (yellow) over the ground or curve it follows (grey). Drag a point up or down there, or type its **Raise**, to lift or sink the road at that point (for a ramp, a raised causeway or a dip); it blends smoothly to the neighbouring points. The skirt under the edges reaches down to the ground under a raised road.
+- **Intersections**:
+  - **Place Junctions** on the middle of a road cuts the road there and puts a crossroads in: the road runs through it north-south, its two parts joined to the south and north arms, and the east and west arms free for new roads. Right-click a road point > **Add Intersection Here** does it at that point.
+  - While drawing a road, clicking the middle of another road makes a T intersection there, the new road joined on the side it comes from (on the first click, the side of the road you click). A green square shows where the junction will go; red means the road is too short there (an intersection needs about its own width plus a few metres of road on each side, and loops can't be cut: turn **Loop** off first).
+  - **Intersect Crossing Roads** puts a crossroads wherever two roads cross at about the same height (roads more than 3 m apart there are bridges and are left alone). The first road runs through north-south; the second joins east and west, cut back further the more slanted it crosses so it has room to turn into the arms.
+  - Cutting a road keeps its settings, kit and points on both parts. What Line This Road placed where the junction now stands is removed. Undo takes the whole intersection back in one step.
+- **Line This Road** fills the selected road's sides from its kit, by its **Roadside** settings: buildings behind the sidewalks facing the road (along curves too), street lamps, trees and props on the sidewalks, cars parked at the kerbs, driving on the right. Buildings don't overlap each other, the road, other roads and junctions, or buildings already there (other roads' roadside, placed and generated buildings, anything with building colliders). **Seed** fills it another way. It replaces what it placed before (Undo puts it back); **Clear Roadside** removes it.
+
+#### Place (by hand)
+
+Pick a list (buildings, lamps, props, cars, trees, park props) and click a prefab's thumbnail (or drop any prefab in **Or Any Prefab** and say which way its front points), then click in the Scene view to place it. A box shows where it will stand and an arrow which way it faces; red means it would overlap a building or a road.
+
+- With **Snap To Roads**, the piece lines up with the nearest hand-drawn road on the side you point at: a building stands behind the sidewalk facing the road (**Building Setback** keeps it further back), a lamp or tree at the kerb, a prop near the buildings, a car parked at the kerb. Hold **Ctrl** to place freely.
+- Placed freely, it stands where you click, turned with **R** (90°) or Shift + mouse wheel (15°).
+- **Random Piece After Each** draws the next piece from the list by weight, for quick variety.
+
+Placed pieces go under **City Pieces** in the active scene, a group per list, and Undo removes them.
+
 ### Materials and shaders
 
 Pick shaders under **Tarkov/** in the material inspector. Each one is an editor stand-in for the game shader of the same name, without the prefix (`Tarkov/p0/Reflective/Bumped Specular SMap` stands in for `p0/Reflective/Bumped Specular SMap`). It has the game shader's properties and keyword toggles. When the map loads in a raid, the client plugin moves every such material onto the game's compiled shader. Textures and values carry over because the property names match.
@@ -552,15 +638,93 @@ Retail trees (Woods' pines) are SpeedTree prefabs on the game's `Nature/SpeedTre
 
 ### Using assets from the game
 
-Meshes, textures, materials and prefabs from Tarkov's own maps can be used through an [AssetRipper](https://github.com/AssetRipper/AssetRipper) export. You don't need to export the whole game: [this list of the retail map files](https://gist.github.com/DrakiaXYZ/0c392b4ad6781f287e3f281bdc79e70e) says which `levelN` files in `EscapeFromTarkov_Data` make up each map (Customs is `bigmap`), so open only those (AssetRipper loads what they depend on by itself) and **Export > Export All Files** as a Unity project. Don't copy the export into `Assets`: its decompiled game scripts clash with the SDK's stubs and the project stops compiling, and with it every SDK menu. **Tarkov SDK > Decompilation** brings it in instead:
+There are two ways to bring in Tarkov's own assets. For objects from the retail maps (a door, a crate, a lamp, a tree), use the **Asset Importer**: it reads them straight from your game install, with their components set up. To rip an entire map and everything in it, use AssetRipper and the **Decompilation** tools.
 
-- **Import AssetRipper Export**: **Read Export** on the folder AssetRipper wrote to (it finds `ExportedProject/Assets`), search and pick prefabs, models, materials, textures or scenes, and **Import**. **Bring what they use** adds every mesh, material, texture, sound, animation and prefab they reference. On the way in:
+#### Asset Importer
+
+**Tarkov SDK > Tools > Asset Importer...** lists the objects of every retail map in your game install: the `EscapeFromTarkov_Data` folder in the Map Definition's **Spt Root**, or another one picked with **Change...**.
+
+- **Pick a map** from the tabs at the top (Customs, Factory, Interchange, Labs, Labyrinth, Lighthouse, Reserve, Shoreline, Streets, Woods, Ground Zero, Hideout), then press **Read**. The last tab, **Effects**, is the game's own effects instead of a map: see below.
+  - Reading runs in the background. Most maps take a few seconds; Streets, the largest, takes a couple of minutes.
+  - The result is saved in the project's `Library`, so a map is read only once. **Read Again** reads it again.
+- **Pick a kind** from the tabs below the map: doors, containers, switches, lamps, windows, mounted guns, explosives, fires, particles, trees, props and buildings (objects over 12 m), then **Materials**, **Sounds** and **Data** (see below). The object kinds are the Prefab Library's. **Particles** are the map's particle effects that stand on their own (sparks, hit effects, flare fires); effects that belong to an object, such as a fire barrel's flames, come with that object.
+  - Each distinct object is listed once, with how many the map has.
+  - Search by name. Sort by name, by how often the map uses the object, or by size.
+- **Browse** the objects a page at a time.
+  - Thumbnails are made only for what is on screen, and saved, so a map with thousands of props stays quick to browse.
+  - Click an object to see it larger. Drag the large preview to turn it.
+- **Import** the objects you picked. Ctrl-click or Shift-click picks several.
+  - Double-clicking an object imports it and places it. Dragging an object into the Scene view imports it and places it where you drop it. **Place in the scene too** places every imported object where the Scene view looks.
+  - Each object becomes a prefab in the map's folder under `Prefabs/<Category>/`, where the Prefab Library shows it. Importing the same object again reuses its prefab.
+  - Its meshes, materials and textures go in `Assets/TarkovGameAssets/`, one asset for each game asset, shared between imports. The SDK's `.gitignore` keeps that folder out of git.
+- **Add To City Kit** imports the picked objects (or materials) and adds them to a list of the City Builder's kit: see [City builder](#city-builder).
+
+What an imported prefab keeps:
+
+- its hierarchy, with transforms, layers and tags
+- its meshes, renderers and LOD groups
+- its box, sphere, capsule and mesh colliders, rigidbodies, joints and lights
+- its particle systems with every module, and its line and trail renderers
+- every game component the SDK has a stub for, with its values from the map: a door's curves and sounds, a container's type, a lamp's lights
+
+Materials go on the SDK's shader stand-ins. A game shader the SDK has no stand-in for gets a simple placeholder named `Tarkov/<shader>` in `Assets/TarkovGameAssets/Shaders` (blended like particles for particle shaders); in the raid, the game's own shader replaces it. Reflection cubemaps become the SDK's. Ids are cleared, so Build Map gives each copy its own.
+
+What it leaves out:
+
+- components the SDK has no class for, such as audio sources, animators, decals and impostor billboards
+- skinning: a skinned mesh comes in as a plain mesh in its rest pose
+
+The Console lists what each import left out. Like anything taken from the game, imported assets go into your map's bundle.
+
+**Materials** are the materials the map's renderers use, each shown on a sphere with how many renderers use it and its shader. Importing one makes a `.mat` in `Assets/TarkovGameAssets/<game file>/Materials` with its textures, on the SDK's shader stand-in, as an imported prefab's materials are. Drag one onto an object in the Scene view to put it on every material slot of that object's renderers, or tick **Put it on the selected objects too** before importing. Double-clicking imports it and selects it in the Project window.
+
+**Sounds** are the map's sounds: what its sound sources play, and every other sound in its scenes' own files (ambience, radio music, sounds the game's sound banks play). Each shows its length and format.
+
+- Double-click a sound, or press **Play** under the large preview, to hear it.
+- Importing one makes a `.wav` in `Assets/TarkovGameAssets/<game file>/Sounds`, with the game's load type and compression on its import settings. The game stores sounds in FMOD's formats, so the SDK has Unity decode them; a long sound takes a few seconds. A `.wav` is uncompressed, about 10 MB a minute, so importing over 100 MB asks first (the radio's podcasts run half an hour). Unity compresses it again when it builds the map.
+- Dragging a sound into the Scene view imports it and places a 3D sound source there, set up like an **Ambient Sound Point** (looping if the sound is 5 s or longer). **Place a sound source too** does the same where the Scene view looks.
+
+**Data** is the map's lighting and its camera's post-processing:
+
+- **Lighting** is the map's LevelSettings, time of day (the full weather's TOD sky and weather, or the simple rig) and ambient light. **Apply To The Open Scenes** puts its values on the open scenes' own components of those kinds: ambient light, fog, sun, sky colours, the time of day curves and gradients, the sun's path. It asks first, and Undo reverts it. Your scene keeps its own materials, lights, cubemaps and camera, its clock (the preview hour) and its map-specific settings (north, rain bounds). A part your scene doesn't have is left out and named: a simple-rig map's sky (Labs, Labyrinth, Factory) doesn't go onto a full-weather scene, nor the other way round. Factory's day and night lighting are only LevelSettings; its reworked scenes use the simple rig.
+- **PRISM** is the post-processing of the map's camera: exposure, tonemap, vignette, bloom, ambient obscurance, LUTs and the rest. Retail maps keep it on their camera, not in a PRISM preset, so importing makes a preset from it in `Assets/TarkovGameAssets/<game file>/Presets`, with its lens dirt and LUT textures. **Put it on the scene's LevelSettings too** sets it as LevelSettings' **Prism Preset Prefab**, which the raid camera takes its post-processing from. Most retail maps share Customs' camera; Factory day, Factory night and reworked Factory have their own.
+
+**Effects** lists the game's own effects from its effects bundle (`StreamingAssets/Windows/assets/systems/effects/particlesystems/effects.bundle`), the ones the game plays for explosions and bullet impacts:
+
+- **Each game effect whole**, by the game's name: `Gas_explosion`, `Grenade_new`, `big_explosion`, `Artillery_mine`, `landmine` and the rest, and the impacts on each surface (`Concrete`, `Metal`, `Wood` ...). It becomes one prefab with every particle system the effect plays.
+- **The pieces** they're made of (a fire burst, a shockwave, smoking fragments), each named with the effects that use it.
+
+The bundle is read where it lies: only the parts that are read get decompressed, so nothing is unpacked or copied. Effect prefabs go in `Prefabs/Particles/` with the map's other particles. A particle prefab plays when placed in the raid if its systems play on awake, as the game's do; to set one off from a trigger, use the SDK's **Explosion** or a **Spawn Prefab** trigger.
+
+#### AssetRipper exports
+
+Meshes, textures, materials and prefabs from Tarkov's own maps can also be used through an [AssetRipper](https://github.com/AssetRipper/AssetRipper) export. This is for whole maps. You don't need to export the whole game: [this list of the retail map files](https://gist.github.com/DrakiaXYZ/0c392b4ad6781f287e3f281bdc79e70e) says which `levelN` files in `EscapeFromTarkov_Data` make up each map (Customs is `bigmap`), so open only those (AssetRipper loads what they depend on by itself) and **Export > Export All Files** as a Unity project. Don't copy the export into `Assets`: its decompiled game scripts clash with the SDK's stubs and the project stops compiling, and with it every SDK menu. **Tarkov SDK > Decompilation** brings it in instead:
+
+- **Import AssetRipper Export**: **Read Export** on the folder AssetRipper wrote to (it finds `ExportedProject/Assets`), search and pick prefabs, models, materials, textures or scenes, and **Import**. The list shows 500 files a page; **Pick All Matching** picks every file the search matches, on every page. **Bring what they use** adds every mesh, material, texture, sound, animation and prefab they reference. On the way in:
   - components move onto the project's scripts of the same class, whether AssetRipper wrote its scripts as decompiled `.cs` files or kept them in their DLLs (found by Unity's FileID of the class): the SDK's stubs for the game's components (same fields, so their values stay) and the packages' for theirs. Components the SDK has no stub for are listed in the Console and, with **Remove scripts the SDK doesn't have** on, removed from the prefabs.
   - materials on a game shader the SDK has a stand-in for move onto it (`Tarkov/...`). Game shaders without one come in renamed `Tarkov/<name>`, so the raid still swaps the game's real shader in; with **Keep game shaders the SDK has no stand-in for** off, those materials go on Unity's Standard instead.
   - assets keep their GUIDs, so everything that pointed at them still does; what the project already has isn't copied again.
 - **Clean Up Ripped Scene...** (with the ripped scene open): **Scan** lists what needs fixing and **Clean** fixes the ticked ones, with Undo: components whose script didn't come across, materials on game shaders the SDK has a stand-in for, tree impostors (retail's far billboards; their shader and script are retail-only), renderers and mesh colliders without a mesh, LOD groups pointing at removed renderers, cameras and audio listeners left in the scene, and terrains on retail terrain shaders (they get `SDK_Terrain`). It lists what it can't fix: statically batched meshes (export again with AssetRipper's **Static Mesh Separation** on), scene singletons the map has more than one of (LocationScene, LevelSettings, the weather, EnvironmentManager), and a retail spatial audio system.
-- **Prefab Library...**: **Extract From Open Scenes** turns the important objects of a ripped (or any) scene into prefabs, one per distinct object (500 identical crates make one prefab): doors with their frames, containers, switches, lamps, windows, mounted guns, explosives, fires, trees and props (and, ticked, buildings over 12 m). They go in the map's folder (its Map Definition's, else the scene's) under `Prefabs/<Category>/`, with their ids cleared so Build Map gives every copy its own; meshes that only lived in the scene are saved under `Prefabs/_Meshes`. **Make Prefabs From Selected** does it for the selected objects, into the category picked beside it (**Selected become instances** links them to the new prefabs). The window shows them by category with thumbnails and a search: drag one into the Scene view, or double-click to place it where the view looks.
+- **Prefab Library...**: **Extract From Open Scenes** turns the important objects of a ripped (or any) scene into prefabs, one per distinct object (500 identical crates make one prefab): doors with their frames, containers, switches, lamps, windows, mounted guns, explosives, fires, trees and props (and, ticked, buildings over 12 m). They go in the map's folder (its Map Definition's, else the scene's) under `Prefabs/<Category>/`, with their ids cleared so Build Map gives every copy its own; meshes that only lived in the scene are saved under `Prefabs/_Meshes`. **Make Prefabs From Selected** does it for the selected objects, into the category picked beside it (**Selected become instances** links them to the new prefabs). The window shows them by category (including **Particles**, for particle effects from the Asset Importer) with thumbnails and a search, a page at a time (48 to 384 a page), and loads only the prefabs on screen, so it stays quick with thousands. Drag one into the Scene view, or double-click to place it where the view looks.
 - **Fix Ripped Materials In Selected Folder** and **Remove Missing Scripts In Selected Folder** do the same to a folder already in the project (select it in the Project window).
+- **Adjust Prefabs...** makes the prefabs in a folder work in a map without setting each one up by hand. **Preview** lists what each prefab would get; **Adjust** saves them, and Undo can't put that back, so commit or copy the folder first.
+  - **Repair what they have** finishes the components that are already there:
+    - removes missing scripts, impostor renderers, and renderers or colliders without a mesh, and tidies LOD groups
+    - puts materials on the SDK's shader stand-ins
+    - gives retail collider names their layers (`*_COLLIDER` LowPoly, `*_BALLISTIC_<material>` HighPoly with that bullet material) and adds BallisticColliders where they're missing
+    - sets the curves, lists, search positions and interaction boxes doors, switches and containers need, links lamps' lights and a bulb to shoot out, and sets up windows, card readers and audio sources
+    - adds tree wind, and clears ids so each copy gets its own
+  - **Give collision to prefabs with none** adds low and high poly colliders.
+  - **Rebuild by type** turns a prefab with no game components that is plainly a door, lootable container or lamp into the SDK's working one, as the Interactive Object Builder makes it.
+    - A **door** is named "door", is door-sized and thin, and hinges on its left edge. Check the hinge side and swing.
+    - A **container** takes the retail type its name says (weapon box, grenade box, medbag, toolbox, safe, technical supply crate, drawer, jacket, duffle bag, crate). It's searched from its -Z side.
+    - A **lamp** is a prefab with lights, or one named lamp, lantern and so on. It gets a LampController over its lights, or a new light at its middle.
+- **Restore Components**, at the bottom of the import window after **Read Export**, puts back components that were left off because the SDK had no class for them, with every value they had in the game, so you don't set them up again by hand.
+  1. Give the project the class: add the game's type to `Tools/StubGenerator/stub-roots.txt` and regenerate the stubs ("Updating the stubs"), or add a script with the same namespace and class name.
+  2. Read the same export, set **Prefabs And Scenes In** to the folder you imported into, and press **Restore Components**.
+
+  It matches the imported prefabs and scenes to the export by GUID, and objects by their file IDs, which the import keeps. It puts removed components back on their objects and fixes ones left as missing scripts. With **Overwrite components added by hand** on, components you re-added yourself also get the export's values. The Console lists the classes that are still missing. Close any scene it should change first; open scenes are skipped. Imports also keep a backup of every prefab they take components off, in `RipBackup/` next to `Assets` (outside the project's assets, not in git), so **Restore Components From The Import's Backup** works after you delete the export. Imports made before this backup existed need the export: if you deleted it, export the same game files again with AssetRipper; its IDs should come out the same.
+- AssetRipper can't read the game's TextMeshPro fonts and sprite assets, and writes them out empty. TextMeshPro then throws `NullReferenceException` at `TMP_FontAsset.ReadFontAssetDefinition` on every import and redraw. The import leaves them out, and the SDK deletes any that get into the project anyway: when they're imported, and once each time Unity opens. **Remove Missing Scripts In Selected Folder** deletes them too. Ripped texts then draw in TextMeshPro's default font.
 - **Tree Builder**: see [Trees](#trees).
 
 What you take from the game goes into your map's bundle; keep that in mind before sharing a map built with it.

@@ -24,23 +24,37 @@ namespace TarkovSDK.Editor
     public class TarkovPrefabLibrary : EditorWindow
     {
         private static readonly string[] Categories =
-            { "Doors", "Containers", "Switches", "Lamps", "Windows", "Mounted Guns", "Explosives", "Fires", "Trees", "Props", "Buildings", "Custom" };
+            { "Doors", "Containers", "Switches", "Lamps", "Windows", "Mounted Guns", "Explosives", "Fires", "Particles", "Trees", "Props", "Buildings", "Custom" };
+
+        private static readonly int[] PageSizes = { 48, 96, 192, 384 };
+
+        // a prefab by path, loaded only when its cell is on screen (a map can have thousands)
+        private struct Entry
+        {
+            public string Path, Name, Category;
+        }
 
         private string _folder;
         private int _category;
         private string _search = "";
         private float _size = 96f;
         private Vector2 _scroll;
-        private List<GameObject> _prefabs = new List<GameObject>();
+        private List<Entry> _prefabs = new List<Entry>();
+        private List<Entry> _shown = new List<Entry>();
+        private string _shownKey;
+        private int _page;
+        private int _pageSize;
+        private readonly Dictionary<string, GameObject> _loaded = new Dictionary<string, GameObject>();
+        private Dictionary<string, int> _counts;
         private bool _buildings;
         private bool _connect;
         private int _customCategory = Categories.Length - 1;
         private string _status;
 
-        [MenuItem("Tarkov SDK/Decompilation/Prefab Library...", priority = 150)]
+        [MenuItem("Tarkov SDK/Decompilation/Prefab Library...", priority = 151)]
         public static void Open() => GetWindow<TarkovPrefabLibrary>("Prefab Library").minSize = new Vector2(420f, 360f);
 
-        [MenuItem("Tarkov SDK/Decompilation/Make Prefabs From Selected", priority = 151)]
+        [MenuItem("Tarkov SDK/Decompilation/Make Prefabs From Selected", priority = 152)]
         private static void MenuFromSelected() => EditorApplication.delayCall += () =>
         {
             var folder = MapFolder();
@@ -60,9 +74,16 @@ namespace TarkovSDK.Editor
         {
             _folder = MapFolder();
             Refresh();
+            EditorApplication.projectChanged += OnProjectChanged;
         }
 
-        private void OnFocus() => Refresh();
+        private void OnDisable() => EditorApplication.projectChanged -= OnProjectChanged;
+
+        private void OnProjectChanged()
+        {
+            Refresh();
+            Repaint();
+        }
 
         // the map's folder: its Map Definition's (the one listing the active scene), else the active scene's
         public static string MapFolder()
@@ -82,21 +103,32 @@ namespace TarkovSDK.Editor
 
         private string PrefabsFolder => _folder + "/Prefabs";
 
+        // the folder's prefabs by path only: nothing is loaded until it's drawn
         private void Refresh()
         {
-            _prefabs = new List<GameObject>();
+            _prefabs = new List<Entry>();
+            _loaded.Clear();
+            _shownKey = null;
+            _counts = null;
             if (string.IsNullOrEmpty(_folder) || !AssetDatabase.IsValidFolder(PrefabsFolder))
                 return;
-            _prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder })
-                .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g))).Where(p => p != null).OrderBy(p => p.name).ToList();
+            _prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }).Select(AssetDatabase.GUIDToAssetPath)
+                .Select(p => new Entry { Path = p, Name = Path.GetFileNameWithoutExtension(p), Category = CategoryOf(p) })
+                .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        private static string CategoryOf(GameObject prefab)
+        private static string CategoryOf(string path)
         {
-            var path = AssetDatabase.GetAssetPath(prefab);
             var parts = path.Split('/');
             int i = Array.IndexOf(parts, "Prefabs");
             return i >= 0 && i + 2 < parts.Length ? parts[i + 1] : "Custom";
+        }
+
+        private GameObject Load(Entry entry)
+        {
+            if (!_loaded.TryGetValue(entry.Path, out var prefab) || prefab == null)
+                _loaded[entry.Path] = prefab = AssetDatabase.LoadAssetAtPath<GameObject>(entry.Path);
+            return prefab;
         }
 
         // ------------------------------------------------------------ window
@@ -152,43 +184,91 @@ namespace TarkovSDK.Editor
                 _buildings = EditorGUILayout.ToggleLeft(new GUIContent("Extract buildings too", "Large objects (over 12 m) become prefabs in Buildings."), _buildings, GUILayout.Width(160f));
                 _connect = EditorGUILayout.ToggleLeft(new GUIContent("Selected become instances", "Make Prefabs From Selected links the selected objects to their new prefabs."), _connect);
             }
-            if (_status != null)
+            if (!string.IsNullOrEmpty(_status))
                 EditorGUILayout.HelpBox(_status, MessageType.Info);
 
-            var present = new[] { "All" }.Concat(Categories.Where(c => _prefabs.Any(p => CategoryOf(p) == c))).ToArray();
+            if (_counts == null)
+                _counts = _prefabs.GroupBy(p => p.Category).ToDictionary(g => g.Key, g => g.Count());
+            var counts = _counts;
+            var present = new[] { "All" }.Concat(Categories.Where(counts.ContainsKey)).ToArray();
             _category = Mathf.Clamp(_category, 0, present.Length - 1);
-            _category = GUILayout.Toolbar(_category, present, EditorStyles.toolbarButton);
+            int category = GUILayout.Toolbar(_category, present.Select(c => c == "All" ? $"All ({_prefabs.Count})" : $"{c} ({counts[c]})").ToArray(), EditorStyles.toolbarButton);
             using (new EditorGUILayout.HorizontalScope())
             {
-                _search = EditorGUILayout.TextField(_search, EditorStyles.toolbarSearchField);
+                var search = EditorGUILayout.TextField(_search, EditorStyles.toolbarSearchField);
+                if (search != _search || category != _category)
+                    _page = 0;
+                _search = search;
+                _category = category;
                 _size = GUILayout.HorizontalSlider(_size, 56f, 160f, GUILayout.Width(90f));
             }
 
-            var shown = _prefabs.Where(p => p != null && (_category == 0 || CategoryOf(p) == present[_category]) &&
-                                            (string.IsNullOrEmpty(_search) || p.name.IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
-            if (shown.Count == 0)
+            string key = $"{present[_category]}|{_search}|{_prefabs.Count}";
+            if (key != _shownKey)
             {
-                EditorGUILayout.HelpBox(_prefabs.Count == 0 ? "No prefabs yet. Open a ripped scene and press Extract From Open Scenes, or select objects and press Make Prefabs From Selected."
+                _shownKey = key;
+                _shown = _prefabs.Where(p => (_category == 0 || p.Category == present[_category]) &&
+                                             (_search.Length == 0 || p.Name.IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+            }
+            if (_shown.Count == 0)
+            {
+                EditorGUILayout.HelpBox(_prefabs.Count == 0 ? "No prefabs yet. Open a ripped scene and press Extract From Open Scenes, select objects and press Make Prefabs From Selected, " +
+                                                              "or bring objects from the retail maps with Tarkov SDK > Tools > Asset Importer."
                     : "No prefab matches.", MessageType.None);
                 return;
             }
-            EditorGUILayout.LabelField("Drag one into the Scene view, or double-click to place it at the view's centre.", EditorStyles.miniLabel);
+
+            // a page at a time, and of it only the rows the scroll view shows
+            int pageSize = PageSizes[Mathf.Clamp(_pageSize, 0, PageSizes.Length - 1)];
+            int pages = Mathf.Max(1, (_shown.Count + pageSize - 1) / pageSize);
+            _page = Mathf.Clamp(_page, 0, pages - 1);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(_page == 0))
+                    if (GUILayout.Button("<", EditorStyles.miniButtonLeft, GUILayout.Width(28f)))
+                        _page--;
+                GUILayout.Label($"Page {_page + 1} of {pages} ({_shown.Count} prefabs). Drag one into the Scene view, or double-click to place it.",
+                    EditorStyles.centeredGreyMiniLabel, GUILayout.ExpandWidth(true));
+                using (new EditorGUI.DisabledScope(_page >= pages - 1))
+                    if (GUILayout.Button(">", EditorStyles.miniButtonRight, GUILayout.Width(28f)))
+                        _page++;
+                int size = EditorGUILayout.Popup(_pageSize, PageSizes.Select(p => p + " per page").ToArray(), GUILayout.Width(100f));
+                if (size != _pageSize)
+                {
+                    _pageSize = size;
+                    _page = 0;
+                }
+            }
+            var page = _shown.Skip(_page * pageSize).Take(pageSize).ToList();
+            AssetPreview.SetPreviewTextureCacheSize(Mathf.Max(256, pageSize * 2));
+
+            float cell = _size + 6f, cellHeight = _size + 20f;
+            float width = position.width - 20f;
+            int columns = Mathf.Max(1, (int)(width / cell));
+            int rows = (page.Count + columns - 1) / columns;
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
-            int columns = Mathf.Max(1, (int)((position.width - 20f) / (_size + 6f)));
+            var content = GUILayoutUtility.GetRect(width, rows * cellHeight);
+            float viewHeight = position.height;
+            int first = Mathf.Max(0, (int)(_scroll.y / cellHeight)), last = Mathf.Min(rows - 1, (int)((_scroll.y + viewHeight) / cellHeight));
             bool loading = false;
-            for (int i = 0; i < shown.Count; i += columns)
-                using (new EditorGUILayout.HorizontalScope())
-                    for (int j = i; j < Mathf.Min(i + columns, shown.Count); j++)
-                        loading |= Cell(shown[j]);
+            for (int row = first; row <= last; row++)
+                for (int col = 0; col < columns; col++)
+                {
+                    int i = row * columns + col;
+                    if (i >= page.Count)
+                        break;
+                    var prefab = Load(page[i]);
+                    if (prefab != null)
+                        loading |= Cell(prefab, new Rect(content.x + col * cell, content.y + row * cellHeight, _size, _size + 16f));
+                }
             EditorGUILayout.EndScrollView();
             if (loading || AssetPreview.IsLoadingAssetPreviews())
                 Repaint();
         }
 
         // a thumbnail with its name; true while its preview is loading
-        private bool Cell(GameObject prefab)
+        private bool Cell(GameObject prefab, Rect rect)
         {
-            var rect = GUILayoutUtility.GetRect(_size, _size + 16f, GUILayout.Width(_size), GUILayout.Height(_size + 16f));
             var image = new Rect(rect.x, rect.y, _size, _size);
             var preview = AssetPreview.GetAssetPreview(prefab);
             bool loading = preview == null;
@@ -393,15 +473,7 @@ namespace TarkovSDK.Editor
                 copy.transform.localScale = source.transform.lossyScale;
                 foreach (var t in copy.GetComponentsInChildren<Transform>(true))
                     GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
-                // Build Map gives every placed copy its own
-                foreach (var wio in copy.GetComponentsInChildren<WorldInteractiveObject>(true))
-                    wio.Id = "";
-                foreach (var weapon in copy.GetComponentsInChildren<StationaryWeapon>(true))
-                    weapon._id = "";
-                foreach (var group in copy.GetComponentsInChildren<LootableContainersGroup>(true))
-                    group.Id = "";
-                foreach (var sync in copy.GetComponentsInChildren<ISyncAble>(true))
-                    sync._random = 0;
+                ClearIds(copy);
                 StoreMeshes(copy, folder);
                 var path = PathFor(folder, category, copy.name);
                 return PrefabUtility.SaveAsPrefabAsset(copy, path);
@@ -415,6 +487,19 @@ namespace TarkovSDK.Editor
             {
                 Object.DestroyImmediate(copy);
             }
+        }
+
+        // Build Map gives every placed copy its own
+        public static void ClearIds(GameObject go)
+        {
+            foreach (var wio in go.GetComponentsInChildren<WorldInteractiveObject>(true))
+                wio.Id = "";
+            foreach (var weapon in go.GetComponentsInChildren<StationaryWeapon>(true))
+                weapon._id = "";
+            foreach (var group in go.GetComponentsInChildren<LootableContainersGroup>(true))
+                group.Id = "";
+            foreach (var sync in go.GetComponentsInChildren<ISyncAble>(true))
+                sync._random = 0;
         }
 
         // "Crate_02 (17)" -> "Crate_02"

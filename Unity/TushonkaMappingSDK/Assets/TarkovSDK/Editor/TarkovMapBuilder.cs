@@ -67,6 +67,8 @@ namespace TarkovSDK.Editor
                 for (int i = 0; i < scenePaths.Count; i++)
                     scenes.Add(EditorSceneManager.OpenScene(scenePaths[i], i == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive));
 
+                // with every map scene open, before anything is moved between them
+                report.Warnings.AddRange(TarkovCulling.Check(def));
                 // before Prepare, which adds a missing manager or time of day to the first scene
                 report.Warnings.AddRange(TarkovMapScenes.Gather(scenes));
                 // before Prepare, which sizes indoor triggers and checks the rain cover

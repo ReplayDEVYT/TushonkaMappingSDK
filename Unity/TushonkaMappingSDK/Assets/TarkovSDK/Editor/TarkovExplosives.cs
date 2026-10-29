@@ -30,10 +30,10 @@ namespace TarkovSDK.Editor
         public static readonly string[] EffectLabels =
             { "Gas cylinder (Interchange)", "Grenade", "Small grenade", "Mortar shell", "Landmine", "Big explosion", "Big smoky explosion", "Rocket (SPG)", "None" };
 
-        [MenuItem(HazardsMenu + "Explosive Barrel", priority = 49)]
+        [MenuItem(HazardsMenu + "Explosive Barrel", priority = 50)]
         private static void MenuBarrel(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateExplosiveCylinder(p));
 
-        [MenuItem(TriggersMenu + "Shootable Trigger", priority = 81)]
+        [MenuItem(TriggersMenu + "Shootable Trigger", priority = 82)]
         private static void MenuShootable(MenuCommand cmd)
         {
             var target = cmd.context as GameObject ?? Selection.activeGameObject;
@@ -53,7 +53,7 @@ namespace TarkovSDK.Editor
             });
         }
 
-        [MenuItem(TriggersMenu + "Explosion", priority = 82)]
+        [MenuItem(TriggersMenu + "Explosion", priority = 83)]
         private static void MenuExplosion(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateExplosion(p, NewId("Explosion")).gameObject);
 
         public static string NewId(string what) => $"{what}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";

@@ -33,7 +33,7 @@ namespace TarkovSDK.Editor
         private static readonly string[] Tabs = { "General", "Map Select", "Raid", "Access", "Bots", "Spawns", "Loot", "Airdrops", "JSON" };
         private const int JsonTab = 8;
 
-        [MenuItem("Tarkov SDK/Map Settings/Data/Server Data Editor", priority = 135)]
+        [MenuItem("Tarkov SDK/Map Settings/Data/Server Data Editor", priority = 139)]
         public static void Open() => Open(Selection.activeObject as TarkovMapDefinition);
 
         public static void Open(TarkovMapDefinition definition)

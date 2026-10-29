@@ -18,13 +18,13 @@ namespace TarkovSDK.Editor
         public const string TemplatesRoot = "SDK_SpawnTemplates";
         private const string Menu = "GameObject/Tarkov SDK/Triggers/";
 
-        [MenuItem(Menu + "Spawn Bots", priority = 88)]
+        [MenuItem(Menu + "Spawn Bots", priority = 89)]
         private static void MenuBots(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateBots(p).gameObject);
 
-        [MenuItem(Menu + "Spawn Loot", priority = 89)]
+        [MenuItem(Menu + "Spawn Loot", priority = 90)]
         private static void MenuLoot(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreateLoot(p).gameObject);
 
-        [MenuItem(Menu + "Spawn Prefab", priority = 90)]
+        [MenuItem(Menu + "Spawn Prefab", priority = 91)]
         private static void MenuPrefab(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var spawn = CreatePrefab(p);
