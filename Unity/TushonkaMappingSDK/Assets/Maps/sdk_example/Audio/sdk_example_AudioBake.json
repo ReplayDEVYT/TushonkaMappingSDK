@@ -1,0 +1,14 @@
+{
+  "Routes": "4fdac4bfd41054eb1a77b66e199fb67c",
+  "RoutesOnBuild": 0,
+  "Geometries": {
+    "StreamingAssets/Acoustics/sdk_example/Geometry_cf9bc4.xrageo": "71d6c0c7c54d80e209fdb34f5865958d",
+    "StreamingAssets/Acoustics/sdk_example/Features_818737.xrageo": "e0374eb94000ada9860db34188a0518f"
+  },
+  "Map": "755870fb2064257f69341e157764d243",
+  "MapDraft": false,
+  "IndoorTone": null,
+  "BunkerTone": null,
+  "IndoorToneVolume": 0.4,
+  "BunkerToneVolume": 0.4
+}

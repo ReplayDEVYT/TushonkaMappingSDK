@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b21b5ccecc244f51a33c47f6a07b1770, type: 3}
+  m_Name: sdk_example_SpatialAudioInfo
+  m_EditorClassIdentifier: 
+  relativeBakeDataPath: CustomMapLoader/sdk_example.audiobakedata
+  bakeSettings:
+    maxDepthIndoorToIndoor: 7
+    maxDepthIndoorToOutdoor: 3
+    maxDepthOutdoorToOutdoor: 3
+    maxDistanceOutdoorToOutdoor: 350
+    maxDistanceIndoorToOutdoor: 300
+    maxDistanceIndoorToIndoor: 200
+  roomsCount: 3
+  portalsCount: 3
+  routesCount: 5
+  roomPairsCount: 3
+  maxRoutesCount: 2
+  maxRoutePortalsCount: 4

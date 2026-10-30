@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SnowFlakes Close_8ce2
+  m_Name: SnowFlakes Close
   m_Shader: {fileID: 4800000, guid: 0bb50bb5d3b8ca0439ac52feea5b5970, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

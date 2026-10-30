@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a48c8c045db3d5479c1e7a5c1e45f83, type: 3}
+  m_Name: sdk_example
+  m_EditorClassIdentifier: 
+  MapId: sdk_example
+  Scenes:
+  - {fileID: 102900000, guid: 4c31e2e23254f024a9645be908012a02, type: 3}
+  EntirelyIndoors: 0
+  OutputFolder: Build
+  CreatePackage: 1
+  DeployToGame: 1
+  SptRoot: C:/spt41

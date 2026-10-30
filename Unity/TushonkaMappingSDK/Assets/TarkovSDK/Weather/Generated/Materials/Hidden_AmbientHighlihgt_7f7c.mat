@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden_AmbientHighlihgt_7f7c
+  m_Name: Hidden_AmbientHighlihgt
   m_Shader: {fileID: 4800000, guid: 69fa875452b9fd54eab877f67eadf4e1, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

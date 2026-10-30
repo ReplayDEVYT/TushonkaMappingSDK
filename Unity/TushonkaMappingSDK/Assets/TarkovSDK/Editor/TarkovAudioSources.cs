@@ -104,7 +104,7 @@ namespace TarkovSDK.Editor
             return changed;
         }
 
-        [MenuItem("Tarkov SDK/Quick Fixes/Fix Audio Sources (Meta XR)", priority = 204)]
+        [MenuItem("Tarkov SDK/Quick Fixes/Fix Audio Sources (Meta XR)", priority = 205)]
         private static void FixMenu() => EditorApplication.delayCall += () =>
         {
             var scene = SceneManager.GetActiveScene();

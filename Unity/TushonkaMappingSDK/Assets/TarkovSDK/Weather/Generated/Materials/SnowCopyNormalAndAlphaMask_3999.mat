@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SnowCopyNormalAndAlphaMask_3999
+  m_Name: SnowCopyNormalAndAlphaMask
   m_Shader: {fileID: 4800000, guid: d363ba5ec87fed74c8a6178e1aee5ae9, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

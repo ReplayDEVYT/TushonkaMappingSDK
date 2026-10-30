@@ -162,6 +162,7 @@ namespace TarkovSDK.Editor
 
             // cull thin wires far away, as retail's LODGroup does
             var lod = root.GetComponent<LODGroup>() ?? root.gameObject.AddComponent<LODGroup>();
+            if (lod == null) lod = root.gameObject.AddComponent<LODGroup>();
             lod.SetLODs(new[] { new LOD(0.015f, new Renderer[] { renderer }) });
             lod.RecalculateBounds();
 

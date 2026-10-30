@@ -31,7 +31,7 @@ namespace TarkovSDK.Editor
         public static Type MeshType => Runtime("ProBuilderMesh");
         public static bool Available => MeshType != null && Editor("EditorMaterialUtility") != null;
 
-        [MenuItem("Tarkov SDK/Quick Fixes/Set Up ProBuilder For Tarkov", priority = 206)]
+        [MenuItem("Tarkov SDK/Quick Fixes/Set Up ProBuilder For Tarkov", priority = 207)]
         private static void SetUpMenu() => EditorApplication.delayCall += () =>
         {
             if (!Available)

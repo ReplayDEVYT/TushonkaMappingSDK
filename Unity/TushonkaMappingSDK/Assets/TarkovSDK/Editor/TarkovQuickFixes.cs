@@ -282,7 +282,82 @@ namespace TarkovSDK.Editor
         // specular maps glow at night.
         public const float SimpleRigAmbientLimit = 0.03f; // Factory: 0.03 at 0.6 = 0.018
 
-        [MenuItem(Menu + "Fix Night Lighting (Bright or Shiny at Night)", priority = 201)]
+        // Fix Static Doors And Lids: Unity merges Batching Static meshes into one fixed mesh when the map is built, so
+        // a door, lid, trunk or car door marked Static opens in the raid (its object turns, so its colliders do) but
+        // its mesh stays shut. Ticking Static on a container or vehicle ticks it on every child, the moving parts
+        // too, and retail prefabs from the Asset Importer go into maps that are marked Static for the acoustics.
+        [MenuItem(Menu + "Fix Static Doors And Lids (Only The Collision Opens)", priority = 201)]
+        public static void FixStaticMovers()
+        {
+            var problems = new List<string>();
+            int count = 0;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded)
+                    continue;
+                int fixedHere = UnstaticMovingParts(scene, problems, undo: true);
+                if (fixedHere > 0)
+                    EditorSceneManager.MarkSceneDirty(scene);
+                count += fixedHere;
+            }
+            foreach (var p in problems)
+                Debug.LogWarning("[Tarkov SDK] " + p);
+            Debug.Log($"[Tarkov SDK] Fix Static Doors And Lids: {count} object(s) are no longer static.");
+            EditorUtility.DisplayDialog("Fix Static Doors And Lids",
+                (count == 0 ? "No moving part in the open scenes is marked static." :
+                    $"{count} object(s) on or under doors, lids, trunks and other moving parts are no longer Batching / Occluder / Occludee Static, " +
+                    "so their meshes move with them in the raid. The parts that don't move stay static.") +
+                (problems.Count == 0 ? "" : $"\n\n{problems.Count} can't be fixed this way:\n" + string.Join("\n", problems.Take(6)) +
+                                            (problems.Count > 6 ? $"\n... and {problems.Count - 6} more (see the Console)" : "")) +
+                "\n\nBuild the map again for the raid.", "OK");
+        }
+
+        // what static batching would freeze: the flags that stop a moving mesh from moving (Navigation Static is kept:
+        // it only shapes the navmesh bake)
+        private const StaticEditorFlags FrozenFlags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic;
+
+        // the objects the game moves in the raid: interactive objects that turn (WorldInteractiveObject.CurrentAngle sets
+        // their rotation unless Keep Rotation is on or open and closed are the same angle), and anything animated or
+        // physical. Clears the frozen flags on them and everything under them; returns how many objects changed.
+        // Build Map runs it without Undo.
+        public static int UnstaticMovingParts(Scene scene, List<string> problems, bool undo)
+        {
+            var movers = new HashSet<Transform>();
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var wio in root.GetComponentsInChildren<WorldInteractiveObject>(true))
+                {
+                    if (wio._keepRotation || Mathf.Approximately(Mathf.DeltaAngle(wio.OpenAngle, wio.CloseAngle), 0f))
+                        continue;
+                    movers.Add(wio.transform);
+                    // a lootable container is often an invisible box (jackets, bodies); a door or trunk is what you see
+                    if ((wio is Door || wio is Trunk) && wio.GetComponentInChildren<Renderer>(true) == null)
+                        problems?.Add($"{Where(wio)}: turns when opened but has no mesh under it, so nothing visible moves; put the door's or lid's mesh under '{wio.name}'");
+                }
+                foreach (var c in root.GetComponentsInChildren<Animator>(true))
+                    movers.Add(c.transform);
+                foreach (var c in root.GetComponentsInChildren<Animation>(true))
+                    movers.Add(c.transform);
+                // kinematic ones too: a breachable door's splinters wait kinematic until the breach
+                foreach (var c in root.GetComponentsInChildren<Rigidbody>(true))
+                    movers.Add(c.transform);
+            }
+            int count = 0;
+            foreach (var t in movers.SelectMany(m => m.GetComponentsInChildren<Transform>(true)).Distinct())
+            {
+                var flags = GameObjectUtility.GetStaticEditorFlags(t.gameObject);
+                if ((flags & FrozenFlags) == 0)
+                    continue;
+                if (undo)
+                    Undo.RecordObject(t.gameObject, "Fix static doors and lids");
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject, flags & ~FrozenFlags);
+                count++;
+            }
+            return count;
+        }
+
+        [MenuItem(Menu + "Fix Night Lighting (Bright or Shiny at Night)", priority = 202)]
         public static void FixNightLighting()
         {
             var fixes = new List<string>();
@@ -374,7 +449,7 @@ namespace TarkovSDK.Editor
 
         // Fix Shiny Materials: p0 materials without a reflection cubemap (TarkovReflectionCube); selected
         // materials, or with none selected every material on the open scenes' renderers
-        [MenuItem(Menu + "Fix Shiny Materials (Missing Reflection Cubemaps)", priority = 202)]
+        [MenuItem(Menu + "Fix Shiny Materials (Missing Reflection Cubemaps)", priority = 203)]
         public static void FixReflectionCubemaps()
         {
             var selected = Selection.GetFiltered<Material>(SelectionMode.Assets);
@@ -413,7 +488,7 @@ namespace TarkovSDK.Editor
         private const string SMapShader = "Tarkov/p0/Reflective/Bumped Specular SMap";
         private const string BumpedSpecularShader = "Tarkov/p0/Bumped Specular";
 
-        [MenuItem(Menu + "Convert SMap Materials To Bumped Specular", priority = 203)]
+        [MenuItem(Menu + "Convert SMap Materials To Bumped Specular", priority = 204)]
         public static void ConvertSMap()
         {
             var target = Shader.Find(BumpedSpecularShader);

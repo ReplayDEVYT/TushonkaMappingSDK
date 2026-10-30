@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Moon_57b0
+  m_Name: Moon
   m_Shader: {fileID: 4800000, guid: 80e57f70daa19ab4f8bfbc1ac0f7573a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

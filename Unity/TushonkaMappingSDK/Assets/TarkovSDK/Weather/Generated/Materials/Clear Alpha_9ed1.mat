@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Clear Alpha_9ed1
+  m_Name: Clear Alpha
   m_Shader: {fileID: 4800000, guid: 441ea5c6b40885f4c80c46cf66003ad0, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

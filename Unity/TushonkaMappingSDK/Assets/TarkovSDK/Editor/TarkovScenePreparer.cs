@@ -231,6 +231,14 @@ namespace TarkovSDK.Editor
                 }
             }
 
+            // static batching freezes a mesh where it was built: a static door or lid opens with only its colliders
+            var staticProblems = new List<string>();
+            int unfrozen = TarkovQuickFixes.UnstaticMovingParts(scene, staticProblems, undo: false);
+            if (unfrozen > 0)
+                report.Warnings.Add($"{scene.name}: {unfrozen} object(s) on or under doors, lids, trunks and other moving parts were marked Static, which freezes their meshes " +
+                                    "in the raid (only the collision opened); they're no longer static (Quick Fixes > Fix Static Doors And Lids)");
+            report.Warnings.AddRange(staticProblems);
+
             // before the ids (they give sync objects their random part) and FillLocationScene (it lists what these make)
             TarkovExplosives.Prepare(scene, roots, report);
             TarkovWires.Prepare(scene, roots, report);

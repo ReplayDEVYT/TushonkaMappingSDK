@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Space_ac3d
+  m_Name: Space
   m_Shader: {fileID: 4800000, guid: d544c982aa2c172499615dd86a22f398, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
