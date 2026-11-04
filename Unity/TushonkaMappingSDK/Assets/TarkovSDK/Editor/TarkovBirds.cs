@@ -229,10 +229,10 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ spawners
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Birds (Flight Paths)", priority = 73)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Birds (Flight Paths)", priority = 76)]
         private static void MenuPaths(MenuCommand cmd) => EditorApplication.delayCall += () => TarkovSceneTools.Place(cmd, p => CreatePaths(p).gameObject);
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Bird Flock", priority = 74)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Bird Flock", priority = 77)]
         private static void MenuFlock(MenuCommand cmd) => EditorApplication.delayCall += () => TarkovSceneTools.Place(cmd, p => CreateFlock(p).transform.parent.gameObject);
 
         // birds round two loops over the spawner, 25 and 32 m up, flown opposite ways
@@ -796,7 +796,7 @@ namespace TarkovSDK.Editor
         private double _nextCheck;
         private readonly Dictionary<BezierSpline, List<Vector3>> _blocked = new Dictionary<BezierSpline, List<Vector3>>();
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Bird Path Tool...", priority = 130)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Bird Path Tool...", priority = 132)]
         public static void OpenMenu() => Open(Selection.activeGameObject != null ? Selection.activeGameObject.GetComponentInParent<BirdsSpawner>() : null);
 
         public static void Open(BirdsSpawner spawner)

@@ -42,6 +42,8 @@ namespace TarkovSDK.Editor
             public MaterialType Wood = MaterialType.WoodThick;
             [Tooltip("The trigger spheres down the canopy that rustle when walked through (and tell bots a player is in the tree).")]
             public bool Canopy = true;
+            [Tooltip("A bush (retail filbert, fern, brush): no trunk, players walk and bullets fly through it; only the rustle triggers.")]
+            public bool Bush;
             [Tooltip("The last LOD stays until the tree is this small on screen (0.02 = 2% of its height).")]
             public float CullBelow = 0.02f;
             [Tooltip("Paint it on the scene's terrains too (adds it to their trees).")]
@@ -50,11 +52,14 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ the SDK's own trees
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Pine)", priority = 70)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Pine)", priority = 72)]
         private static void MenuPine(MenuCommand cmd) => Place(cmd, "SDK_Pine");
 
-        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Broadleaf)", priority = 71)]
+        [MenuItem("GameObject/Tarkov SDK/Environment/Tree (Broadleaf)", priority = 73)]
         private static void MenuBroadleaf(MenuCommand cmd) => Place(cmd, "SDK_Broadleaf");
+
+        [MenuItem("GameObject/Tarkov SDK/Environment/Bush", priority = 74)]
+        private static void MenuBush(MenuCommand cmd) => Place(cmd, "SDK_Bush");
 
         private static void Place(MenuCommand cmd, string name) => EditorApplication.delayCall += () =>
         {
@@ -90,7 +95,7 @@ namespace TarkovSDK.Editor
                 return null;
             }
             Directory.CreateDirectory(AssetFolder);
-            bool pine = name == "SDK_Pine";
+            bool pine = name == "SDK_Pine", bush = name == "SDK_Bush";
             var bark = Material("SDK_TreeBark", Texture("SDK_TreeBark", 256, 256, BarkPixels, wrap: true), leaves: false);
             var foliage = pine
                 ? Material("SDK_TreeNeedles", Texture("SDK_TreeNeedles", 256, 512, NeedlePixels, wrap: false), leaves: true)
@@ -100,7 +105,7 @@ namespace TarkovSDK.Editor
             {
                 for (int lod = 0; lod < 3; lod++)
                 {
-                    var mesh = pine ? PineMesh(lod) : BroadleafMesh(lod);
+                    var mesh = bush ? BushMesh(lod) : pine ? PineMesh(lod) : BroadleafMesh(lod);
                     mesh.name = $"{name}_LOD{lod}";
                     AssetDatabase.CreateAsset(mesh, $"{AssetFolder}/{mesh.name}.asset");
                     var go = new GameObject(mesh.name);
@@ -108,7 +113,7 @@ namespace TarkovSDK.Editor
                     go.AddComponent<MeshFilter>().sharedMesh = mesh;
                     go.AddComponent<MeshRenderer>().sharedMaterials = new[] { bark, foliage };
                 }
-                return Build(root, AssetFolder, name, new Options(), out _);
+                return Build(root, AssetFolder, name, new Options { Bush = bush }, out _);
             }
             finally
             {
@@ -380,6 +385,37 @@ namespace TarkovSDK.Editor
             return m.Mesh();
         }
 
+        // a 1.6 m hazel-like bush: thin stems fanning out of the ground and leaf clusters over a low dome about 2.4 m across
+        private static Mesh BushMesh(int lod)
+        {
+            var m = new MeshBuilder();
+            var random = new System.Random(37);
+            int stems = lod == 0 ? 7 : lod == 1 ? 4 : 0;
+            for (int i = 0; i < stems; i++)
+            {
+                float angle = i / (float)stems * Mathf.PI * 2f + (float)random.NextDouble() * 0.6f;
+                var end = new Vector3(Mathf.Cos(angle) * 0.7f, 1.1f + (float)random.NextDouble() * 0.4f, Mathf.Sin(angle) * 0.7f);
+                m.Tube(Vector3.zero, end, 0.025f, 0.01f, lod == 0 ? 5 : 4, 1f);
+            }
+            int clusters = lod == 0 ? 34 : lod == 1 ? 18 : 8;
+            int cards = lod == 0 ? 3 : 2;
+            float size = lod == 0 ? 0.9f : lod == 1 ? 1.15f : 1.6f;
+            for (int c = 0; c < clusters; c++)
+            {
+                // points on a squashed half sphere, denser towards the top and the rim
+                float a = (float)random.NextDouble() * Mathf.PI * 2f, up = Mathf.Sqrt((float)random.NextDouble());
+                var center = new Vector3(Mathf.Cos(a) * 1f * Mathf.Sqrt(1f - up * up), 0.3f + up * 0.85f, Mathf.Sin(a) * 1f * Mathf.Sqrt(1f - up * up));
+                for (int k = 0; k < cards; k++)
+                {
+                    float angle = k / (float)cards * Mathf.PI + (float)random.NextDouble();
+                    var across = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    var along = (Vector3.up + across * 0.3f).normalized * size;
+                    m.Card(center - along * 0.5f, along, across, size);
+                }
+            }
+            return m.Mesh();
+        }
+
         // ------------------------------------------------------------ building a tree
 
         // Makes a tree prefab from 'source' (a prefab, model or scene object; it's copied, never changed) in 'folder'.
@@ -436,6 +472,16 @@ namespace TarkovSDK.Editor
                     AddColliders(tree, lod0, assets, options, notes);
                 else
                     notes.Add("its own colliders and canopy kept");
+                // the rustle; the SDK's own prefabs are committed, so they leave it to Build Map (the game's bank is per install)
+                if (folder != AssetFolder)
+                {
+                    var silent = tree.GetComponentsInChildren<TreeInteractive>(true).Where(t => t._soundBank == null).ToList();
+                    var bank = silent.Count > 0 ? TarkovFoliageSounds.Bank() : null;
+                    foreach (var t in silent)
+                        t._soundBank = bank;
+                    if (bank != null)
+                        notes.Add($"rustles with {bank.name}");
+                }
                 var interactive = tree.transform.Find(InteractiveName) ?? tree.GetComponentInChildren<TreeInteractive>(true)?.transform;
                 var part = tree.GetComponent<TreeInteractivePart>() ?? tree.AddComponent<TreeInteractivePart>();
                 part.InteractivePart = interactive != null ? interactive.gameObject : null;
@@ -746,6 +792,11 @@ namespace TarkovSDK.Editor
             interactive.transform.SetParent(tree.transform, false);
             interactive.transform.localPosition = new Vector3(center.x, leafBounds.min.y, center.z);
             interactive.AddComponent<TreeInteractive>();
+            if (options.Bush)
+            {
+                AddBushTriggers(interactive, tree.transform.InverseTransformPoint(bounds.min), tree.transform.InverseTransformPoint(bounds.max), bottom, notes);
+                return;
+            }
             if (options.Canopy)
             {
                 // three triggers from the lowest branches up, narrowing like retail's (1.29, 1.0, 0.65 m on a pine)
@@ -788,6 +839,30 @@ namespace TarkovSDK.Editor
             ballistic._typeOfMaterial = options.Wood;
             ballistic.SurfaceSound = BaseBallistic.ESurfaceSound.Wood;
             notes.Add($"trunk {radius * 2f:0.00} m wide, {trunkHeight:0.0} m tall; canopy {(options.Canopy ? "triggers" : "none")} from {leafBounds.min.y - bottom:0.0} m");
+        }
+
+        // Retail bushes (filbert, fern, brush_dry) are only an AICollider with one to three trigger spheres: nothing blocks
+        // players or bullets. A round bush gets one sphere, a long hedge a row of them along its long side, each covering
+        // the full height so crouching through it still rustles.
+        private static void AddBushTriggers(GameObject interactive, Vector3 min, Vector3 max, float bottom, List<string> notes)
+        {
+            interactive.transform.localPosition = new Vector3((min.x + max.x) * 0.5f, bottom, (min.z + max.z) * 0.5f);
+            float height = Mathf.Max(0.3f, max.y - bottom);
+            float sizeX = max.x - min.x, sizeZ = max.z - min.z;
+            bool alongX = sizeX >= sizeZ;
+            float length = Mathf.Max(sizeX, sizeZ), width = Mathf.Max(0.3f, Mathf.Min(sizeX, sizeZ));
+            float radius = Mathf.Clamp(Mathf.Max(width, height) * 0.5f, 0.3f, 4f);
+            // a row only for something clearly longer than wide
+            int count = length < width * 1.5f ? 1 : Mathf.Clamp(Mathf.CeilToInt(length / (radius * 1.6f)), 1, 4);
+            for (int i = 0; i < count; i++)
+            {
+                float t = count == 1 ? 0f : (i / (float)(count - 1) - 0.5f) * (length - radius * 2f);
+                var sphere = interactive.AddComponent<SphereCollider>();
+                sphere.isTrigger = true;
+                sphere.radius = radius;
+                sphere.center = new Vector3(alongX ? t : 0f, Mathf.Min(radius, height * 0.5f), alongX ? 0f : t);
+            }
+            notes.Add($"bush: {count} rustle trigger(s) of {radius:0.0} m, no trunk (walk and shoot through)");
         }
 
         // the bark triangles of LOD0 as one mesh, in the hitbox's space (which sits at the tree's origin)
@@ -846,6 +921,10 @@ namespace TarkovSDK.Editor
         private string _folder = "Assets/Trees";
         private readonly TarkovTrees.Options _options = new TarkovTrees.Options();
         private List<string> _notes;
+        // cached: Describe looks through the project
+        private string _soundSource;
+
+        private void OnFocus() => _soundSource = null;
 
         [MenuItem("Tarkov SDK/Decompilation/Tree Builder...", priority = 153)]
         private static void Open()
@@ -870,8 +949,13 @@ namespace TarkovSDK.Editor
                 _name = _source.name.Replace(" ", "_");
             _name = EditorGUILayout.TextField("Prefab Name", _name);
             _folder = EditorGUILayout.TextField("Save Into", _folder);
-            _options.Wood = (EFT.Ballistics.MaterialType)EditorGUILayout.EnumPopup(new GUIContent("Trunk Material", "What bullets hit (WoodThick for trunks, WoodThin for saplings)."), _options.Wood);
-            _options.Canopy = EditorGUILayout.Toggle(new GUIContent("Canopy Triggers", "Rustles when walked through and tells bots a player is in the tree."), _options.Canopy);
+            _options.Bush = EditorGUILayout.Toggle(new GUIContent("Bush", "No trunk: players walk and bullets fly through it, and it rustles when walked through (retail filbert, fern, brush)."), _options.Bush);
+            using (new EditorGUI.DisabledScope(_options.Bush))
+            {
+                _options.Wood = (EFT.Ballistics.MaterialType)EditorGUILayout.EnumPopup(new GUIContent("Trunk Material", "What bullets hit (WoodThick for trunks, WoodThin for saplings)."), _options.Wood);
+                _options.Canopy = EditorGUILayout.Toggle(new GUIContent("Canopy Triggers", "Rustles when walked through and tells bots a player is in the tree."), _options.Canopy);
+            }
+            EditorGUILayout.LabelField("Rustle sound", _soundSource ?? (_soundSource = TarkovFoliageSounds.Describe()), EditorStyles.miniLabel);
             _options.CullBelow = EditorGUILayout.Slider(new GUIContent("Cull Below", "The last LOD stays until the tree is this small on screen."), _options.CullBelow, 0.005f, 0.2f);
             _options.AddToTerrains = EditorGUILayout.Toggle(new GUIContent("Add To Terrains", "Adds it to the open scene's terrains, to paint with the Paint Trees tool."), _options.AddToTerrains);
             using (new EditorGUI.DisabledScope(_source == null || string.IsNullOrWhiteSpace(_name) || !_folder.StartsWith("Assets", StringComparison.Ordinal)))
@@ -885,6 +969,7 @@ namespace TarkovSDK.Editor
                             EditorGUIUtility.PingObject(prefab);
                         }
                         Debug.Log($"[Tarkov SDK] Tree Builder: {(prefab != null ? "built" : "not built")} {_name}: " + string.Join("; ", _notes));
+                        _soundSource = null;
                         Repaint();
                     };
             if (_notes != null)

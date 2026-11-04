@@ -432,7 +432,7 @@ namespace TarkovSDK.Editor
             if (road.FollowGround)
             {
                 Physics.SyncTransforms();
-                heights = line.Select(p => Ground(new Ray(p + Vector3.up * 60f, Vector3.down), 200f, false, out var hit) ? hit.point.y + road.GroundOffset : p.y).ToList();
+                heights = line.Select(p => Terrain(new Ray(p + Vector3.up * 60f, Vector3.down), 200f, out var hit) ? hit.point.y + road.GroundOffset : p.y).ToList();
                 // a loop's last sample is its first again: smoothed round the ring of the others, then closed
                 int ring = loop ? heights.Count - 1 : heights.Count;
                 for (int pass = 0; pass < 2; pass++)
@@ -838,9 +838,16 @@ namespace TarkovSDK.Editor
         // ------------------------------------------------------------ ground
 
         // the first solid surface along the ray; with `roads` off, hand-made roads and junctions are looked through
-        public static bool Ground(Ray ray, float max, bool roads, out RaycastHit hit)
+        public static bool Ground(Ray ray, float max, bool roads, out RaycastHit hit) => Ground(ray, max, roads, TarkovRainCover.SolidMask, out hit);
+
+        // What Follow Ground (and fitting a junction) lies on: the Terrain layer only, which is where terrains and
+        // ground meshes are (Make Static Geometry, converted models, the generated city's ground), never props,
+        // buildings, trees or cars (Default and the Low/HighPolyCollider layers), so a road doesn't climb over them.
+        public static bool Terrain(Ray ray, float max, out RaycastHit hit) => Ground(ray, max, false, LayerMask.GetMask("Terrain"), out hit);
+
+        private static bool Ground(Ray ray, float max, bool roads, int mask, out RaycastHit hit)
         {
-            foreach (var h in Physics.RaycastAll(ray, max, TarkovRainCover.SolidMask, QueryTriggerInteraction.Ignore).OrderBy(x => x.distance))
+            foreach (var h in Physics.RaycastAll(ray, max, mask, QueryTriggerInteraction.Ignore).OrderBy(x => x.distance))
             {
                 if (!roads && IsRoadPart(h.collider.transform))
                     continue;
@@ -922,7 +929,7 @@ namespace TarkovSDK.Editor
             Physics.SyncTransforms();
             var corners = new List<Vector3>();
             foreach (var c in new[] { new Vector3(-r, 0f, -r), new Vector3(-r, 0f, r), new Vector3(r, 0f, r), new Vector3(r, 0f, -r) })
-                if (Ground(new Ray(root.position + heading * c + Vector3.up * 60f, Vector3.down), 200f, false, out var hit))
+                if (Terrain(new Ray(root.position + heading * c + Vector3.up * 60f, Vector3.down), 200f, out var hit))
                     corners.Add(hit.point);
             if (corners.Count < 3)
                 return false;

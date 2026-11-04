@@ -16,6 +16,8 @@ UnspawnPoint
 BotZoneNavMeshCutter
 PatrolWay
 PatrolPoint
+# a patrol point's look directions (a child of the point; world directions)
+PointWithLookSides
 
 # --- AI data holders (left empty in the editor; the client plugin generates their data from the navmesh) ---
 AICoversData
@@ -74,6 +76,12 @@ EFT.Weather.TodLightSetter
 TOD_Time
 AmbientLight
 OnRenderObjectManager
+# indoor ambient: AmbientLight draws them into its stencil pass (StencilShadow = a closed volume darkening the ambient inside,
+# AnalyticSource = light let in through an opening; the Dynamic ones follow a moving parent, e.g. Reserve's train)
+StencilShadow
+DynamicStencilShadow
+AnalyticSource
+DynamicAnalyticSource
 
 # --- full weather system (Tarkov SDK > Map > Time of Day / Weather...) ---
 TOD_Sky

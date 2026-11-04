@@ -6,4 +6,5 @@
 
 public class PointWithLookSides : global::UnityEngine.MonoBehaviour
 {
+    public global::System.Collections.Generic.List<global::UnityEngine.Vector3> Directions = new global::System.Collections.Generic.List<global::UnityEngine.Vector3>();
 }

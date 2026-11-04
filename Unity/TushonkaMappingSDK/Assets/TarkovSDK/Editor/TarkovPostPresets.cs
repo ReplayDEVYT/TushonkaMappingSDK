@@ -13,7 +13,7 @@ namespace TarkovSDK.Editor
     // makes a preset with those retail values next to the scene and assigns it, so a mapper can tune it.
     public static class TarkovPostPresets
     {
-        [MenuItem("Tarkov SDK/Generation/Misc/Post-Processing Preset", priority = 114)]
+        [MenuItem("Tarkov SDK/Generation/Misc/Post-Processing Preset", priority = 115)]
         private static void CreateMenu() => EditorApplication.delayCall += Create;
 
         public static void Create()

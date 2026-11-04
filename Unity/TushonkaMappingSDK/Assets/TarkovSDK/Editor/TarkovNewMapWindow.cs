@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -13,7 +14,7 @@ namespace TarkovSDK.Editor
     {
         private string _mapId = "sdk_example";
 
-        [MenuItem("Tarkov SDK/Map Settings/New Map...", priority = 137)]
+        [MenuItem("Tarkov SDK/Map Settings/New Map...", priority = 140)]
         private static void Open()
         {
             var window = GetWindow<TarkovNewMapWindow>(true, "New Tarkov Map");
@@ -39,11 +40,16 @@ namespace TarkovSDK.Editor
                 }
         }
 
-        // the SDK's own trees west of the shed (their prefabs are made once, in Assets/TarkovSDK/Trees)
+        // the SDK's own trees and bushes west of the shed (their prefabs are made once, in Assets/TarkovSDK/Trees); walking
+        // through any of them rustles (Build Map gives them the foliage bank)
         private static void CreateExampleTrees(UnityEngine.SceneManagement.Scene scene)
         {
             var root = new GameObject("Trees");
-            foreach (var (name, position) in new[] { ("SDK_Pine", new Vector3(-68f, 0f, 12f)), ("SDK_Pine", new Vector3(-75f, 0f, 22f)), ("SDK_Broadleaf", new Vector3(-62f, 0f, 27f)) })
+            foreach (var (name, position) in new[]
+                     {
+                         ("SDK_Pine", new Vector3(-68f, 0f, 12f)), ("SDK_Pine", new Vector3(-75f, 0f, 22f)), ("SDK_Broadleaf", new Vector3(-62f, 0f, 27f)),
+                         ("SDK_Bush", new Vector3(-64f, 0f, 17f)), ("SDK_Bush", new Vector3(-71f, 0f, 30f)), ("SDK_Bush", new Vector3(-58f, 0f, 21f)),
+                     })
             {
                 var prefab = TarkovTrees.SdkTree(name);
                 if (prefab == null)
@@ -53,6 +59,29 @@ namespace TarkovSDK.Editor
                 tree.transform.position = position;
             }
             Undo.RegisterCreatedObjectUndo(root, "Example trees");
+        }
+
+        // a Building Builder house in the east, turned a little: a hall with stairs up to a second storey under a gable roof,
+        // a room beside it under a flat roof with its far end rounded off, baseboards and crown mouldings inside, a band
+        // round its plinth; its doors, windows, lamps, darkness volumes, ambient portals, rain cover and indoor triggers
+        // come with it (before the navmesh bake, so bots walk in and upstairs)
+        private static void CreateExampleHouse(UnityEngine.SceneManagement.Scene scene)
+        {
+            var plan = TarkovBuildingBuilder.Create(scene, new Vector3(58f, 0f, 4f), "SDK_ExampleHouse");
+            TarkovBuildingBuilder.Building(plan).rotation = Quaternion.Euler(0f, 15f, 0f);
+            var upper = new TarkovSDK.TarkovBuilding.Storey { Height = 3f };
+            plan.Storeys.Add(upper);
+            plan.Fit(upper);
+            for (int z = 0; z < plan.Depth; z++)
+                for (int x = 0; x < 6; x++)
+                    plan.Set(1, x, z, 1);
+            plan.Stairs.Add(new TarkovSDK.TarkovBuilding.Stair { Storey = 0, X = 1, Z = 2, Direction = 0, Length = 5, Width = 2 });
+            plan.Openings.Add(new TarkovSDK.TarkovBuilding.Opening { Storey = 1, X = 2, Z = 0, Kind = TarkovSDK.TarkovBuilding.OpeningKind.Window, Width = 1.2f, Height = 1.2f, Sill = 0.9f, Span = 2 });
+            plan.Roof = TarkovSDK.TarkovBuilding.RoofKind.Gable;
+            TarkovBuildingBuilder.RoundRoom(plan, 0, 2, TarkovSDK.TarkovBuilding.BevelKind.Round, 2f, 8);
+            foreach (var preset in new[] { "Baseboard", "Crown Moulding", "Plinth Band" })
+                plan.Trims.Add(TarkovBuildingBuilder.TrimPresets.First(p => p.Name == preset).Make(plan));
+            TarkovBuildingBuilder.Build(plan);
         }
 
         // the map features beside the shed and in the west, before the navmesh bake so it goes round them: a fire barrel, an
@@ -171,9 +200,12 @@ namespace TarkovSDK.Editor
             TarkovLightingPreview.ApplyRetailReflection();
             CreateExampleTrees(scene);
             CreateExampleFeatures(scene);
+            CreateExampleHouse(scene);
             TarkovSceneTools.BakeNavMesh();
             Physics.SyncTransforms();
             TarkovRainCover.Generate(scene);
+            // the shed and the bunker darkened inside, with light let in at their doorways
+            TarkovIndoorAmbient.Generate(scene);
             TarkovAirdrops.Generate(scene, 20f);
             TarkovAirdrops.EnsurePhysicsSetup(scene, new TarkovScenePreparer.Report());
             // the roads follow the navmesh, so they come after the bake

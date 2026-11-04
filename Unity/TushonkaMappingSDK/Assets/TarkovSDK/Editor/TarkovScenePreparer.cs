@@ -243,11 +243,15 @@ namespace TarkovSDK.Editor
             TarkovExplosives.Prepare(scene, roots, report);
             TarkovWires.Prepare(scene, roots, report);
             TarkovTrees.PrepareWind(scene, roots);
+            TarkovFoliageSounds.Prepare(scene, roots, report);
+            TarkovIndoorAmbient.Check(scene, roots, report);
             roots = scene.GetRootGameObjects();
             AssignInteractiveIds(scene, roots, report);
             TarkovContainerGroups.Prepare(scene, roots, report);
             TarkovMountedGuns.Prepare(scene, roots, report);
             TarkovBreachableDoors.Prepare(scene, roots, report);
+            // sub points first: SyncPatrolWays lists each way's own points, not the sub points under them
+            TarkovPatrolGenerator.Prepare(scene, roots, report);
             SyncPatrolWays(roots);
             SyncSpawnPoints(scene, roots, report);
             SyncBotZones(roots);
@@ -600,7 +604,8 @@ namespace TarkovSDK.Editor
                 trigger.Bounds = TransformBounds(trigger.transform);
                 EditorUtility.SetDirty(trigger);
                 var group = trigger.GetComponentInParent<EFT.EnvironmentEffect.TriggerGroup>(true);
-                if (group == null || group.GetComponentInParent<EFT.EnvironmentEffect.EnvironmentManager>(true) == null)
+                // a Building Builder building's own volumes are copied under the EnvironmentManager (TarkovBuildingBuilder.PrepareMap)
+                if ((group == null || group.GetComponentInParent<EFT.EnvironmentEffect.EnvironmentManager>(true) == null) && !TarkovBuildingBuilder.IsBuildingIndoor(trigger.transform))
                     report.Warnings.Add($"{scene.name}/{trigger.name}: IndoorTrigger is not under a TriggerGroup inside the EnvironmentManager, " +
                                         "so the game never checks it. Create it with GameObject > Tarkov SDK > Environment > Indoor Trigger");
             }

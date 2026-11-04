@@ -17,6 +17,9 @@ namespace TarkovSDK.Editor
         public const string AdditiveShader = "Legacy Shaders/Particles/Additive";
         public const string AlphaBlendedShader = "Legacy Shaders/Particles/Alpha Blended";
 
+        // A folder that's on disk but not yet in the asset database (made outside Unity, or with New Folder in a folder
+        // picker just before) is imported, not created: CreateFolder would make a "<name> 1" beside it, and anything
+        // moved into the real one would fail.
         public static void EnsureFolder(string folder)
         {
             if (AssetDatabase.IsValidFolder(folder))
@@ -24,6 +27,12 @@ namespace TarkovSDK.Editor
             var parent = Path.GetDirectoryName(folder)?.Replace('\\', '/');
             if (!string.IsNullOrEmpty(parent))
                 EnsureFolder(parent);
+            if (Directory.Exists(folder))
+            {
+                AssetDatabase.ImportAsset(folder, ImportAssetOptions.ForceSynchronousImport);
+                if (AssetDatabase.IsValidFolder(folder))
+                    return;
+            }
             AssetDatabase.CreateFolder(parent, Path.GetFileName(folder));
         }
 

@@ -115,7 +115,7 @@ namespace TarkovSDK.Editor
         {
             error = null;
             var path = AssetPathOf(entry);
-            var existing = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            var existing = GameAssetStore.Find<AudioClip>(path);
             if (existing != null)
                 return existing;
             var clip = Load(entry, out error);

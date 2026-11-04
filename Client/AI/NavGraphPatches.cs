@@ -19,7 +19,10 @@ namespace mizmii.CustomMapLoader.AI
         [PatchPrefix]
         private static bool Prefix(AICoversData __instance, ref bool __result)
         {
-            if (!Plugin.GenerateAiData.Value || !MapRegistry.IsCustomMapActive())
+            if (!MapRegistry.IsCustomMapActive())
+                return true;
+            NavGraphBuilder.EnsureDoorsHolder();
+            if (!Plugin.GenerateAiData.Value)
                 return true;
             // a map that does ship baked data is restored by the game as usual
             if (__instance.Points != null && __instance.Points.Count > 0)

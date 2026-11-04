@@ -23,4 +23,11 @@ public class AmbientLight : global::OnRenderObjectConnector
     [global::UnityEngine.Range(0f, 1f)]
     public float ReflectionBottomShade;
     public global::UnityEngine.AnimationCurve _reflectionWettingFunc;
+
+    [global::System.Serializable]
+    public class CullingSettings
+    {
+        public float Distance = 100f;
+        public float FadeLength = 5f;
+    }
 }

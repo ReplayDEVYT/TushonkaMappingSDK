@@ -42,7 +42,7 @@ namespace TarkovSDK.Editor
         [MenuItem("GameObject/Tarkov SDK/Interactables/Mounted Gun (AGS-30)", priority = 38)]
         private static void MenuAgs(MenuCommand cmd) => EditorApplication.delayCall += () => TarkovSceneTools.Place(cmd, CreateAgs);
 
-        public const string AgsPrefabPath = TarkovGameAssets.Root + "/Prefabs/Mounted Guns/AGS-30.prefab";
+        public static string AgsPrefabPath => TarkovGameAssets.Root + "/Prefabs/Mounted Guns/AGS-30.prefab";
         private static readonly string[] AgsScenes = { "custom_DesignMain", "Reserve_Base_DesignMain", "Lighthouse_DesignMain", "Sandbox_Design_Main", "City_Design_Main" };
 
         // the game's AGS-30, imported from the first retail scene that has one (once; reused after)

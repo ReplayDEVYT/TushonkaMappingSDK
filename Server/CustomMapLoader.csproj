@@ -20,6 +20,8 @@
     <PackageReference Include="SPTushonka.Common" Version="4.1.6" />
     <PackageReference Include="SPTushonka.DI" Version="4.1.6" />
     <PackageReference Include="SPTushonka.Server.Core" Version="4.1.6" />
+    <!-- AbstractPatch (the Lots of Loot raid hook); the server's own SPTarkov.Reflection.dll is used at runtime -->
+    <PackageReference Include="SPTushonka.Reflection" Version="4.1.5" />
   </ItemGroup>
 
   <ItemGroup>

@@ -39,7 +39,7 @@ namespace TarkovSDK
         [Tooltip("A double solid centre line instead of a dashed one.")]
         public bool Avenue;
 
-        [Tooltip("The road lies on the ground under it (terrain, the generated city), smoothed; off: it follows its points' heights.")]
+        [Tooltip("The road lies on the ground under it (the Terrain layer: terrains, ground meshes, the generated city; never props or buildings), smoothed; off: it follows its points' heights.")]
         public bool FollowGround = true;
 
         [Tooltip("Metres the road sits above the ground it follows.")]

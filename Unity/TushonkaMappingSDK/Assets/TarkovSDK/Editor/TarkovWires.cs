@@ -43,7 +43,7 @@ namespace TarkovSDK.Editor
             };
         }
 
-        [MenuItem(Menu + "Wire", priority = 72)]
+        [MenuItem(Menu + "Wire", priority = 75)]
         private static void MenuWire(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p =>
         {
             var wire = Create(p, new[] { new Vector3(0f, 7f, 0f), new Vector3(25f, 7f, 0f) }, null);
@@ -409,7 +409,7 @@ namespace TarkovSDK.Editor
         private float _poleHeight = 7f;
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Wire Tool...", priority = 129)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Wire Tool...", priority = 131)]
         public static void Open() => GetWindow<TarkovWiresWindow>("Wire Tool").minSize = new Vector2(340f, 360f);
 
         private void OnEnable() => SceneView.duringSceneGui += OnSceneGUI;

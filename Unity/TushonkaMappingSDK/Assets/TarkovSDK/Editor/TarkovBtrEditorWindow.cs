@@ -49,7 +49,7 @@ namespace TarkovSDK.Editor
         private float _carry;
         private Dictionary<string, List<TarkovBtrSim.Event>> _checks;
 
-        [MenuItem("Tarkov SDK/Tools/World Events/BTR Path Editor...", priority = 119)]
+        [MenuItem("Tarkov SDK/Tools/World Events/BTR Path Editor...", priority = 121)]
         private static void Menu() => Open(TarkovBtr.FindInMap(SceneManager.GetActiveScene()));
 
         public static void Open(MapPathConfig config)

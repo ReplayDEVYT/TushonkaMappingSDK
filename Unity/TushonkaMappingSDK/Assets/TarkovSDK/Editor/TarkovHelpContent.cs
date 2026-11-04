@@ -94,6 +94,14 @@ namespace TarkovSDK.Editor
                       "a road that ends on a junction's arm joins it. Drag a selected road's points, Ctrl-click it to add one; the curve editor (Roads tab) gives each point a mode (Smooth, Aligned, Free, Corner; right-click a point) with blue handles to drag, and a height profile to raise or lower the road at each point. " +
                       "Intersections: Place Junctions on a road's middle cuts it into a crossroads, drawing a road into another's middle makes a T, Intersect Crossing Roads does every crossing. Line This Road fills its sides with the kit's buildings, lamps, trees, props and cars. " +
                       "The Place tab is a brush of the kit's prefabs: with Snap To Roads buildings stand behind the nearest road's sidewalk facing it, cars park at the kerb."),
+                    S("A building (Building Builder)",
+                      "Tarkov SDK > Tools > Geometry > Building Builder...: New Building, then per storey drag rooms onto the grid (in the Scene view or the window), click doors, windows and gaps onto the edges between cells, " +
+                      "click stairs onto a cell (two cells wide for bots). It rebuilds as you go: merged meshes with a distant outside-only LOD, colliders for walking and bullets, doors, glass, frames, lamps, " +
+                      "darkness volumes and ambient portals, a rain cover and indoor triggers (Build Map moves them under the EnvironmentManager). Props you add outside its Generated child stay. " +
+                      "Save As Prefab to reuse it; select a copy and Open Prefab to change all of them. Doors under ~1.1 m wide are too narrow for bots.\n" +
+                      "Round rooms: the Bevel tool (click a room's cell near its corner), or Round Room with Fit for a round or round-ended room; doors and windows go on its straight walls. " +
+                      "Trims tab: baseboards, crown mouldings, cornices and the like from presets, their profile drawn in the window. Materials tab: each part's material, each storey's outside, " +
+                      "how a texture is laid (metres per repeat) and a material inspector; the Paint tool puts a material on single walls."),
                     S("After a build",
                       "Restart the SPT server: it reads base.json, locale.json and sdk_export.json only at startup. The game itself can stay closed or be restarted; the bundles are read when a raid loads."),
                     S("Where the logs are",
@@ -114,6 +122,10 @@ namespace TarkovSDK.Editor
                     S("Bots",
                       "Bake the navmesh (Generation > Essential > Bake NavMesh): bots only walk on it, and the client builds their cover, core points and patrols from it at raid start. " +
                       "Waves and bosses are in the Server Data Editor's Bots tab (base.json). Keep areas bot-free with AI > Nav Blocker and rebake."),
+                    S("Patrols",
+                      "Bots go to random points of their zone's ways (not in order), stay at stay points looking where their arrows point, and now and then move to another way; reserved ways are guard posts. " +
+                      "Generation > Essential > Patrol Routes makes retail-like patrols for zones without hand-made ways. Tools > AI > Patrol Editor shows them (problems in red), adds and drags points on the navmesh, sets look directions, " +
+                      "generates with your settings, and previews bots walking them. Build Map adds the sub points a group's followers need."),
                     S("Bots that spawn on a trigger",
                       "GameObject > Tarkov SDK > Triggers > Spawn Bots, or Triggers & Sounds' Spawn bots: a role (scav, PMC, raider, rogue, cultist, a boss), difficulty and count, at the object's child points, when a zone or switch fires. " +
                       "They spawn like any bot (profiles from the server) into the nearest bot zone. Points must be on the navmesh. In Fika co-op they're spawned by the host."),
@@ -201,6 +213,10 @@ namespace TarkovSDK.Editor
                     S("Breachable doors",
                       "Interactables > Breachable Door, or Tools > Interactables > Make Selected Doors Breachable: kicking the door in (Breach) splinters it as retail's wooden doors do: chips and dust burst from the lock, " +
                       "splinters drop, and broken wood shows round the lock. Any shut or locked door with Can Be Breached can be kicked open; this adds the splintering (the game's BrokenDoor)."),
+                    S("Dark interiors (indoor ambient)",
+                      "Interiors are lit by the open sky's ambient light unless a darkness volume (the game's StencilShadow) covers them; ambient portals (AnalyticSource) let soft light back in through doors and windows. " +
+                      "Generation > Geometry > Indoor Ambient makes both for every room (boxes fitted to the walls, a portal per opening to the outside). By hand: Lights > Indoor Darkness Volume / Ambient Portal, with Fit To Room and Fit To Opening in their inspectors. " +
+                      "They need the map's time of day rig (its AmbientLight draws them) and only show in the raid."),
                     S("Volumetric light shafts",
                       "Lights > Volumetric Light Shaft (a soft-shadowed spot through a window), or Tools > Lighting > Add Volumetric Light To Selected Lights: the game's VolumetricLight with retail's values. " +
                       "In the raid it shows with Volumetric Lighting on in the game's graphics settings. The Scene view previews the haze, but without the light's shadows, so shafts aren't cut by walls there."),
@@ -278,9 +294,10 @@ namespace TarkovSDK.Editor
                     S("Fix folders already in the project",
                       "Select a folder in the Project window: Decompilation > Fix Ripped Materials In Selected Folder (stand-ins and Tarkov/ renames), Remove Missing Scripts In Selected Folder (it also deletes the empty TextMeshPro fonts older imports brought in, which make TMP throw NullReferenceException in ReadFontAssetDefinition). Components left off at import (no class in the SDK) come back with their game values from the import window's Restore Components, once the project has the class (stub-roots.txt + regenerate, or your own script of the same name); it needs the export still on disk. Decompilation > Adjust Prefabs... repairs a folder of ripped prefabs (layers, ballistics, interactable settings, lamps, windows, ids, collision) and rebuilds doors, containers and lamps that lost their game components; Preview first."),
                     S("Trees",
-                      "GameObject > Tarkov SDK > Environment > Tree (Pine / Broadleaf) places the SDK's own trees. Decompilation > Tree Builder turns any tree into a game-ready one: a tree imported from another map keeps its SpeedTree meshes, " +
+                      "GameObject > Tarkov SDK > Environment > Tree (Pine / Broadleaf) places the SDK's own trees, Bush the SDK's bush. Decompilation > Tree Builder turns any tree into a game-ready one: a tree imported from another map keeps its SpeedTree meshes, " +
                       "materials and wind; any other model gets its bark and leaves on the game's tree shader (Nature/SpeedTreeEFT), and every tree gets LODs, a trunk that blocks players and bullets (wood), and the canopy triggers that rustle " +
-                      "and tell bots a player is inside, laid out as on Woods. Add To Terrains puts it on the scene's terrains to paint with Paint Trees (painted trees render and collide, the canopy triggers need placed trees)."),
+                      "and tell bots a player is inside, laid out as on Woods. Tick Bush for bushes: no trunk (walk and shoot through), only the rustle triggers. Add To Terrains puts it on the scene's terrains to paint with Paint Trees (painted trees render and collide, the canopy triggers need placed trees). " +
+                      "Silent trees: Build Map gives every tree and bush without a sound bank the game's tree rustle (copied from your game install the first time) or, without the game, the SDK's own."),
                     S("Shipping game assets",
                       "Assets taken from the game go into your map's bundle. Keep that in mind before sharing a map built with them."),
                 },
@@ -331,6 +348,8 @@ namespace TarkovSDK.Editor
             M("Build", "Scene names must be unique", D, "Two of the map's scenes share a name; the game loads scenes by name.", "Rename one of the scenes."),
             M("Build", "Asset bundle build failed", D, "Unity couldn't build the bundles.", "Look at the Console's first red error above it: usually a script error, a missing asset or a full disk."),
             M("Build", "is not an SPT install (no EscapeFromTarkov.exe)", D, "Deploy To Game points at a folder without the game.", "Set Spt Root on the Map Definition to your SPT folder (the one with EscapeFromTarkov.exe)."),
+            M("AI", "patrol point(s) are more than", W, "PatrollingData ignores whether a point can be reached, so a bot that picks it stands still.", "Tools > AI > Patrol Editor: the point shows in red; drag it onto the navmesh or Snap To NavMesh."),
+            M("AI", "patrol point(s) can't be walked to from the first point", W, "The point is on another navmesh island; a bot that picks it stands still.", "Tools > AI > Patrol Editor: move it where the rest of the way can reach, or rebake the navmesh."),
             M("Build", "No navmesh found in any map scene", W, "Bots walk only on the navmesh, and the client builds their cover and patrols from it.", "Tarkov SDK > Generation > Essential > Bake NavMesh."),
             M("Build", "but the map has no baked occlusion data", W, "base.json turns on the raid camera's occlusion culling, but there's nothing baked to cull with.",
                 "Bake it (Tarkov SDK > Tools > Geometry > Culling Helper: Mark Static Objects, Bake), or turn it off there."),
@@ -391,6 +410,9 @@ namespace TarkovSDK.Editor
             M("Scene", "LevelSettings had no fog mode", W, "Without a fog mode the game renders the map black; Build Map set Exponential with density 0.", "Nothing to do. Set the fog you want on LevelSettings."),
             M("Scene", "LevelSettings skybox removed", W, "With the full weather system the skybox would hide the TOD sky and clouds; Build Map removed it.", "Nothing to do."),
             M("Scene", "LevelSettings had no skybox", W, "Without a skybox the sky is black; Build Map set SDK_Skybox.", "Nothing to do, or set your own skybox material."),
+            M("Lighting", "StencilShadow(s) have no MeshRenderer", W, "The game only draws a darkness volume through its renderer; without one it does nothing (retail has a few like that).", "Add a MeshRenderer and switch it off, or use Lights > Indoor Darkness Volume."),
+            M("Lighting", "StencilShadow(s) have no mesh", W, "A darkness volume darkens what is inside its mesh; without one there is nothing inside.", "Give it a closed mesh (the SDK's is SDK_StencilBox), or use Lights > Indoor Darkness Volume."),
+            M("Lighting", "has darkness volumes or ambient portals but the map has no AmbientLight", W, "The time of day rig's AmbientLight is what draws them, so without it they do nothing.", "Generation > Time > Time of Day / Weather...: add either rig."),
             M("Lighting", "LevelSettings ambient mode is", W, "Skybox and Trilight ambient glow on every surface at night.", "Tarkov SDK > Quick Fixes > Fix Night Lighting."),
             M("Lighting", "lights the map day and night and makes it glow at night", W, "Unity's ambient light reaches every surface unshadowed, day and night.", "Tarkov SDK > Quick Fixes > Fix Night Lighting."),
             M("Scene", "had no EnvironmentManager, one was added", W, "The game looks for indoor triggers in the EnvironmentManager; Build Map added it.", "Nothing to do."),
@@ -411,6 +433,8 @@ namespace TarkovSDK.Editor
             M("Scenes", "and so does the first scene", W, "A map has one of these. A second EnvironmentManager switches itself off in the raid; two LevelSettings or time of day systems fight.", "Delete the one in the other scene."),
             M("Scenes", "shares an object with the scene's LocationScene", W, "Build Map can't move it into the first scene without the other scene's LocationScene.", "Move that component onto its own object in the first scene."),
             M("Scenes", "indoor trigger group(s) moved under the EnvironmentManager", W, "The game only checks the indoor triggers under the first scene's EnvironmentManager.", "Nothing to do. Save the scenes."),
+            M("Scenes", "are inside a prefab, which can't be split", W, "Indoor triggers inside a prefab in another scene can't be moved under the first scene's EnvironmentManager, so the game ignores them.", "Unpack the prefab (right-click > Prefab > Unpack) or move the triggers out of it, then Fix Scene Setup."),
+            M("Scenes", "is inside a prefab, which can't be split", W, "A once-per-map part (LevelSettings, EnvironmentManager, time of day...) inside a prefab in another scene can't be moved into the first scene.", "Unpack the prefab, or move that part into the first scene by hand."),
             M("Scenes", "Part of the map has no navmesh under it", W, "The navmesh was baked without those scenes open (or before they were added), so bots can't walk there.", "Map Definition > Open All Scenes, then bake the navmesh again."),
             M("Lighting", "have no reflection cubemap and shine flat grey", W, "p0 materials without a Reflection Cubemap reflect flat grey, which no time of day changes.", "Tarkov SDK > Quick Fixes > Fix Shiny Materials."),
             M("Lighting", "has both the simple time of day rig and the full weather system", W, "Two time of day systems fight over the light.", "Generation > Time > Time of Day / Weather...: keep one."),
@@ -428,6 +452,9 @@ namespace TarkovSDK.Editor
             M("Audio", "has no Outdoor Day clip", W, "The ambient audio system plays nothing by day.", "Set the Outdoor Day clip in Generation > Ambience > Ambient Sounds..."),
             M("Audio", "beds and the ambient audio system", W, "The simple beds play on top of the game's ambient system.", "Remove SDK_Ambience, or the ambient audio system."),
             M("Audio", "no rain cover, so rain falls on the screen indoors", W, "The full weather shows rain on the screen wherever there's no dry plane above the camera.", "Generation > Geometry > Rain Cover."),
+            M("Audio", "rain covers (WeatherObstacle", W, "The game reads one WeatherObstacle; the dry planes under the others are ignored.", "Delete the extra RainCover objects, or regenerate with Generation > Geometry > Rain Cover (it replaces them all)."),
+            M("Audio", "was moved, turned, scaled or under another object", W, "The game applies the rain cover root's transform on top of its dry planes, so a moved root puts the cover off where it is. Build Map put it back at the origin, keeping the planes in place.", "Nothing; to move a cover, move its DryPlane children, not the root."),
+            M("Audio", "use a mesh without Read/Write enabled", W, "The game combines the dry planes' meshes at raid start and can't read these, so the rain cover fails.", "Turn on Read/Write in the model's import settings, or make the cover with GameObject > Tarkov SDK > Environment > Rain Cover For This Object."),
             M("Audio", "room acoustics are set up but not baked", W, "Meta XR's room acoustics have no bake, so the raid has no Meta reverb.", "Generation > Audio > Spatial Audio..., Bake Acoustics."),
             M("Audio", "not set up for Meta XR Audio", W, "These sources play with plain panning and no room sound.", "Generation > Audio > Spatial Audio..., Fix Audio Sources (or Quick Fixes > Fix Audio Sources)."),
             M("Audio", "Fade Up Outdoors is too short for the game to fade", W, "The game doesn't fade under 0.5 s, so the outdoor ambience jumps to full on leaving a room.", "Spatial Audio window: Fade Smoothly."),

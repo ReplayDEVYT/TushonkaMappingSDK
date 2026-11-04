@@ -44,7 +44,7 @@ namespace TarkovSDK.Editor
         private Bounds? _mapBounds;
         private Vector2 _scroll;
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Player Scale...", priority = 131)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Player Scale...", priority = 133)]
         public static void Open() => GetWindow<TarkovPlayerScaleWindow>("Player Scale").minSize = new Vector2(340f, 420f);
 
         private void OnEnable() => SceneView.duringSceneGui += OnSceneGui;

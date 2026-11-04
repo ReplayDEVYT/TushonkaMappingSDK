@@ -74,7 +74,7 @@ namespace TarkovSDK.Editor
             TarkovSceneTools.Place(cmd, p => CreateLampGroup(p).gameObject);
         }
 
-        [MenuItem("Tarkov SDK/Generation/Misc/Lens Flare Settings", priority = 113)]
+        [MenuItem("Tarkov SDK/Generation/Misc/Lens Flare Settings", priority = 114)]
         public static void AddFlareSettingsMenu()
         {
             var scene = SceneManager.GetActiveScene();

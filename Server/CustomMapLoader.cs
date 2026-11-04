@@ -40,6 +40,8 @@ public class CustomMapLoader(
     ImageRouter imageRouter,
     MapMenuData menuData,
     MapFeaturesData featuresData,
+    LotsOfLootCompat lotsOfLoot,
+    LotsOfLootRaidPatch lotsOfLootPatch,
     ISptLogger<CustomMapLoader> logger) : IOnLoad
 {
     // map id -> location ids it connects to on the map select screen, resolved once every map is in
@@ -59,6 +61,10 @@ public class CustomMapLoader(
     public async Task OnLoadAsync(CancellationToken cancellationToken)
     {
         var modDir = Path.GetDirectoryName(typeof(CustomMapLoader).Assembly.Location)!;
+        lotsOfLoot.LoadConfig(modDir);
+        // SPT applies no patch by itself: each mod enables its own
+        if (lotsOfLootPatch is SPTarkov.Reflection.Patching.IRuntimePatch patch && !patch.IsActive)
+            patch.Enable();
         var mapsDir = Path.Combine(modDir, "maps");
         if (!Directory.Exists(mapsDir))
         {
@@ -192,6 +198,12 @@ public class CustomMapLoader(
         if (!string.Equals(locationBase.Id, mapId, StringComparison.Ordinal))
             throw new InvalidDataException($"base.json Id '{locationBase.Id}' must equal the folder name '{mapId}'");
         EnsureAvailable(mapId, locationBase.IdField);
+        // the map maker's Lots of Loot setting (base.json "LotsOfLoot", from the SDK's Server Data Editor)
+        LotsOfLootCompat.MapSetting? lotsOfLootSetting = null;
+        using (var raw = JsonDocument.Parse(await File.ReadAllTextAsync(basePath, cancellationToken)))
+            if (raw.RootElement.TryGetProperty("LotsOfLoot", out var lol) && lol.ValueKind == JsonValueKind.Object)
+                lotsOfLootSetting = lol.Deserialize<LotsOfLootCompat.MapSetting>();
+        lotsOfLoot.Register(mapId, lotsOfLootSetting);
 
         // the bundle keys the client plugin serves, as built by the SDK
         locationBase.Scene = new Scene

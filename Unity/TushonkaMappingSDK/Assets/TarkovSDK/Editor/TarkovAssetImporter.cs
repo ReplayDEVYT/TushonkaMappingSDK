@@ -58,6 +58,9 @@ namespace TarkovSDK.Editor
         private List<GameIndexEntry> _countsOf;
         private Dictionary<string, int> _counts;
         private string _prefabsFolder;
+        private bool _showFolders;
+        // a folder of its own for what's imported now (Change... by the import's path), null = where imports go
+        private string _into;
 
         // background scan
         private Task _scan;
@@ -69,7 +72,7 @@ namespace TarkovSDK.Editor
         private string _scanMapKey;
         private string _scanError;
 
-        [MenuItem("Tarkov SDK/Tools/Asset Importer...", priority = 136)]
+        [MenuItem("Tarkov SDK/Tools/Asset Importer...", priority = 139)]
         public static void Open() => GetWindow<TarkovAssetImporter>("Asset Importer").minSize = new Vector2(520f, 480f);
 
         private void OnFocus() => _prefabsFolder = null;
@@ -147,7 +150,10 @@ namespace TarkovSDK.Editor
                     EditorApplication.delayCall += PickFolder;
                 TarkovGameModelPreview.Enabled = GUILayout.Toggle(TarkovGameModelPreview.Enabled,
                     new GUIContent("Scene Models", "Draws the game's models for mounted guns, loot spawns, airdrop points and BTR stops in the Scene view."), EditorStyles.toolbarButton);
+                _showFolders = GUILayout.Toggle(_showFolders, new GUIContent("Import Folders", "Where imports go (normally the map's Prefabs folder and Assets/TarkovGameAssets)."), EditorStyles.toolbarButton);
             }
+            if (_showFolders)
+                DrawFolders();
             if (!TarkovGameData.Available)
             {
                 EditorGUILayout.HelpBox($"No game install at {TarkovGameData.Folder}. Set Spt Root on your Map Definition, or press Change... and pick the game's EscapeFromTarkov_Data folder.",
@@ -196,6 +202,104 @@ namespace TarkovSDK.Editor
                 return;
             }
             DrawBrowser(current, index);
+        }
+
+        // where the import goes, with Change... to pick a folder of its own for it (a material only one map uses, say)
+        // and Default to go back; the folder stays picked for the next imports until then
+        private void IntoField(string normal)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(new GUIContent("Into " + (_into ?? normal), _into != null ? "A folder picked for these imports; Default goes back to " + normal : "Where it goes. Change... picks a folder for these imports."),
+                    _into != null ? EditorStyles.miniBoldLabel : EditorStyles.miniLabel);
+                if (GUILayout.Button(new GUIContent("Change...", "Picks a folder inside Assets for what's imported now (their textures and meshes stay in the shared game assets)."), EditorStyles.miniButton, GUILayout.Width(64f)))
+                    EditorApplication.delayCall += () =>
+                    {
+                        var start = Path.GetFullPath(_into ?? TarkovPrefabLibrary.MapFolder() ?? "Assets");
+                        var picked = EditorUtility.OpenFolderPanel("Import into", Directory.Exists(start) ? start : Application.dataPath, "");
+                        if (string.IsNullOrEmpty(picked))
+                            return;
+                        var project = TarkovImportFolders.FromDisk(picked);
+                        if (project == null)
+                            EditorUtility.DisplayDialog("Asset Importer", "Pick a folder inside this project's Assets folder.", "OK");
+                        else
+                        {
+                            // a folder just made in the picker isn't in the asset database yet
+                            TarkovGeneratedAssets.EnsureFolder(project);
+                            _into = project;
+                        }
+                        Repaint();
+                    };
+                using (new EditorGUI.DisabledScope(_into == null))
+                    if (GUILayout.Button(new GUIContent("Default", "Back to " + normal), EditorStyles.miniButton, GUILayout.Width(52f)))
+                        _into = null;
+            }
+        }
+
+        // the Import Folders: each empty for its default, typed, picked on disk (inside Assets) or set back
+        private void DrawFolders()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Where imports go in this project. Leave a folder empty for its default.", EditorStyles.wordWrappedMiniLabel);
+                FolderField(new GUIContent("Prefabs", "Imported objects, as prefabs in <folder>/<Category>. Default: the map's Prefabs folder (what the Prefab Library shows)."),
+                    TarkovImportFolders.Prefabs, TarkovGameImportJob.DefaultPrefabsFolder(), v => TarkovImportFolders.Prefabs = v);
+                FolderField(new GUIContent("Game Assets", "The meshes, materials, textures, sounds and presets imports are made of, in <folder>/<game file>/<kind>. Default: " + TarkovGameAssets.DefaultRoot + "."),
+                    TarkovImportFolders.Assets, TarkovGameAssets.DefaultRoot, v => TarkovImportFolders.Assets = v);
+                if (TarkovImportFolders.Assets != null)
+                    EditorGUILayout.HelpBox("These are the game's own files: keep them out of anything you share or commit (Assets/TarkovGameAssets is ignored by the SDK's git setup; another folder isn't).", MessageType.Info);
+                if (TarkovImportFolders.Prefabs != null || TarkovImportFolders.Assets != null)
+                    EditorGUILayout.LabelField("What was imported before stays where it is; importing an object again into a new folder makes a second copy.", EditorStyles.wordWrappedMiniLabel);
+            }
+        }
+
+        private void FolderField(GUIContent label, string current, string fallback, Action<string> set)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUI.BeginChangeCheck();
+                var typed = EditorGUILayout.DelayedTextField(label, current ?? "");
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (string.IsNullOrWhiteSpace(typed) || TarkovImportFolders.Valid(typed))
+                        set(typed);
+                    else
+                        EditorUtility.DisplayDialog("Import Folders", $"\"{typed}\" isn't a folder inside the project's Assets (it should start with Assets/).", "OK");
+                    _prefabsFolder = null;
+                }
+                if (current == null && Event.current.type == EventType.Repaint)
+                {
+                    // the default, greyed, in the empty field
+                    var r = GUILayoutUtility.GetLastRect();
+                    r.xMin += EditorGUIUtility.labelWidth + 2f;
+                    GUI.Label(r, fallback, EditorStyles.centeredGreyMiniLabel);
+                }
+                if (GUILayout.Button("...", GUILayout.Width(24f)))
+                    EditorApplication.delayCall += () =>
+                    {
+                        var start = System.IO.Path.GetFullPath(current ?? fallback);
+                        var picked = EditorUtility.OpenFolderPanel(label.text + " folder", System.IO.Directory.Exists(start) ? start : Application.dataPath, "");
+                        if (string.IsNullOrEmpty(picked))
+                            return;
+                        var project = TarkovImportFolders.FromDisk(picked);
+                        if (project == null)
+                            EditorUtility.DisplayDialog("Import Folders", "Pick a folder inside this project's Assets folder.", "OK");
+                        else
+                        {
+                            TarkovGeneratedAssets.EnsureFolder(project);
+                            set(project);
+                        }
+                        _prefabsFolder = null;
+                        Repaint();
+                    };
+                using (new EditorGUI.DisabledScope(current == null))
+                    if (GUILayout.Button(new GUIContent("Default", "Back to " + fallback), GUILayout.Width(56f)))
+                    {
+                        set(null);
+                        _prefabsFolder = null;
+                        GUI.FocusControl(null);
+                    }
+            }
         }
 
         private void PickFolder()
@@ -603,12 +707,12 @@ namespace TarkovSDK.Editor
                         EditorGUILayout.LabelField("Onto the open scenes' LevelSettings, time of day and ambient light", EditorStyles.miniLabel);
                     else if (entry != null && entry.Category == GameIndex.Data)
                     {
-                        EditorGUILayout.LabelField($"Into {TarkovGameAssets.Root}/<game file>/Presets", EditorStyles.miniLabel);
+                        IntoField($"{TarkovGameAssets.Root}/<game file>/Presets");
                         _place = EditorGUILayout.ToggleLeft(new GUIContent("Put it on the scene's LevelSettings too", "LevelSettings' Prism Preset Prefab, which the raid camera takes its post-processing from."), _place);
                     }
                     else if (entry != null && GameIndex.IsAsset(entry))
                     {
-                        EditorGUILayout.LabelField($"Into {TarkovGameAssets.Root}/<game file>/{entry.Category}", EditorStyles.miniLabel);
+                        IntoField($"{TarkovGameAssets.Root}/<game file>/{entry.Category}");
                         _place = EditorGUILayout.ToggleLeft(entry.Category == GameIndex.Materials
                             ? new GUIContent("Put it on the selected objects too", "Every material slot of the selected objects' renderers gets the imported material.")
                             : new GUIContent("Place a sound source too", "A 3D sound source where the Scene view looks, set up like an Ambient Sound Point (looping if the sound is 5 s or longer)."), _place);
@@ -616,7 +720,7 @@ namespace TarkovSDK.Editor
                     else
                     {
                         var folder = _prefabsFolder ?? (_prefabsFolder = TarkovGameImportJob.PrefabsFolder());
-                        EditorGUILayout.LabelField("Into " + folder + "/<Category>", EditorStyles.miniLabel);
+                        IntoField(folder + "/<Category>");
                         _place = EditorGUILayout.ToggleLeft(new GUIContent("Place in the scene too", "Each imported prefab is also placed where the Scene view looks."), _place);
                     }
                     using (new EditorGUI.DisabledScope(_selected.Count == 0))
@@ -653,8 +757,8 @@ namespace TarkovSDK.Editor
             var kit = TarkovCityBuilder.CurrentKit ?? TarkovCityBuilder.CreateKit();
             List<string> notes;
             var made = entries.All(e => e.Category == GameIndex.Materials)
-                ? TarkovGameImportJob.ImportAssets(entries, out notes)
-                : TarkovGameImportJob.Import(entries, out notes).Cast<Object>().ToList();
+                ? TarkovGameImportJob.ImportAssets(entries, out notes, _into)
+                : TarkovGameImportJob.Import(entries, out notes, _into).Cast<Object>().ToList();
             int added = TarkovCityBuilder.AddToKit(kit, field, made.Where(o => o != null));
             _status = $"Added {added} to {kit.name}'s {TarkovCityBuilder.SlotLabel(field).ToLowerInvariant()}" +
                       (notes.Count > 0 ? $" ({notes.Count} notes in the Console)." : ".");
@@ -673,9 +777,9 @@ namespace TarkovSDK.Editor
             // picked across kinds: the materials and sounds come in too, without being placed
             var assets = entries.Where(GameIndex.IsAsset).ToList();
             if (assets.Count > 0)
-                TarkovGameImportJob.ImportAssets(assets, out _);
+                TarkovGameImportJob.ImportAssets(assets, out _, _into);
             entries = entries.Where(e => !GameIndex.IsAsset(e)).ToList();
-            var prefabs = TarkovGameImportJob.Import(entries, out var notes);
+            var prefabs = TarkovGameImportJob.Import(entries, out var notes, _into);
             _status = $"Imported {prefabs.Count(p => p != null)} of {entries.Count}" + (notes.Count > 0 ? $" ({notes.Count} notes in the Console)" : ".");
             if (place)
                 foreach (var prefab in prefabs.Where(p => p != null))
@@ -700,7 +804,7 @@ namespace TarkovSDK.Editor
             if (megabytes > 100f && !EditorUtility.DisplayDialog("Asset Importer",
                     $"These sounds make about {megabytes:0} MB of .wav files in the project (Unity compresses them again when it builds the map).", "Import", "Cancel"))
                 return;
-            var assets = TarkovGameImportJob.ImportAssets(entries, out var notes);
+            var assets = TarkovGameImportJob.ImportAssets(entries, out var notes, _into);
             // lighting makes no asset: it counts as done unless it left a note
             int lit = entries.Count(e => GameIndex.IsLighting(e) && !notes.Any(n => n.StartsWith(e.Name + ":")));
             _status = (lit > 0 ? "Lighting applied to the open scenes (the Console says what). " : "") +
@@ -803,6 +907,56 @@ namespace TarkovSDK.Editor
         }
     }
 
+    // The Asset Importer's own folders for this project (EditorPrefs keyed by the project's path, like the game data
+    // folder): null = the defaults (prefabs in the map's Prefabs folder, game assets in Assets/TarkovGameAssets).
+    public static class TarkovImportFolders
+    {
+        private static string Key(string name) => $"TarkovSDK.ImportFolder.{name}:{Application.dataPath}";
+
+        public static string Prefabs
+        {
+            get => Get("Prefabs");
+            set => Set("Prefabs", value);
+        }
+
+        public static string Assets
+        {
+            get => Get("Assets");
+            set => Set("Assets", value);
+        }
+
+        private static string Get(string name)
+        {
+            var value = EditorPrefs.GetString(Key(name), "");
+            return Valid(value) ? value : null;
+        }
+
+        private static void Set(string name, string value)
+        {
+            if (Valid(value))
+                EditorPrefs.SetString(Key(name), Normal(value));
+            else
+                EditorPrefs.DeleteKey(Key(name));
+        }
+
+        // a folder inside the project's Assets (it needn't exist yet: imports make it)
+        public static bool Valid(string folder) => !string.IsNullOrWhiteSpace(folder) && (Normal(folder) == "Assets" || Normal(folder).StartsWith("Assets/")) && !Normal(folder).Contains("..");
+
+        public static string Normal(string folder) => folder.Trim().Replace('\\', '/').TrimEnd('/');
+
+        // an absolute folder picked on disk as a project path, or null when it's outside Assets
+        public static string FromDisk(string absolute)
+        {
+            if (string.IsNullOrEmpty(absolute))
+                return null;
+            var full = System.IO.Path.GetFullPath(absolute).Replace('\\', '/').TrimEnd('/');
+            var assets = System.IO.Path.GetFullPath(Application.dataPath).Replace('\\', '/').TrimEnd('/');
+            if (string.Equals(full, assets, System.StringComparison.OrdinalIgnoreCase))
+                return "Assets";
+            return full.StartsWith(assets + "/", System.StringComparison.OrdinalIgnoreCase) ? "Assets" + full.Substring(assets.Length) : null;
+        }
+    }
+
     // Imports index entries as prefabs (scenes read once per job and kept for the next)
     public static class TarkovGameImportJob
     {
@@ -812,8 +966,11 @@ namespace TarkovSDK.Editor
 
         public static GameSceneTree Tree(GameIndexEntry entry) => GameSceneCache.For(TarkovGameData.Files, entry);
 
-        // where imported prefabs go: the Prefab Library's (the map's folder) or, with no saved scene, the game assets'
-        public static string PrefabsFolder()
+        // where imported prefabs go: the Import Folders setting, else the Prefab Library's (the map's folder) or, with
+        // no saved scene, the game assets'
+        public static string PrefabsFolder() => TarkovImportFolders.Prefabs ?? DefaultPrefabsFolder();
+
+        public static string DefaultPrefabsFolder()
         {
             var folder = TarkovPrefabLibrary.MapFolder();
             return folder != null ? folder + "/Prefabs" : TarkovGameAssets.Root + "/Prefabs";
@@ -822,7 +979,8 @@ namespace TarkovSDK.Editor
         private const string UserDataPrefix = "TarkovGame:";
 
         // materials and sounds: one asset each (null where it didn't import), made once and then reused
-        public static List<Object> ImportAssets(List<GameIndexEntry> entries, out List<string> notes)
+        // into: a folder for these assets themselves (their textures stay shared), else where imports go
+        public static List<Object> ImportAssets(List<GameIndexEntry> entries, out List<string> notes, string into = null)
         {
             notes = new List<string>();
             var made = new List<Object>();
@@ -871,6 +1029,8 @@ namespace TarkovSDK.Editor
                     }
                     if (asset == null)
                         notes.Add($"{entry.Name}: not imported ({error})");
+                    else if (into != null && GameAssetStore.MoveInto(asset, into) is string moveError)
+                        notes.Add($"{entry.Name}: not moved into {into} ({moveError})");
                     notes.AddRange(store.Notes.Distinct().Select(n => $"{entry.Name}: {n}"));
                     store.Notes.Clear();
                     made.Add(asset);
@@ -886,15 +1046,16 @@ namespace TarkovSDK.Editor
             return made;
         }
 
-        public static List<GameObject> Import(List<GameIndexEntry> entries, out List<string> notes)
+        // into: a folder for these prefabs (straight in it), else the prefabs folder's <Category>
+        public static List<GameObject> Import(List<GameIndexEntry> entries, out List<string> notes, string into = null)
         {
             notes = new List<string>();
             var prefabs = new List<GameObject>();
             var root = PrefabsFolder();
             // prefabs already imported, by the object they came from
             var existing = new Dictionary<string, string>();
-            if (AssetDatabase.IsValidFolder(root))
-                foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { root }))
+            foreach (var folder in new[] { root, into }.Where(f => f != null && AssetDatabase.IsValidFolder(f)).Distinct())
+                foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { folder }))
                 {
                     var path = AssetDatabase.GUIDToAssetPath(guid);
                     var data = AssetImporter.GetAtPath(path)?.userData;
@@ -910,11 +1071,24 @@ namespace TarkovSDK.Editor
                     var entry = entries[i];
                     if (EditorUtility.DisplayCancelableProgressBar("Asset Importer", entry.Name, i / (float)entries.Count))
                         break;
+                    // else one moved to a folder of its own: by its name anywhere, checked by its stamp
+                    if (!existing.ContainsKey(entry.Signature))
+                        foreach (var guid in AssetDatabase.FindAssets("t:Prefab " + GameIndex.Clean(entry.Name), new[] { "Assets" }))
+                        {
+                            var path = AssetDatabase.GUIDToAssetPath(guid);
+                            if (AssetImporter.GetAtPath(path)?.userData == UserDataPrefix + entry.Signature)
+                            {
+                                existing[entry.Signature] = path;
+                                break;
+                            }
+                        }
                     if (existing.TryGetValue(entry.Signature, out var known))
                     {
                         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(known);
                         if (prefab != null)
                         {
+                            if (into != null && GameAssetStore.MoveInto(prefab, into) is string moveError)
+                                notes.Add($"{entry.Name}: not moved into {into} ({moveError})");
                             prefabs.Add(prefab);
                             continue;
                         }
@@ -927,7 +1101,7 @@ namespace TarkovSDK.Editor
                         prefabs.Add(null);
                         continue;
                     }
-                    var dir = $"{root}/{entry.Category}";
+                    var dir = into ?? $"{root}/{entry.Category}";
                     TarkovGeneratedAssets.EnsureFolder(dir);
                     var target = AssetDatabase.GenerateUniqueAssetPath($"{dir}/{GameIndex.Clean(entry.Name)}.prefab");
                     store.Notes.Clear();

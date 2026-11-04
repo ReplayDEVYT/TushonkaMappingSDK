@@ -47,6 +47,18 @@ namespace mizmii.CustomMapLoader.AI
             return true;
         }
 
+        // Every retail map has an AIDoorsHolder (the baked door links' parent); SDK maps have none. The game
+        // doesn't need it, but mods do: Waypoints' DoorLinkPatch (a BotsController.Init postfix) parents the
+        // links it makes under FindObjectOfType<AIDoorsHolder>() unchecked, so a custom map with a locked or
+        // breachable door failed to start a raid. RestoreData runs inside BotsController.Init, before it.
+        public static void EnsureDoorsHolder()
+        {
+            if (UnityEngine.Object.FindObjectOfType<AIDoorsHolder>() != null)
+                return;
+            var holder = new GameObject("AIDoorsHolder").AddComponent<AIDoorsHolder>();
+            holder.DoorsLinks = new List<NavMeshDoorLink>();
+        }
+
         private static int MaxPointId(AICoversData covers)
         {
             int max = 0;

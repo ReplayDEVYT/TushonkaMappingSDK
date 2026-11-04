@@ -37,7 +37,7 @@ namespace TarkovSDK.Editor
         private Vector2 _scroll;
         private string _status;
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Culling Helper...", priority = 132)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Culling Helper...", priority = 134)]
         public static void Open() => GetWindow<TarkovCullingWindow>("Culling Helper").minSize = new Vector2(380f, 460f);
 
         private void OnEnable()

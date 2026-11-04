@@ -468,7 +468,7 @@ namespace TarkovSDK.Editor
             (ERequirementState.Reference, "Climbing gear (Alpinist)", ""),
         };
 
-        [MenuItem("Tarkov SDK/Tools/Extracts/Extracts...", priority = 115)]
+        [MenuItem("Tarkov SDK/Tools/Extracts/Extracts...", priority = 116)]
         private static void Open() => GetWindow<TarkovExtractsWindow>("Extracts").minSize = new Vector2(440f, 420f);
 
         private void OnSelectionChange() => Repaint();

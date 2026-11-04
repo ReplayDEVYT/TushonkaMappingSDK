@@ -36,13 +36,55 @@ namespace TarkovSDK.Editor
             {
                 if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                     return;
+                // the multi-scene bake takes the first scene's settings
+                var first = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(paths[0]);
+                if (first.IsValid() && first.isLoaded)
+                {
+                    var active = EditorSceneManager.GetActiveScene();
+                    EditorSceneManager.SetActiveScene(first);
+                    if (UseHumanoidAgent())
+                        EditorSceneManager.SaveScene(first);
+                    EditorSceneManager.SetActiveScene(active);
+                }
                 UnityEditor.AI.NavMeshBuilder.BuildNavMeshForMultipleScenes(paths.ToArray());
                 Debug.Log($"[Tarkov SDK] NavMesh baked over all {paths.Count} scenes of '{def.MapId}', stored in the first. Only Navigation Static geometry is included.");
                 return;
             }
+            UseHumanoidAgent();
             UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
 #pragma warning restore 618
             Debug.Log("[Tarkov SDK] NavMesh baked for the active scene. Only Navigation Static geometry is included.");
+        }
+
+        // The legacy bake reads the active scene's own bake settings (NavMeshSettings.m_BuildSettings, the Navigation
+        // window's Bake tab), not the agent type: a new scene starts at radius 0.5 and height 2, which closes doorways
+        // under ~1.2 m wide or 2 m tall to bots. They're set to the project's Humanoid agent (type 0, what bots path
+        // with). True when something changed.
+        public static bool UseHumanoidAgent()
+        {
+            var agent = UnityEngine.AI.NavMesh.GetSettingsByID(0);
+            var so = new SerializedObject(UnityEditor.AI.NavMeshBuilder.navMeshSettingsObject);
+            bool changed = false;
+            void Set(string name, float value)
+            {
+                var p = so.FindProperty("m_BuildSettings." + name);
+                if (p != null && !Mathf.Approximately(p.floatValue, value))
+                {
+                    p.floatValue = value;
+                    changed = true;
+                }
+            }
+            Set("agentRadius", agent.agentRadius);
+            Set("agentHeight", agent.agentHeight);
+            Set("agentSlope", agent.agentSlope);
+            Set("agentClimb", agent.agentClimb);
+            if (changed)
+            {
+                so.ApplyModifiedProperties();
+                Debug.Log($"[Tarkov SDK] The scene's navmesh bake settings set to the Humanoid agent (radius {agent.agentRadius}, height {agent.agentHeight}, " +
+                          $"climb {agent.agentClimb}, slope {agent.agentSlope})");
+            }
+            return changed;
         }
 
         public static void CreateSkeleton()
@@ -262,7 +304,7 @@ namespace TarkovSDK.Editor
 
         // a group per building keeps the game's indoor lookup fast: it tests a group's bounds before
         // its triggers. Created under the map's root group, or inside the group that was right-clicked.
-        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 67)]
+        [MenuItem(Menu + "Environment/Indoor Trigger Group", priority = 69)]
         private static void MenuIndoorTriggerGroup(MenuCommand cmd)
         {
             var parent = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -277,7 +319,7 @@ namespace TarkovSDK.Editor
 
         // indoor triggers only work under a TriggerGroup inside the EnvironmentManager, so they are
         // always created there (or in the TriggerGroup that was right-clicked) at the Scene view centre
-        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 66)]
+        [MenuItem(Menu + "Environment/Indoor Trigger", priority = 68)]
         private static void MenuIndoorTrigger(MenuCommand cmd)
         {
             var group = (cmd.context as GameObject)?.GetComponent<EFT.EnvironmentEffect.TriggerGroup>() ?? IndoorTriggerGroup();
@@ -287,7 +329,7 @@ namespace TarkovSDK.Editor
             Selection.activeGameObject = trigger.gameObject;
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 123)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Make Selected Static Geometry (Terrain layer)", priority = 125)]
         private static void MenuStaticGeometry()
         {
             foreach (var go in Selection.gameObjects)
@@ -299,7 +341,7 @@ namespace TarkovSDK.Editor
             }
         }
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 125)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add BallisticCollider To Selected Colliders", priority = 127)]
         private static void MenuAddBallistic()
         {
             foreach (var go in Selection.gameObjects)
@@ -325,7 +367,7 @@ namespace TarkovSDK.Editor
         // client swaps it for the real "p0/Reflective/Bumped Specular SMap" in the raid. That shader
         // reads albedo from _MainTex RGB, specular from _MainTex alpha and gloss from _SpecMap, so
         // Unity's plain white textures would make a fully white, fully glossy surface that blooms.
-        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 126)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Refresh Default Surface Material", priority = 128)]
         private static void RefreshDefaultSurfaceMenu() => DefaultSurfaceMaterial();
 
         public static Material DefaultSurfaceMaterial()

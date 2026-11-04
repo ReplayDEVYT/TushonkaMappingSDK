@@ -9,7 +9,7 @@ using mizmii.CustomMapLoader.Menu;
 
 namespace mizmii.CustomMapLoader
 {
-    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.9.3")]
+    [BepInPlugin("com.mizmii.custommaploader", "CustomMapLoader", "1.10.0")]
     // loaded after SAIN when it is installed, so SainLocationPatch can find it; never required
     [BepInDependency("me.sol.sain", BepInDependency.DependencyFlags.SoftDependency)]
     // after Fika when it is installed, so FikaForceTransitEnterPatch can find its host transit controller; never required
@@ -76,6 +76,7 @@ namespace mizmii.CustomMapLoader
             Enable(new SwitchCurvePatch());
             Enable(new PhysicsPropAwakePatch());
             Enable(new PhysicsPropPushPatch());
+            Enable(new PhysicsPropExplosionPatch());
             Enable(new MboitFogTimePatch());
             Enable(new CloudsNotRunningPatch());
             Enable(new TimeSelectionLocationsPatch());

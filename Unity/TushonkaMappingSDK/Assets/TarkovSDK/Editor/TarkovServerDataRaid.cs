@@ -54,6 +54,7 @@ namespace TarkovSDK.Editor
             FloatField("Loose Loot", "GlobalLootChanceModifier", "GlobalLootChanceModifier. Customs 0.4, Woods 0.4, Factory 0.27, Lighthouse 0.12.");
             FloatField("Loose Loot (PvE)", "GlobalLootChanceModifierPvE", "GlobalLootChanceModifierPvE: used in SPT's PvE raids. Customs 0.9, Woods 0.95, Factory 0.3.");
             FloatField("Containers", "GlobalContainerChanceModifier", "GlobalContainerChanceModifier. Every retail map uses 1.");
+            DrawLotsOfLoot();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Other", EditorStyles.boldLabel);
@@ -87,6 +88,34 @@ namespace TarkovSDK.Editor
             if (list.Count > 1)
                 EditorGUILayout.HelpBox($"base.json has {list.Count} airdrop phases; these settings are the first one's. The game moves to the next phase once a phase's " +
                                         "No Drops After time has passed. Edit the others in the JSON tab.", MessageType.None);
+        }
+
+        // Lots of Loot (a server mod that multiplies loot by a preset of retail maps): what this map does with it, as
+        // base.json "LotsOfLoot" { Mode, LikeMap }, read by CustomMapLoader's server (players can override it in its
+        // config.json). Empty: Preset like Customs.
+        private static readonly string[] LotsOfLootModes = { "Preset", "Ignore" };
+        private static readonly (string Id, string Name)[] LotsOfLootMaps =
+        {
+            ("bigmap", "Customs"), ("factory4_day", "Factory"), ("woods", "Woods"), ("interchange", "Interchange"), ("rezervbase", "Reserve"),
+            ("shoreline", "Shoreline"), ("tarkovstreets", "Streets"), ("lighthouse", "Lighthouse"), ("sandbox", "Ground Zero"), ("laboratory", "Labs"),
+            ("labyrinth", "Labyrinth"),
+        };
+
+        private void DrawLotsOfLoot()
+        {
+            var setting = _base["LotsOfLoot"] as JObject;
+            string mode = setting?.Value<string>("Mode") ?? "Preset";
+            string like = setting?.Value<string>("LikeMap") ?? "bigmap";
+            int m = Math.Max(0, Array.FindIndex(LotsOfLootModes, x => string.Equals(x, mode, StringComparison.OrdinalIgnoreCase)));
+            int newMode = EditorGUILayout.Popup(new GUIContent("With Lots of Loot", "Lots of Loot (a server mod) multiplies every map's loot by its preset, which only lists retail maps. " +
+                "Preset: this map gets as much more as the map below does. Ignore: SPT's own amounts. Players can change it in CustomMapLoader's config.json."), m, LotsOfLootModes);
+            int l = Math.Max(0, Array.FindIndex(LotsOfLootMaps, x => x.Id == like));
+            int newLike = l;
+            using (new EditorGUI.DisabledScope(newMode != 0))
+                newLike = EditorGUILayout.Popup(new GUIContent("Like Map", "The retail map whose Lots of Loot amounts (multipliers, spawn limit) this map takes; pick one of a similar size."),
+                    l, LotsOfLootMaps.Select(x => x.Name).ToArray());
+            if (newMode != m || newLike != l)
+                _base["LotsOfLoot"] = new JObject { ["Mode"] = LotsOfLootModes[newMode], ["LikeMap"] = LotsOfLootMaps[newLike].Id };
         }
 
         private void FloatField(string label, string key, string tooltip = null)

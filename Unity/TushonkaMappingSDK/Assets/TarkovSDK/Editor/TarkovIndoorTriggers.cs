@@ -87,45 +87,15 @@ namespace TarkovSDK.Editor
                 return null;
             }
 
-            Physics.SyncTransforms();
             var old = Find();
             var manual = Object.FindObjectsOfType<IndoorTrigger>(true)
                 .Where(t => old == null || !t.transform.IsChildOf(old.transform))
                 .Select(t => TarkovScenePreparer.TransformBounds(t.transform)).ToList();
-            float top = bounds.max.y + 10f;
-            int nx = Mathf.CeilToInt(bounds.size.x / CellSize), nz = Mathf.CeilToInt(bounds.size.z / CellSize);
-            var cells = new List<Cell>[nx, nz];
-            var boxes = new List<Bounds>();
-            int roomCount = 0;
-            // ceilings are found from below, which only works when a mesh's back faces aren't hit
-            bool backfaces = Physics.queriesHitBackfaces;
-            Physics.queriesHitBackfaces = false;
-            try
-            {
-                for (int iz = 0; iz < nz; iz++)
-                {
-                    if (EditorUtility.DisplayCancelableProgressBar("Indoor Triggers", "Scanning for rooms", iz / (float)nz))
-                        return null;
-                    for (int ix = 0; ix < nx; ix++)
-                        cells[ix, iz] = Scan(new Vector3(bounds.min.x + (ix + 0.5f) * CellSize, top, bounds.min.z + (iz + 0.5f) * CellSize),
-                            mask, wallMask, manual);
-                }
-                EditorUtility.DisplayProgressBar("Indoor Triggers", "Building rooms", 1f);
-                foreach (var room in FindRooms(cells, nx, nz))
-                {
-                    var roomBoxes = CoverRoom(room, bounds.min, mask);
-                    if (roomBoxes.Sum(b => b.size.x * b.size.z) < MinRoomArea)
-                        continue;
-                    boxes.AddRange(roomBoxes);
-                    roomCount++;
-                }
-            }
-            finally
-            {
-                Physics.queriesHitBackfaces = backfaces;
-                EditorUtility.ClearProgressBar();
-                Counted.Clear();
-            }
+            var rooms = ScanRooms(bounds, mask, wallMask, manual, "Indoor Triggers");
+            if (rooms == null)
+                return null;
+            var boxes = rooms.SelectMany(r => r).ToList();
+            int roomCount = rooms.Count;
 
             var buildings = GroupBuildings(boxes);
             if (old != null)
@@ -166,6 +136,46 @@ namespace TarkovSDK.Editor
         }
 
         // ------------------------------------------------------------ scan
+
+        // Every room over the area, each as the boxes that cover it (CoverRoom); floors inside manual boxes are skipped.
+        // Null if cancelled. Shared with the indoor ambient generator.
+        internal static List<List<Bounds>> ScanRooms(Bounds bounds, int mask, int wallMask, List<Bounds> manual, string title)
+        {
+            Counted.Clear();
+            Physics.SyncTransforms();
+            float top = bounds.max.y + 10f;
+            int nx = Mathf.CeilToInt(bounds.size.x / CellSize), nz = Mathf.CeilToInt(bounds.size.z / CellSize);
+            var cells = new List<Cell>[nx, nz];
+            var rooms = new List<List<Bounds>>();
+            // ceilings are found from below, which only works when a mesh's back faces aren't hit
+            bool backfaces = Physics.queriesHitBackfaces;
+            Physics.queriesHitBackfaces = false;
+            try
+            {
+                for (int iz = 0; iz < nz; iz++)
+                {
+                    if (EditorUtility.DisplayCancelableProgressBar(title, "Scanning for rooms", iz / (float)nz))
+                        return null;
+                    for (int ix = 0; ix < nx; ix++)
+                        cells[ix, iz] = Scan(new Vector3(bounds.min.x + (ix + 0.5f) * CellSize, top, bounds.min.z + (iz + 0.5f) * CellSize),
+                            mask, wallMask, manual);
+                }
+                EditorUtility.DisplayProgressBar(title, "Building rooms", 1f);
+                foreach (var room in FindRooms(cells, nx, nz))
+                {
+                    var roomBoxes = CoverRoom(room, bounds.min, mask);
+                    if (roomBoxes.Sum(b => b.size.x * b.size.z) >= MinRoomArea)
+                        rooms.Add(roomBoxes);
+                }
+            }
+            finally
+            {
+                Physics.queriesHitBackfaces = backfaces;
+                EditorUtility.ClearProgressBar();
+                Counted.Clear();
+            }
+            return rooms;
+        }
 
         // the room cells of one column, one per storey
         internal static List<Cell> Scan(Vector3 from, int mask, int wallMask, List<Bounds> manual)

@@ -30,6 +30,8 @@ Types:
   full    AmbientHighlight/HighlightSettings
   full    AmbientHighlight/StencilType
   full    AmbientLight
+  full    AmbientLight/CullingSettings
+  full    AnalyticSource
   full    AnimatorSync
   full    AreaLight
   full    AreaLight/TextureSize
@@ -122,6 +124,8 @@ Types:
   full    DisablerCullingObject/ComponentState
   shallow DisablerCullingObjectBase
   full    DoorHandle
+  full    DynamicAnalyticSource
+  full    DynamicStencilShadow
   full    EBodyPart
   full    EBodyPartColliderType
   full    ECoverPointSpecial
@@ -363,7 +367,7 @@ Types:
   full    PatrolType
   full    PatrolWay
   full    PhysicsTriggerHandler
-  shallow PointWithLookSides
+  full    PointWithLookSides
   full    PointWithNeighborType
   full    PowOfTwoDimensions
   full    Prism.Utils.AOBlurType
@@ -399,6 +403,7 @@ Types:
   full    SpatialAudioRoom/RoomConnection
   shallow StaticLoot
   shallow StationaryWeaponLink
+  full    StencilShadow
   full    TOD_AmbientParameters
   full    TOD_AmbientType
   full    TOD_AtmosphereParameters

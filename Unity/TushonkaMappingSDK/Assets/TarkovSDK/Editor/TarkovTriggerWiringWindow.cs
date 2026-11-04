@@ -110,7 +110,7 @@ namespace TarkovSDK.Editor
         private Transform _explosionAt;
         private TarkovWorldEvent _worldEvent;
 
-        [MenuItem("Tarkov SDK/Tools/Triggers/Triggers & Sounds...", priority = 118)]
+        [MenuItem("Tarkov SDK/Tools/Triggers/Triggers & Sounds...", priority = 119)]
         public static void Open()
         {
             var window = GetWindow<TarkovTriggerWiringWindow>("Triggers & Sounds");

@@ -18,7 +18,7 @@ namespace TarkovSDK.Editor
     {
         private const string Menu = "GameObject/Tarkov SDK/World Events/";
 
-        [MenuItem(Menu + "Scripted Event", priority = 81)]
+        [MenuItem(Menu + "Scripted Event", priority = 85)]
         private static void MenuEvent(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => Create(p).gameObject);
 
         // an event with a notification and an explosion to start from
@@ -224,7 +224,7 @@ namespace TarkovSDK.Editor
         private Vector2 _scroll;
         private float _wait = 5f;
 
-        [MenuItem("Tarkov SDK/Tools/World Events/Scripted Events...", priority = 121)]
+        [MenuItem("Tarkov SDK/Tools/World Events/Scripted Events...", priority = 123)]
         public static void OpenMenu() => Open(null);
 
         public static void Open(TarkovWorldEvent evt)

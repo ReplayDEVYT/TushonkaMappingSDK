@@ -54,3 +54,44 @@ namespace mizmii.CustomMapLoader.Loading
         }
     }
 }
+
+namespace mizmii.CustomMapLoader.Loading
+{
+    // Explosions push physics props. SmallPhysicsObject has OnBlowUp (a push away from the blast, within
+    // BlowUpThreshold metres, weaker further out), but Tarkov never calls it: only Arena did. Every explosion
+    // (grenades, mines, mortar shells, HandlerExplosion) ends in ExplosionSharedMethods.Explosion, which runs on
+    // every machine, so after it each prop is offered the blast. The Building Builder's breakable wall holes are
+    // props too: the blast swaps their intact piece for the loose chunks and throws those.
+    internal class PhysicsPropExplosionPatch : ModulePatch
+    {
+        private static readonly FieldInfo Instance = AccessTools.Field(typeof(SmallPhysicsSystem), "_instance");
+        private static readonly FieldInfo Objects = AccessTools.Field(typeof(SmallPhysicsSystem), "_smallPhysicsObjects");
+
+        protected override MethodBase GetTargetMethod() => AccessTools.Method(typeof(EFT.ExplosionSharedMethods), nameof(EFT.ExplosionSharedMethods.Explosion));
+
+        [PatchPostfix]
+        private static void Postfix(EFT.IExplosiveItem grenadeItem, Vector3 explosionPosition)
+        {
+            if (!MapRegistry.IsCustomMapActive() || grenadeItem == null || grenadeItem.IsDummy)
+                return;
+            // the system's own getter would make one when the map has no props
+            var system = Instance?.GetValue(null) as SmallPhysicsSystem;
+            if (system == null || !(Objects?.GetValue(system) is System.Collections.Generic.List<SmallPhysicsObject> list))
+                return;
+            // a breaking hole wakes its chunks, which add themselves to the list
+            foreach (var prop in list.ToArray())
+            {
+                if (prop == null || !prop.gameObject.activeInHierarchy)
+                    continue;
+                try
+                {
+                    prop.OnBlowUp(explosionPosition);
+                }
+                catch (System.Exception e)
+                {
+                    Plugin.LogSource.LogWarning($"physics prop {prop.name} on explosion: {e.Message}");
+                }
+            }
+        }
+    }
+}

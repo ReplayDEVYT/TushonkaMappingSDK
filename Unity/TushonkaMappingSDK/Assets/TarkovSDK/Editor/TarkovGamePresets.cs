@@ -207,7 +207,7 @@ namespace TarkovSDK.Editor
         {
             error = null;
             var path = PresetPathOf(entry);
-            var existing = AssetDatabase.LoadAssetAtPath<PrismPreset>(path);
+            var existing = GameAssetStore.Find<PrismPreset>(path);
             if (existing != null)
                 return existing;
             var files = TarkovGameData.Files;

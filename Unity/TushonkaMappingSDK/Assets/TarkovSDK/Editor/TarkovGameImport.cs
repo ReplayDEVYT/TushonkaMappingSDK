@@ -209,7 +209,9 @@ namespace TarkovSDK.Editor
     // Meshes, textures and materials built from the game's objects
     public static class TarkovGameAssets
     {
-        public const string Root = "Assets/TarkovGameAssets";
+        public const string DefaultRoot = "Assets/TarkovGameAssets";
+        // where imported game assets go: the Asset Importer's Import Folders setting for this project, else the default
+        public static string Root => TarkovImportFolders.Assets ?? DefaultRoot;
         public const string PreviewPrefix = "SDK game model ";
 
         public static Mesh BuildMesh(GameFiles files, GameSerializedFile from, GamePPtr pptr, out string error)
@@ -661,6 +663,35 @@ namespace TarkovSDK.Editor
         // where the asset of that id in that game file goes
         public static string PathOf(string fileName, string kind, string name, long id, string ext) => $"{FolderOf(fileName, kind)}/{Safe(name)}_{id}{ext}";
 
+        // an asset imported before: where it's made, else wherever it was moved to (the Asset Importer's Change... puts
+        // single imports in a folder of their own); found by its file name, <name>_<id>, which no other import has
+        public static T Find<T>(string path) where T : Object
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset != null)
+                return asset;
+            string file = Path.GetFileName(path), name = Path.GetFileNameWithoutExtension(path);
+            foreach (var guid in AssetDatabase.FindAssets(name, new[] { "Assets" }))
+            {
+                var other = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.Equals(Path.GetFileName(other), file, StringComparison.OrdinalIgnoreCase) && AssetDatabase.LoadAssetAtPath<T>(other) is T found)
+                    return found;
+            }
+            return null;
+        }
+
+        // moves an imported asset into a folder (keeping it the same asset, so what uses it still does); null, or why not
+        public static string MoveInto(Object asset, string folder)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(path) || string.Equals(Path.GetDirectoryName(path).Replace('\\', '/'), folder, StringComparison.OrdinalIgnoreCase))
+                return null;
+            TarkovGeneratedAssets.EnsureFolder(folder);
+            var target = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{Path.GetFileName(path)}");
+            var error = AssetDatabase.MoveAsset(path, target);
+            return string.IsNullOrEmpty(error) ? null : error;
+        }
+
         private T Get<T>(GameSerializedFile from, GamePPtr pptr, string kind, string ext, Func<GameSerializedFile, GameObjectInfo, string, T> build) where T : Object
         {
             if (pptr.IsNull || !_files.Resolve(from, pptr, out var file, out var info))
@@ -671,7 +702,7 @@ namespace TarkovSDK.Editor
             string name = file.Read(info.PathId, "m_Name")?.Str("m_Name") ?? "";
             var folder = FolderOf(file.Name, kind);
             var path = PathOf(file.Name, kind, name, info.PathId, ext);
-            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            var asset = Find<T>(path);
             if (asset == null)
             {
                 asset = build(file, info, name);

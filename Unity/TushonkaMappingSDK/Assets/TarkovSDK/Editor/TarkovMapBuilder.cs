@@ -73,6 +73,10 @@ namespace TarkovSDK.Editor
                 report.Warnings.AddRange(TarkovMapScenes.Gather(scenes));
                 // before Prepare, which sizes indoor triggers and checks the rain cover
                 TarkovIndoorMap.Apply(def, scenes, report);
+                // after Apply (it may make the whole-map cover): one obstacle at the origin, every object's own cover under it
+                report.Warnings.AddRange(TarkovRainCover.PrepareMap(scenes));
+                // built buildings' indoor volumes under the EnvironmentManager, before Prepare sizes the triggers
+                report.Warnings.AddRange(TarkovBuildingBuilder.PrepareMap(scenes));
                 for (int i = 0; i < scenes.Count; i++)
                     TarkovScenePreparer.Prepare(scenes[i], i == 0, report);
 

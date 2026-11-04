@@ -291,7 +291,7 @@ namespace TarkovSDK.Editor
 
         // ------------------------------------------------------------ colliders
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 124)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/Add Low + High Poly Colliders To Selected", priority = 126)]
         private static void MenuLowHighPoly()
         {
             if (Selection.gameObjects.Length == 0)

@@ -32,7 +32,7 @@ namespace TarkovSDK.Editor
             return door.transform.parent.gameObject;
         });
 
-        [MenuItem("Tarkov SDK/Tools/Interactables/Make Selected Doors Breachable", priority = 117)]
+        [MenuItem("Tarkov SDK/Tools/Interactables/Make Selected Doors Breachable", priority = 118)]
         private static void MenuMakeBreachable()
         {
             var doors = Selection.gameObjects.SelectMany(g => g.GetComponentsInChildren<Door>(true)).Distinct().ToList();

@@ -343,7 +343,7 @@ namespace TarkovSDK.Editor
                     var junction = selectedJunction;
                     EditorApplication.delayCall += () =>
                     {
-                        _toolStatus = TarkovCityRoads.FitToGround(junction) ? "Fitted to the ground." : "No ground found under its corners.";
+                        _toolStatus = TarkovCityRoads.FitToGround(junction) ? "Fitted to the ground." : "No terrain (Terrain layer) found under its corners.";
                         Repaint();
                     };
                 }

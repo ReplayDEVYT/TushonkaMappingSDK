@@ -85,9 +85,11 @@ namespace TarkovSDK.Editor
                     else if (go.GetComponentInChildren<LocationScene>(true) != null)
                         messages.Add($"{scenes[i].name}: its {part.Label} ('{go.name}') shares an object with the scene's LocationScene; a map has one, in its first scene. " +
                                      $"Move it into {first.name} by hand");
+                    else if (!Move(go, first, null))
+                        messages.Add($"{scenes[i].name}: its {part.Label} ('{go.name}') is inside a prefab, which can't be split; a map has one, in its first scene. " +
+                                     $"Unpack the prefab or move it into {first.name} by hand");
                     else
                     {
-                        Move(go, first, null);
                         kept = go;
                         messages.Add($"{scenes[i].name}: {part.Label} '{go.name}' moved into the first scene, {first.name} (a map has one, in its first scene)");
                     }
@@ -101,6 +103,10 @@ namespace TarkovSDK.Editor
                 var units = new List<Transform>();
                 foreach (var trigger in scenes[i].GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<IndoorTrigger>(true)))
                 {
+                    // editor-only ones never ship: a Building Builder building's (Build Map copies those under the first
+                    // scene's EnvironmentManager itself) and any other under an EditorOnly object
+                    if (EditorOnly(trigger.transform))
+                        continue;
                     var unit = trigger.transform;
                     for (var t = trigger.transform; t != null && t.GetComponent<EnvironmentManager>() == null; t = t.parent)
                         if (t.GetComponent<TriggerGroup>() != null)
@@ -111,16 +117,25 @@ namespace TarkovSDK.Editor
                 if (units.Count == 0)
                     continue;
                 root ??= IndoorTriggerGroup(first);
+                int moved = 0;
                 foreach (var unit in units)
-                    Move(unit.gameObject, first, root.transform);
-                messages.Add($"{scenes[i].name}: {units.Count} indoor trigger group(s) moved under the EnvironmentManager in {first.name}; " +
-                             "the game only checks indoor triggers there");
+                {
+                    if (Move(unit.gameObject, first, root.transform))
+                        moved++;
+                    else
+                        messages.Add($"{scenes[i].name}: the indoor triggers '{unit.name}' are inside a prefab, which can't be split, so they stay in {scenes[i].name} and do nothing " +
+                                     $"(the game only checks indoor triggers under the EnvironmentManager in {first.name}). Unpack the prefab, or move them out of it");
+                }
+                if (moved > 0)
+                    messages.Add($"{scenes[i].name}: {moved} indoor trigger group(s) moved under the EnvironmentManager in {first.name}; " +
+                                 "the game only checks indoor triggers there");
             }
             return messages;
         }
 
         // the first scene's EnvironmentManager and its first TriggerGroup, made when missing
-        private static TriggerGroup IndoorTriggerGroup(Scene scene)
+        // the scene's EnvironmentManager's first TriggerGroup (the one the game reads), made when missing
+        internal static TriggerGroup IndoorTriggerGroup(Scene scene)
         {
             var manager = First<EnvironmentManager>(scene);
             if (manager == null)
@@ -141,18 +156,32 @@ namespace TarkovSDK.Editor
             return group;
         }
 
-        // only a root object can change scenes
-        private static void Move(GameObject go, Scene scene, Transform parent)
+        private static bool EditorOnly(Transform t)
         {
+            for (var x = t; x != null; x = x.parent)
+                if (x.CompareTag("EditorOnly"))
+                    return true;
+            return false;
+        }
+
+        // Only a root object can change scenes. Something inside a prefab instance can't be taken out of it (Unity
+        // won't re-parent it, and moving it threw "Gameobject is not a root in a scene"): false, nothing done.
+        private static bool Move(GameObject go, Scene scene, Transform parent)
+        {
+            if (PrefabUtility.IsPartOfPrefabInstance(go) && !PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                return false;
             var from = go.scene;
             if (go.transform.parent != null)
                 Undo.SetTransformParent(go.transform, null, "Move To First Scene");
+            if (go.transform.parent != null)
+                return false;
             if (go.scene != scene)
                 Undo.MoveGameObjectToScene(go, scene, "Move To First Scene");
             if (parent != null)
                 Undo.SetTransformParent(go.transform, parent, "Move To First Scene");
             EditorSceneManager.MarkSceneDirty(from);
             EditorSceneManager.MarkSceneDirty(scene);
+            return true;
         }
 
         // whether the loaded navmesh reaches the scene's ground (null: nothing walkable in it). A navmesh baked before a

@@ -915,7 +915,7 @@ namespace TarkovSDK.Editor
         private TarkovCityBuilder.Layout _layout;
         private string _layoutKey;
 
-        [MenuItem("Tarkov SDK/Tools/Geometry/City Builder...", priority = 133)]
+        [MenuItem("Tarkov SDK/Tools/Geometry/City Builder...", priority = 135)]
         public static void Open() => GetWindow<TarkovCityBuilderWindow>("City Builder").minSize = new Vector2(380f, 480f);
 
         public static void RepaintOpen()

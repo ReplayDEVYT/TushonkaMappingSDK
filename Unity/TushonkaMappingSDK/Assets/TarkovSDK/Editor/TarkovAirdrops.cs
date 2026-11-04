@@ -17,10 +17,10 @@ namespace TarkovSDK.Editor
         public const string RootName = "AirdropPoints";
         public const string GeneratedName = "Generated";
 
-        [MenuItem("GameObject/Tarkov SDK/World Events/Airdrop Point", priority = 77)]
+        [MenuItem("GameObject/Tarkov SDK/World Events/Airdrop Point", priority = 81)]
         private static void MenuPoint(MenuCommand cmd) => TarkovSceneTools.Place(cmd, p => CreatePoint(p ?? Root(SceneManager.GetActiveScene()).transform, Vector3.zero).gameObject);
 
-        [MenuItem("Tarkov SDK/Generation/Misc/Airdrop Points", priority = 111)]
+        [MenuItem("Tarkov SDK/Generation/Misc/Airdrop Points", priority = 112)]
         private static void MenuGenerate() => EditorApplication.delayCall += () => Generate(SceneManager.GetActiveScene(), 20f);
 
         public static GameObject Root(Scene scene)
