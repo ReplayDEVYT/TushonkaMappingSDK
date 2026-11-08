@@ -14,6 +14,7 @@
     <Copyright>Copyright © mizmii</Copyright>
     <RepositoryUrl></RepositoryUrl>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+    <SptRoot>C:\spt41</SptRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,11 +39,6 @@
     <!-- the release ships no maps: sdk_example's bundles aren't in it, so its location would fail to load -->
     <PackageMapFiles Include="@(MapFiles)" Exclude="maps\sdk_example\**" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <!-- dotnet build -p:DeployToSpt=true copies the server mod into the SPT install below -->
-    <SptRoot Condition="'$(SptRoot)' == ''">C:\spt41</SptRoot>
-  </PropertyGroup>
 
   <Target Name="PackageModForDistribution" AfterTargets="Build">
     <PropertyGroup>
